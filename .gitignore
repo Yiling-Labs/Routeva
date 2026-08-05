@@ -27,6 +27,10 @@ coverage/
 *.xcuserstate
 DerivedData/
 
+# Cloudflare Wrangler local cache
+.wrangler/
+**/.wrangler/
+
 # Large local design exports (prefer Git LFS or external storage if needed)
 # design/**/*.psd
 # design/**/*.sketch
