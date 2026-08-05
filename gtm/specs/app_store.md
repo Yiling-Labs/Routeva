@@ -20,6 +20,16 @@
 - 竖屏为主；数量与必填机型以 Connect 为准
 - 可加边框模板，但避免误导性虚假系统 UI
 
+## 语言（与 App locale 脱钩 · ADR 0048）
+
+| 优先级 | 语言 | GTM 范围 |
+|---|---|---|
+| **P0** | **English** | 描述/关键词/截图/预览全套精做；美区验收 |
+| **P1** | **zh-Hans** | 商店文案与按需运营；可后于 en |
+| **P2** | **es / ja** 等 | 按 ROI 加 listing；完整截图套不默认 8 语齐发 |
+
+App UI 另有 8 locale（en · zh-Hans · zh-Hant · es · pt-BR · ja · ko · de）。**勿**因 App 8 语强制 GTM 8 套像素物料。功效/隐私口径不以无人审机翻为最终稿。见 CONTEXT **GTM Language Set**。
+
 ## 文案（常见上限）
 
 | 字段 | 限制（量级） |

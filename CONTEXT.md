@@ -17,8 +17,32 @@ _Avoid_: 未验证就默认全球多商店同步首发
 _Avoid_: iPad-first；通用 Apple 全家桶首发；为 iOS 16 及以下扩测试矩阵
 
 **Product Language (Source)**：
-面向用户的 UI、Onboarding、诊断可读文案、付费墙、商店材料与 Agent 首发质量以 **English** 为源语言（source of truth）并优先做 Craft 打磨。Agent 跟随系统/App 语言；中文等本地化可后续加，但不以中文 UI 作为美区首发验收标准。内部文档可用中文。
-_Avoid_: 中文 UI 当美区首发唯一验收；中英半套上架
+面向用户的 UI、Onboarding、诊断可读文案、付费墙、商店材料与 Agent 首发质量以 **English** 为源语言（source of truth）并优先做 Craft 打磨。内部文档可用中文。布局与 i18n 工程须按 **MVP Locale Set** + 伪本地化验收。详见 ADR **0047**（策略）/ **0048**（闭集 M）。  
+_Avoid_: 中文 UI 当美区首发唯一验收；中英半套上架；用语言数量当完成度；App locale 与 GTM 精做套数强行 1:1
+
+**MVP Locale Set（方案 M · 8）**：
+App UI 上架闭集（L2，ADR **0048** 取代 0047 之三语闭集）：  
+**en**（人工源）· **zh-Hans** · **zh-Hant** · **es** · **pt-BR** · **ja** · **ko** · **de**（后七者为机翻壳层，无人审）。  
+系统首选语言匹配其一则用该 locale，否则 **回落 en**。不进闭集的不上架、不维护。  
+**后置：** RTL（ar 等）、ru、vi/id/th、fr/it 等更大集合——另开里程碑，不静默追加。  
+_Avoid_: 15+ 语言假覆盖；Hans/Hant 混用同一串无分 locale；用上架 de 以外的方式忽视长词布局（de 已在闭集内压测）
+
+**Localization Policy（MVP）**：
+- **选择（U1）：** 仅跟随 iOS 系统首选语言；**无** Settings「Language」行（与无 Appearance 一致）。  
+- **机翻范围（T1 · 壳层）：** 导航、Settings 行名、按钮、空态、列表壳等可对闭集内非 en locale **机翻**（无人审）。  
+- **锁 English：** 诊断四桶与失败主文案、Repair 确认/进度/回滚、隐私关键句、付费墙。高风险键无合格译文时 **显式回落 en**，优于错误机翻。  
+- **披露：** About 可有一句次要说明——部分界面为机翻，关键说明以 English 为准；**无**每屏 MT 横幅、无首次强选语言。  
+- **Help：** 用户输入可跟界面/系统语言；结构化诊断卡仍 English（同 T1）。  
+- **GTM 语言（与 App 脱钩计数）：** 见 **GTM Language Set**。  
+_Avoid_: 全 UI 含诊断/同意无人审机翻；运行时 LLM 译 UI 字符串；Settings 语言双轨；每屏 Machine translated 条；8 套完整 GTM 截图与 App 同日齐发
+
+**GTM Language Set**：
+Go-to-market **精做**语言与 App locale **不同步强绑**。  
+- **P0：** **English** 全套（美区 App Store 描述/关键词/截图/预览、主隐私叙事、英文社区）。  
+- **P1：** **zh-Hans** 商店文案与按需中文运营物料（可后于 en 上架）。  
+- **P2：** 按安装/投放 ROI 再开 **es** 或 **ja** 等 **listing 文案**；完整多语言截图/视频按需，默认不 8 语齐套。  
+闭集外 GTM 语言不做。机翻可用于非 en listing 草稿，**功效/隐私承诺不以无人审机翻为最终口径**。  
+_Avoid_: App 8 locale 迫使 GTM 8 套像素物料；商店多语言徽章当虚荣指标
 
 **Product Bet (MVP)**：
 MVP 要证明的是 **自愈闭环**（诊断准、修复可验证可回滚）。**自动导入并连上**是入场必要条件。**Craft** 为交付质量要求。首发选择 **Thick Agent** 作为主交互面之一（开放自然语言 + 分流意图 + 云端可选），但 **Agent 不得取代 Diagnostic Engine 成为故障裁判**；无模型时核心连接/诊断/修复仍须可用。北极星仍是修复成功率与连接稳定性，不是对话次数。

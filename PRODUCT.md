@@ -14,7 +14,7 @@
 | types | ios |
 | min_os | iOS 17+ |
 | market | 美国 App Store 首发优先 |
-| product_language | English（用户可见源语言） |
+| product_language | English 源；App 8 locale（M · ADR 0048）；壳机翻 · T1（0047） |
 | business | **Beta：全功能免费**；目标草稿 Free + Pro $2.99 永久（见 ADR 0001/0006） |
 | updated | 2026-08-05 |
 | status | Grill Q1–Q15 + 复审 Q1–Q12 已收口；可进入设计/实现细化 |
@@ -79,7 +79,7 @@
 | 平台 | iOS App；**iPhone 主验收**；iPad 可装可用、布局不优先 |
 | 系统 | **iOS 17+** |
 | 商店 | 美国 App Store 首发优先 |
-| 文案语言 | 用户可见 **English** 为源 |
+| 文案语言 | **English** 源；App **en·zh-Hans·zh-Hant·es·pt-BR·ja·ko·de**（壳机翻；诊断/Repair/隐私锁 en · ADR 0047/0048）；GTM 精做 en 优先 |
 | 身份 | 无自建账号；数据本机（商业化后再依赖 StoreKit 恢复购买） |
 | 商业 | **Beta 全免**；目标草稿：Free 深度体验 + Pro Non-Consumable **$2.99** |
 
