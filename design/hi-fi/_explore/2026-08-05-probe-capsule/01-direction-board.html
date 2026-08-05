@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Direction D · Probe Capsule</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      background: #c8c8c6;
+      background-image: radial-gradient(ellipse at 30% 20%, #d4d4d2 0%, #b8b8b6 55%, #a8a8a6 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 36px 28px 72px;
+    }
+    .meta { max-width: 1680px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .meta p { font-size: 14px; color: #3a3a3a; margin-top: 8px; max-width: 72ch; line-height: 1.55; }
+    .tag {
+      display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      border: 1px solid #333; padding: 3px 10px; margin-top: 12px; border-radius: 999px;
+      background: rgba(255,255,255,0.35);
+    }
+    .row {
+      display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start;
+      max-width: 1800px; margin: 0 auto;
+    }
+    .phone-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .lab {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: #333;
+      text-align: center; max-width: 280px; line-height: 1.35;
+    }
+    .lab span { display: block; font-weight: 400; color: #555; margin-top: 2px; font-size: 11px; }
+    @keyframes ring-pulse {
+      0% { opacity: 0.85; transform: translate(-50%, -50%) scale(0.72); }
+      70% { opacity: 0.15; }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+    }
+    @keyframes ring-pulse-soft {
+      0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.04); }
+    }
+    .probe-ring {
+      position: absolute; left: 50%; top: 50%;
+      border: 1.5px solid rgba(120, 255, 190, 0.75);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: ring-pulse 2.4s ease-out infinite;
+    }
+    .probe-ring:nth-child(2) { animation-delay: 0.8s; }
+    .probe-ring:nth-child(3) { animation-delay: 1.6s; }
+    .probe-ring-static {
+      position: absolute; left: 50%; top: 50%;
+      border: 1.5px solid rgba(120, 255, 190, 0.45);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: ring-pulse-soft 2.8s ease-in-out infinite;
+    }
+    .dot-arc {
+      position: absolute; left: 50%; top: 50%;
+      width: 168px; height: 168px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px dotted rgba(255,255,255,0.22);
+      border-top-color: transparent;
+      border-left-color: transparent;
+      pointer-events: none;
+    }
+    .glass-noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.07;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px;
+      mix-blend-mode: overlay;
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Direction D · Probe Capsule</h1>
+    <p>
+      Strict pin language: dual-field glassmorphism + vertical sliding power capsule + radial probe rings.
+      Routeva semantics only — Verified connection, own subscription, Auto policy, honest Client-Fixable repair.
+      No premium wall, no flag carousel, no fake-green success.
+    </p>
+    <span class="tag">ROUTEVA · CRAFT P0 · GLASS + CAPSULE</span>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useCallback } = React;
+
+    /* —— iPhone 15 Pro frame —— */
+    const frame = {
+      wrap: {
+        display: 'inline-block', padding: 11, background: '#0a0a0a',
+        borderRadius: 58,
+        boxShadow: '0 0 0 1px #2a2a2a, 0 28px 70px rgba(0,0,0,0.38), inset 0 0 0 1px rgba(255,255,255,0.06)',
+      },
+      screen: {
+        position: 'relative', width: 393, height: 852, borderRadius: 48,
+        overflow: 'hidden',
+      },
+      status: {
+        position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 28px 0', fontSize: 15, fontWeight: 600, pointerEvents: 'none',
+      },
+      island: {
+        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
+        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
+      },
+      home: {
+        position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+        width: 128, height: 5, borderRadius: 999, zIndex: 40,
+      },
+    };
+
+    function IosFrame({ children, dark = true, bg }) {
+      const c = dark ? '#fff' : '#0a0a0a';
+      return (
+        <div style={frame.wrap}>
+          <div style={{ ...frame.screen, background: bg || (dark ? '#0e1114' : '#e8eeeb') }}>
+            <div style={{ ...frame.status, color: c }}>
+              <span>9:41</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 11 }}>
+                  {[4, 6, 8, 11].map((h, i) => (
+                    <div key={i} style={{ width: 3, height: h, background: c, borderRadius: 1, opacity: 0.9 }} />
+                  ))}
+                </div>
+                <svg width="16" height="12" viewBox="0 0 16 12" fill={c} style={{ opacity: 0.9 }}>
+                  <path d="M8 2.2c2.2 0 4.1 0.9 5.5 2.3l-1.2 1.2A5.8 5.8 0 0 0 8 3.8a5.8 5.8 0 0 0-4.3 1.9L2.5 4.5A7.6 7.6 0 0 1 8 2.2zm0 3.2c1.3 0 2.4.5 3.3 1.4L10 8a2.8 2.8 0 0 0-4 0L4.7 6.8A4.6 4.6 0 0 1 8 5.4zM8 10.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4z" />
+                </svg>
+                <div style={{
+                  width: 25, height: 12, border: `1.5px solid ${c}`, borderRadius: 3,
+                  padding: 1, position: 'relative', opacity: 0.9,
+                }}>
+                  <div style={{ width: '78%', height: '100%', background: c, borderRadius: 1 }} />
+                  <div style={{
+                    position: 'absolute', top: 3, right: -3, width: 2, height: 5,
+                    background: c, borderRadius: '0 1px 1px 0', opacity: 0.7,
+                  }} />
+                </div>
+              </div>
+            </div>
+            <div style={frame.island} />
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 28 }}>
+              {children}
+            </div>
+            <div style={{ ...frame.home, background: dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.28)' }} />
+          </div>
+        </div>
+      );
+    }
+
+    /* —— Icons —— */
+    function PowerIcon({ size = 22, color = '#fff' }) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v9" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
+          <path d="M7.2 6.4a7.2 7.2 0 1 0 9.6 0" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function Chevron({ dir = 'up', color = 'rgba(255,255,255,0.55)', size = 18 }) {
+      const rot = dir === 'up' ? 0 : 180;
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" style={{ transform: `rotate(${rot}deg)` }}>
+          <path d="M6 14l6-6 6 6" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    }
+    function Gear({ color = 'rgba(255,255,255,0.7)' }) {
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.6" />
+          <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M5.6 18.4l1.6-1.6M16.8 7.2l1.6-1.6" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function GridIcon({ color = 'rgba(255,255,255,0.75)' }) {
+      return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="4" width="6" height="6" rx="1.5" stroke={color} strokeWidth="1.6" />
+          <rect x="14" y="4" width="6" height="6" rx="1.5" stroke={color} strokeWidth="1.6" />
+          <rect x="4" y="14" width="6" height="6" rx="1.5" stroke={color} strokeWidth="1.6" />
+          <rect x="14" y="14" width="6" height="6" rx="1.5" stroke={color} strokeWidth="1.6" />
+        </svg>
+      );
+    }
+
+    /* —— Sliding capsule —— */
+    function ConnectCapsule({
+      mode, // 'idle' | 'connected' | 'connecting'
+      onConnect,
+      onDisconnect,
+      height = 168,
+    }) {
+      const trackRef = useRef(null);
+      const [dragY, setDragY] = useState(0);
+      const [dragging, setDragging] = useState(false);
+      const startY = useRef(0);
+      const baseY = useRef(0);
+
+      const thumbH = 72;
+      const maxTravel = height - thumbH - 16; // padding
+      // idle: thumb at bottom; connected: thumb at top
+      const restY = mode === 'connected' ? 8 : maxTravel;
+
+      const y = dragging ? Math.max(8, Math.min(maxTravel, baseY.current + dragY)) : restY;
+      const progress = 1 - (y - 8) / (maxTravel - 8); // 0 bottom, 1 top
+
+      const onPointerDown = (e) => {
+        if (mode === 'connecting') return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setDragging(true);
+        startY.current = e.clientY;
+        baseY.current = restY;
+        setDragY(0);
+      };
+      const onPointerMove = (e) => {
+        if (!dragging) return;
+        setDragY(e.clientY - startY.current);
+      };
+      const onPointerUp = () => {
+        if (!dragging) return;
+        setDragging(false);
+        const finalY = Math.max(8, Math.min(maxTravel, baseY.current + dragY));
+        const p = 1 - (finalY - 8) / (maxTravel - 8);
+        setDragY(0);
+        if (mode === 'idle' && p > 0.55) onConnect && onConnect();
+        if (mode === 'connected' && p < 0.45) onDisconnect && onDisconnect();
+      };
+
+      const isOn = mode === 'connected';
+      const isBusy = mode === 'connecting';
+
+      const trackBg = isOn
+        ? 'linear-gradient(180deg, rgba(20,40,36,0.55) 0%, rgba(12,28,24,0.75) 100%)'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.35) 100%)';
+      const thumbBg = isOn
+        ? 'linear-gradient(160deg, #7fd9b0 0%, #3fa87a 45%, #2d8a62 100%)'
+        : isBusy
+          ? 'linear-gradient(160deg, #6a9e8a 0%, #3d6b5f 100%)'
+          : 'linear-gradient(160deg, #3a4248 0%, #1c2228 55%, #12161a 100%)';
+      const thumbShadow = isOn
+        ? '0 8px 24px rgba(60,200,140,0.45), inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -2px 6px rgba(0,0,0,0.15)'
+        : '0 10px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -3px 8px rgba(0,0,0,0.35)';
+
+      return (
+        <div
+          ref={trackRef}
+          style={{
+            position: 'relative', width: 78, height,
+            borderRadius: 999,
+            background: trackBg,
+            boxShadow: isOn
+              ? 'inset 0 2px 12px rgba(0,0,0,0.35), 0 0 0 1px rgba(120,255,190,0.12)'
+              : 'inset 0 2px 14px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            touchAction: 'none',
+            userSelect: 'none',
+          }}
+        >
+          {/* chevron hints */}
+          {mode === 'idle' && (
+            <div style={{
+              position: 'absolute', top: 14, left: 0, right: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, opacity: 0.55,
+            }}>
+              <Chevron dir="up" color="rgba(255,255,255,0.5)" size={16} />
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.4)' }}>SWIPE</span>
+            </div>
+          )}
+          {mode === 'connected' && (
+            <div style={{
+              position: 'absolute', bottom: 14, left: 0, right: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, opacity: 0.45,
+            }}>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(180,255,220,0.45)' }}>SWIPE</span>
+              <Chevron dir="down" color="rgba(180,255,220,0.45)" size={16} />
+            </div>
+          )}
+
+          {/* thumb */}
+          <div
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onClick={() => {
+              if (dragging) return;
+              if (mode === 'idle') onConnect && onConnect();
+              if (mode === 'connected') onDisconnect && onDisconnect();
+            }}
+            style={{
+              position: 'absolute', left: 7, width: 64, height: thumbH,
+              top: y,
+              borderRadius: 999,
+              background: thumbBg,
+              boxShadow: thumbShadow,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 4, cursor: isBusy ? 'wait' : 'grab',
+              transition: dragging ? 'none' : 'top 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s',
+              zIndex: 2,
+            }}
+          >
+            <span style={{
+              fontSize: 10, fontWeight: 800, letterSpacing: '0.14em',
+              color: isOn ? 'rgba(8,30,22,0.9)' : 'rgba(255,255,255,0.88)',
+            }}>
+              {isBusy ? '…' : isOn ? 'STOP' : 'START'}
+            </span>
+            <PowerIcon size={20} color={isOn ? 'rgba(8,30,22,0.92)' : '#fff'} />
+            {isOn && (
+              <div style={{
+                position: 'absolute', top: 10, width: 6, height: 6, borderRadius: '50%',
+                background: '#0f3', boxShadow: '0 0 8px #5f5', opacity: 0.9,
+              }} />
+            )}
+            {!isOn && !isBusy && (
+              <div style={{
+                position: 'absolute', top: 10, width: 6, height: 6, borderRadius: '50%',
+                background: '#3d7', boxShadow: '0 0 6px rgba(60,220,140,0.6)', opacity: 0.85,
+              }} />
+            )}
+          </div>
+
+          {/* progress wash when dragging toward connect */}
+          {dragging && mode === 'idle' && progress > 0.1 && (
+            <div style={{
+              position: 'absolute', inset: 4, borderRadius: 999, pointerEvents: 'none',
+              background: `radial-gradient(circle at 50% 80%, rgba(80,220,160,${0.15 * progress}) 0%, transparent 70%)`,
+            }} />
+          )}
+        </div>
+      );
+    }
+
+    /* —— Tab bar —— */
+    function TabBar({ active = 'Home', light = false }) {
+      const items = ['Home', 'Activity', 'Agent'];
+      return (
+        <div style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0, height: 56,
+          display: 'flex', alignItems: 'center',
+          background: light
+            ? 'linear-gradient(180deg, rgba(232,242,236,0.55) 0%, rgba(210,228,218,0.85) 100%)'
+            : 'linear-gradient(180deg, rgba(20,24,28,0.4) 0%, rgba(10,12,14,0.92) 100%)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: light ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+          paddingBottom: 2, zIndex: 30,
+        }}>
+          {items.map((t) => {
+            const on = t === active;
+            const c = light
+              ? (on ? '#0d2a22' : 'rgba(20,40,32,0.4)')
+              : (on ? '#fff' : 'rgba(255,255,255,0.38)');
+            return (
+              <div key={t} style={{
+                flex: 1, textAlign: 'center', fontSize: 10, fontWeight: on ? 700 : 500,
+                letterSpacing: '0.04em', color: c, paddingTop: 6,
+              }}>
+                <div style={{
+                  width: 22, height: 22, margin: '0 auto 3px', borderRadius: 7,
+                  background: on
+                    ? (light ? 'rgba(40,120,90,0.18)' : 'rgba(255,255,255,0.12)')
+                    : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 12,
+                }}>
+                  {t === 'Home' ? '◎' : t === 'Activity' ? '☰' : '✦'}
+                </div>
+                {t}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    /* —— Top chrome —— */
+    function TopChrome({ light = false }) {
+      const c = light ? 'rgba(12,32,26,0.75)' : 'rgba(255,255,255,0.75)';
+      return (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '4px 22px 0', height: 36,
+        }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 12,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: light ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.08)',
+            boxShadow: light
+              ? 'inset 0 1px 0 rgba(255,255,255,0.6), 0 4px 12px rgba(0,0,0,0.06)'
+              : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 14px rgba(0,0,0,0.25)',
+            backdropFilter: 'blur(12px)',
+          }}>
+            <GridIcon color={c} />
+          </div>
+          <span style={{
+            fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', color: c,
+          }}>ROUTEVA</span>
+          <div style={{
+            width: 34, height: 34, borderRadius: 12,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: light ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.08)',
+            boxShadow: light
+              ? 'inset 0 1px 0 rgba(255,255,255,0.6), 0 4px 12px rgba(0,0,0,0.06)'
+              : 'inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 14px rgba(0,0,0,0.25)',
+            backdropFilter: 'blur(12px)',
+          }}>
+            <Gear color={c} />
+          </div>
+        </div>
+      );
+    }
+
+    /* —— Faint map wash —— */
+    function MapWash({ light = false }) {
+      return (
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: light ? 0.14 : 0.12,
+          backgroundImage: `
+            radial-gradient(ellipse 80% 50% at 50% 42%, ${light ? 'rgba(20,60,45,0.5)' : 'rgba(255,255,255,0.25)'} 0%, transparent 70%),
+            url("data:image/svg+xml,${encodeURIComponent(`
+              <svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'>
+                <g fill='none' stroke='${light ? '#0a2a1e' : '#fff'}' stroke-width='1' opacity='0.35'>
+                  <ellipse cx='200' cy='150' rx='160' ry='90'/>
+                  <path d='M40 150 Q100 80 200 100 T360 140'/>
+                  <path d='M60 180 Q140 220 220 170 T350 190'/>
+                  <path d='M80 120 Q160 60 240 110'/>
+                  <circle cx='130' cy='140' r='3'/><circle cx='250' cy='130' r='3'/><circle cx='200' cy='160' r='2'/>
+                </g>
+              </svg>
+            `)}")
+          `,
+          backgroundSize: 'cover, 120% auto',
+          backgroundPosition: 'center, center 38%',
+          backgroundRepeat: 'no-repeat',
+        }} />
+      );
+    }
+
+    /* ========== SCREENS ========== */
+
+    function HomeIdle({ interactive }) {
+      const [mode, setMode] = useState('idle');
+      const connect = () => {
+        setMode('connecting');
+        setTimeout(() => setMode('connected'), 1400);
+      };
+      const disconnect = () => setMode('idle');
+      const m = interactive ? mode : 'idle';
+
+      return (
+        <IosFrame dark bg="linear-gradient(165deg, #2a3036 0%, #14181c 42%, #0b0e11 100%)">
+          <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+            <div className="glass-noise" />
+            <MapWash />
+            <TopChrome />
+
+            <div style={{
+              position: 'absolute', top: '18%', left: 0, right: 0,
+              textAlign: 'center', padding: '0 28px', zIndex: 2,
+            }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '6px 14px', borderRadius: 999,
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(10px)',
+                fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.78)',
+                marginBottom: 18,
+              }}>
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: '#6a7', boxShadow: '0 0 8px rgba(100,200,140,0.5)',
+                }} />
+                Apex Transit · Monthly
+              </div>
+              <div style={{
+                fontSize: 34, fontWeight: 700, letterSpacing: '-0.04em',
+                color: '#f4f6f7', textShadow: '0 2px 24px rgba(0,0,0,0.35)',
+              }}>
+                {m === 'connecting' ? 'Connecting…' : m === 'connected' ? 'Connected' : 'Not Connected'}
+              </div>
+              <div style={{
+                marginTop: 10, fontSize: 14, fontWeight: 500,
+                color: 'rgba(255,255,255,0.48)', letterSpacing: '0.01em',
+              }}>
+                {m === 'connected' ? 'sj-edge-04 · Auto' : 'Auto · provider rules + nodes'}
+              </div>
+              {m === 'idle' && (
+                <div style={{
+                  marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.32)',
+                }}>
+                  Your subscription · we don’t sell nodes
+                </div>
+              )}
+              {m === 'connecting' && (
+                <div style={{ marginTop: 8, fontSize: 12, color: 'rgba(160,220,190,0.65)' }}>
+                  Tunnel → Probe…
+                </div>
+              )}
+            </div>
+
+            {/* capsule zone */}
+            <div style={{
+              position: 'absolute', left: 0, right: 0, bottom: 88,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 5,
+            }}>
+              {(m === 'idle' || m === 'connecting') && (
+                <div className="dot-arc" style={{ top: 'auto', bottom: 40, transform: 'translate(-50%, 0) rotate(200deg)' }} />
+              )}
+              {m === 'connected' && (
+                <div style={{ position: 'relative', width: 200, height: 200, marginBottom: -20 }}>
+                  <div className="probe-ring" style={{ width: 100, height: 100 }} />
+                  <div className="probe-ring" style={{ width: 140, height: 140 }} />
+                  <div className="probe-ring" style={{ width: 180, height: 180 }} />
+                </div>
+              )}
+              <ConnectCapsule
+                mode={m === 'connecting' ? 'connecting' : m}
+                onConnect={connect}
+                onDisconnect={disconnect}
+              />
+              <div style={{
+                marginTop: 16, fontSize: 12, fontWeight: 500,
+                color: 'rgba(255,255,255,0.38)', letterSpacing: '0.02em',
+              }}>
+                {m === 'idle' ? 'Swipe up to connect' : m === 'connecting' ? 'Verifying access…' : 'Swipe down to stop'}
+              </div>
+            </div>
+
+            <TabBar active="Home" />
+          </div>
+        </IosFrame>
+      );
+    }
+
+    function HomeConnected() {
+      return (
+        <IosFrame dark={false} bg="linear-gradient(165deg, #7a9e92 0%, #4f7a6c 38%, #2f564a 72%, #1e3d35 100%)">
+          <div style={{ height: '100%', position: 'relative', color: '#0c1f1a' }}>
+            <div className="glass-noise" style={{ opacity: 0.05 }} />
+            <MapWash light />
+            {/* soft highlight */}
+            <div style={{
+              position: 'absolute', top: -40, left: '10%', right: '10%', height: 220,
+              background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.35) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }} />
+            <TopChrome light />
+
+            <div style={{
+              position: 'absolute', top: '16%', left: 0, right: 0,
+              textAlign: 'center', padding: '0 24px', zIndex: 2,
+            }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '5px 12px', borderRadius: 999, marginBottom: 14,
+                background: 'rgba(255,255,255,0.28)',
+                border: '1px solid rgba(255,255,255,0.35)',
+                backdropFilter: 'blur(12px)',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
+                color: 'rgba(8,40,28,0.85)',
+              }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: '#1aff9c', boxShadow: '0 0 10px #3f5',
+                }} />
+                VERIFIED
+              </div>
+              <div style={{
+                fontSize: 13, fontWeight: 600, color: 'rgba(8,36,28,0.55)',
+                letterSpacing: '0.02em', marginBottom: 6,
+              }}>
+                sj-edge-04
+              </div>
+              <div style={{
+                fontSize: 36, fontWeight: 700, letterSpacing: '-0.04em',
+                color: '#0a1f18',
+                textShadow: '0 1px 0 rgba(255,255,255,0.25)',
+              }}>
+                Connected
+              </div>
+              <div style={{
+                marginTop: 10, fontSize: 14, fontWeight: 600,
+                color: 'rgba(8,36,28,0.62)',
+              }}>
+                Auto · probe passed
+              </div>
+              <div style={{
+                marginTop: 8, fontSize: 12, fontWeight: 500,
+                color: 'rgba(8,36,28,0.42)', maxWidth: 260, marginLeft: 'auto', marginRight: 'auto',
+                lineHeight: 1.4,
+              }}>
+                Path healthy · last check just now
+              </div>
+            </div>
+
+            <div style={{
+              position: 'absolute', left: 0, right: 0, bottom: 88,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 5,
+            }}>
+              <div style={{ position: 'relative', width: 210, height: 210, marginBottom: -28 }}>
+                <div className="probe-ring-static" style={{ width: 96, height: 96, borderColor: 'rgba(40,255,160,0.55)' }} />
+                <div className="probe-ring" style={{ width: 130, height: 130, borderColor: 'rgba(60,255,170,0.5)' }} />
+                <div className="probe-ring" style={{ width: 170, height: 170, borderColor: 'rgba(80,255,180,0.35)' }} />
+                <div className="probe-ring" style={{ width: 210, height: 210, borderColor: 'rgba(100,255,190,0.22)' }} />
+              </div>
+              <ConnectCapsule mode="connected" onDisconnect={() => {}} />
+              <div style={{
+                marginTop: 14, fontSize: 12, fontWeight: 600,
+                color: 'rgba(8,36,28,0.45)', letterSpacing: '0.02em',
+              }}>
+                Swipe down to stop
+              </div>
+            </div>
+
+            <TabBar active="Home" light />
+          </div>
+        </IosFrame>
+      );
+    }
+
+    function DiagnosticScreen() {
+      return (
+        <IosFrame dark bg="linear-gradient(165deg, #252a30 0%, #12161a 50%, #0a0c0e 100%)">
+          <div style={{ height: '100%', position: 'relative', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-noise" />
+            <TopChrome />
+
+            <div style={{ padding: '12px 22px 0', flex: 1, overflow: 'hidden' }}>
+              <div style={{
+                fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)',
+                letterSpacing: '0.04em', marginBottom: 8,
+              }}>
+                DIAGNOSTIC
+              </div>
+              <div style={{
+                fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 16,
+              }}>
+                Something failed
+              </div>
+
+              {/* glass card */}
+              <div style={{
+                borderRadius: 24,
+                background: 'linear-gradient(155deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
+                border: '1px solid rgba(255,255,255,0.14)',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                padding: 20,
+              }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '6px 12px', borderRadius: 999, marginBottom: 16,
+                  background: 'rgba(255, 190, 90, 0.16)',
+                  border: '1px solid rgba(255, 190, 90, 0.35)',
+                  fontSize: 12, fontWeight: 800, letterSpacing: '0.06em',
+                  color: '#ffc46a',
+                }}>
+                  CLIENT-FIXABLE
+                </div>
+
+                <Row label="Why" text="DNS on this device is pointing outside the tunnel." />
+                <Row label="Impact" text="Some apps still leak or fail to load." />
+                <Row label="Next" text="Reset DNS to a known-good preset, then re-probe." />
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  marginTop: 14, paddingTop: 14,
+                  borderTop: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Confidence</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>High · 0.86</span>
+                </div>
+                <div style={{
+                  marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.28)',
+                }}>
+                  Technical details ▸
+                </div>
+              </div>
+
+              <button style={{
+                marginTop: 20, width: '100%', border: 'none', cursor: 'pointer',
+                borderRadius: 18, padding: '16px 20px',
+                background: 'linear-gradient(160deg, #7fd9b0 0%, #3fa87a 50%, #2d8a62 100%)',
+                boxShadow: '0 10px 28px rgba(60,180,120,0.35), inset 0 1px 0 rgba(255,255,255,0.4)',
+                color: '#0a1f18', fontSize: 16, fontWeight: 800, letterSpacing: '0.02em',
+              }}>
+                Repair
+              </button>
+              <div style={{
+                marginTop: 12, textAlign: 'center', fontSize: 12,
+                color: 'rgba(255,255,255,0.35)',
+              }}>
+                Snapshot first · one-tap consent · can roll back
+              </div>
+            </div>
+
+            <TabBar active="Home" />
+          </div>
+        </IosFrame>
+      );
+    }
+
+    function Row({ label, text }) {
+      return (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
+            color: 'rgba(255,255,255,0.38)', marginBottom: 4,
+          }}>{label}</div>
+          <div style={{
+            fontSize: 15, fontWeight: 500, lineHeight: 1.4,
+            color: 'rgba(255,255,255,0.88)',
+          }}>{text}</div>
+        </div>
+      );
+    }
+
+    function RepairConfirm() {
+      const items = [
+        'Capture config snapshot',
+        'Apply DNS preset (DoH)',
+        'Re-establish tunnel',
+        'Run connectivity probe',
+      ];
+      return (
+        <IosFrame dark bg="linear-gradient(165deg, #2a3036 0%, #14181c 48%, #0b0e11 100%)">
+          <div style={{ height: '100%', position: 'relative', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-noise" />
+            <TopChrome />
+
+            <div style={{ padding: '12px 22px 0', flex: 1 }}>
+              <div style={{
+                fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)',
+                letterSpacing: '0.04em', marginBottom: 8,
+              }}>
+                REPAIR
+              </div>
+              <div style={{
+                fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 8,
+              }}>
+                Confirm changes
+              </div>
+              <div style={{
+                fontSize: 14, color: 'rgba(255,255,255,0.48)', lineHeight: 1.45, marginBottom: 20,
+              }}>
+                We’ll try only allowlisted client fixes. If probe fails, we roll back.
+              </div>
+
+              <div style={{
+                borderRadius: 24,
+                background: 'linear-gradient(155deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.04) 100%)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(22px)',
+                padding: '8px 6px',
+              }}>
+                {items.map((t, i) => (
+                  <div key={t} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '14px 14px',
+                    borderBottom: i < items.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                  }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 10,
+                      background: 'rgba(80,200,150,0.15)',
+                      border: '1px solid rgba(80,200,150,0.28)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 12, fontWeight: 800, color: '#7fd9b0',
+                    }}>{i + 1}</div>
+                    <span style={{ fontSize: 15, fontWeight: 550, color: 'rgba(255,255,255,0.9)' }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 22 }}>
+                <button style={{
+                  flex: 1, border: '1px solid rgba(255,255,255,0.14)', cursor: 'pointer',
+                  borderRadius: 16, padding: '15px 12px',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'rgba(255,255,255,0.75)', fontSize: 15, fontWeight: 700,
+                }}>
+                  Cancel
+                </button>
+                <button style={{
+                  flex: 1.2, border: 'none', cursor: 'pointer',
+                  borderRadius: 16, padding: '15px 12px',
+                  background: 'linear-gradient(160deg, #7fd9b0 0%, #3fa87a 50%, #2d8a62 100%)',
+                  boxShadow: '0 10px 28px rgba(60,180,120,0.35), inset 0 1px 0 rgba(255,255,255,0.4)',
+                  color: '#0a1f18', fontSize: 15, fontWeight: 800,
+                }}>
+                  Confirm
+                </button>
+              </div>
+
+              {/* mini capsule echo — visual continuity */}
+              <div style={{
+                marginTop: 28, display: 'flex', justifyContent: 'center', opacity: 0.55,
+              }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: 999,
+                  background: 'linear-gradient(160deg, #3a4248 0%, #1c2228 100%)',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <PowerIcon size={22} color="rgba(255,255,255,0.85)" />
+                </div>
+              </div>
+            </div>
+
+            <TabBar active="Home" />
+          </div>
+        </IosFrame>
+      );
+    }
+
+    function App() {
+      return (
+        <div className="row">
+          <div className="phone-col">
+            <div className="lab">Home · Idle<span>Dark glass · swipe-up START</span></div>
+            <HomeIdle interactive />
+          </div>
+          <div className="phone-col">
+            <div className="lab">Home · Connected<span>Mint field · Verified · STOP rings</span></div>
+            <HomeConnected />
+          </div>
+          <div className="phone-col">
+            <div className="lab">Diagnostic<span>Client-Fixable · Repair CTA</span></div>
+            <DiagnosticScreen />
+          </div>
+          <div className="phone-col">
+            <div className="lab">Repair Confirm<span>Allowlist · one-tap consent</span></div>
+            <RepairConfirm />
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

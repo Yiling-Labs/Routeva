@@ -5,6 +5,7 @@
 | 文件 | 何时存在 |
 |---|---|
 | [common.md](./common.md) | 总是 |
+| [design-versions.md](./design-versions.md) | 总是（设计 explore/current 双轨） |
 | [web.md](./web.md) | types 含 web |
 | [chrome_extension.md](./chrome_extension.md) | types 含 chrome_extension |
 | [ios.md](./ios.md) | types 含 ios |

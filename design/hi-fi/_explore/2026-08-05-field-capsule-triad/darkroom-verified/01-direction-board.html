@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Routeva — Direction Board · darkroom-verified</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- React + Babel pinned -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; }
+    body {
+      background: #070707;
+      color: #F4F1EA;
+      font-family: 'Inter', -apple-system, 'SF Pro Text', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    #root { min-height: 100vh; }
+    div::-webkit-scrollbar { display: none; }
+    .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+    .mono { font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- iOS device frame (skill component, inlined verbatim) -->
+  <script type="text/babel">
+const iosFrameStyles = {
+  wrapper: {
+    display: 'inline-block',
+    padding: 12,
+    background: '#000',
+    borderRadius: 60,
+    boxShadow: '0 0 0 2px #1f2937, 0 20px 60px rgba(0,0,0,0.3)',
+    position: 'relative',
+  },
+  screen: {
+    position: 'relative',
+    borderRadius: 48,
+    overflow: 'hidden',
+    background: '#fff',
+  },
+  statusBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 54,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 32px 0 32px',
+    fontSize: 16,
+    fontWeight: 600,
+    fontFamily: '-apple-system, "SF Pro Text", sans-serif',
+    zIndex: 20,
+    pointerEvents: 'none',
+  },
+  dynamicIsland: {
+    position: 'absolute',
+    top: 12,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: 124,
+    height: 36,
+    background: '#000',
+    borderRadius: 999,
+    zIndex: 30,
+  },
+  statusIcons: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  signalIcon: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: 2,
+    height: 12,
+  },
+  signalBar: {
+    width: 3,
+    background: 'currentColor',
+    borderRadius: 1,
+  },
+  wifiIcon: {
+    width: 16,
+    height: 12,
+    position: 'relative',
+  },
+  batteryIcon: {
+    width: 26,
+    height: 12,
+    border: '1.5px solid currentColor',
+    borderRadius: 3,
+    padding: 1,
+    position: 'relative',
+    opacity: 0.8,
+  },
+  batteryCap: {
+    position: 'absolute',
+    top: 3,
+    right: -3,
+    width: 2,
+    height: 6,
+    background: 'currentColor',
+    borderRadius: '0 1px 1px 0',
+  },
+  content: {
+    position: 'absolute',
+    top: 54,
+    left: 0,
+    right: 0,
+    bottom: 34,
+    overflow: 'auto',
+  },
+  homeIndicator: {
+    position: 'absolute',
+    bottom: 10,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: 140,
+    height: 5,
+    background: 'rgba(0,0,0,0.3)',
+    borderRadius: 999,
+    zIndex: 10,
+  },
+  homeIndicatorDark: {
+    background: 'rgba(255,255,255,0.5)',
+  },
+};
+
+function IosFrame({
+  children,
+  width = 393,
+  height = 852,
+  time = '9:41',
+  battery = 100,
+  darkMode = false,
+  showStatusBar = true,
+  showDynamicIsland = true,
+  showHomeIndicator = true,
+}) {
+  const textColor = darkMode ? '#fff' : '#000';
+
+  return (
+    <div style={iosFrameStyles.wrapper}>
+      <div style={{
+        ...iosFrameStyles.screen,
+        width,
+        height,
+        background: darkMode ? '#000' : '#fff',
+      }}>
+        {showStatusBar && (
+          <div style={{ ...iosFrameStyles.statusBar, color: textColor }}>
+            <span>{time}</span>
+            <div style={iosFrameStyles.statusIcons}>
+              <div style={iosFrameStyles.signalIcon}>
+                <div style={{ ...iosFrameStyles.signalBar, height: 4 }} />
+                <div style={{ ...iosFrameStyles.signalBar, height: 6 }} />
+                <div style={{ ...iosFrameStyles.signalBar, height: 9 }} />
+                <div style={{ ...iosFrameStyles.signalBar, height: 11 }} />
+              </div>
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none" style={{ color: textColor }}>
+                <path d="M8 11.5a1 1 0 100-2 1 1 0 000 2z" fill="currentColor" />
+                <path d="M3 7.5a7 7 0 0110 0" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+                <path d="M1 4.5a11 11 0 0114 0" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" opacity="0.7" />
+              </svg>
+              <div style={iosFrameStyles.batteryIcon}>
+                <div style={{
+                  width: `${battery}%`,
+                  height: '100%',
+                  background: 'currentColor',
+                  borderRadius: 1,
+                  opacity: 0.9,
+                }} />
+                <div style={iosFrameStyles.batteryCap} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDynamicIsland && <div style={iosFrameStyles.dynamicIsland} />}
+
+        <div style={iosFrameStyles.content}>
+          {children}
+        </div>
+
+        {showHomeIndicator && (
+          <div style={{
+            ...iosFrameStyles.homeIndicator,
+            ...(darkMode ? iosFrameStyles.homeIndicatorDark : {}),
+          }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+if (typeof window !== 'undefined') {
+  window.IosFrame = IosFrame;
+}
+  </script>
+
+  <!-- Direction board -->
+  <script type="text/babel">
+const { useState } = React;
+
+/* ---------- tokens ---------- */
+const T = {
+  ink: '#F4F1EA',
+  inkDimIdle: '#C7C9CD',
+  inkDimMint: '#A6D8C2',
+  inkDimAmber: '#DDBE8E',
+  inkDimDiag: '#C9C5BC',
+  mint: '#8FE3BC',
+  amber: '#E8B260',
+  field: {
+    idle:       { base: '#141A24', glow: '#1E2A3C' },
+    connecting: { base: '#16202E', glow: '#22364A' },
+    verified:   { base: '#0E352C', glow: '#1A5546' },
+    degraded:   { base: '#38290D', glow: '#57411B' },
+    diagnostic: { base: '#151517', glow: '#22221F' },
+  },
+  meta: '#8B897F',
+  hairline: 'rgba(244,241,234,0.14)',
+};
+
+/* deterministic pseudo-random */
+function prand(i, j) {
+  const x = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/* ---------- probe dot-field (Connectivity Probe visualization) ---------- */
+function ProbeDots({ mode, accent }) {
+  const cx = 135, cy = 103;
+  const rings = [57, 71, 85, 99].map((r, k) => ({ r, n: 18 + k * 7 }));
+  const dots = [];
+  rings.forEach((ring, k) => {
+    for (let i = 0; i < ring.n; i++) {
+      const a = (i / ring.n) * Math.PI * 2 - Math.PI / 2;
+      let x = cx + Math.cos(a) * ring.r;
+      let y = cy + Math.sin(a) * ring.r;
+      let op = 0.9, r = 2.1, col = accent, missing = false;
+
+      if (mode === 'idle') {
+        op = 0.22; col = T.ink;
+      } else if (mode === 'connecting') {
+        if (k <= 2) op = 0.95 - k * 0.12;
+        else { op = 0.13; col = T.ink; }
+      } else if (mode === 'verified') {
+        op = 0.95 - k * 0.1;
+      } else if (mode === 'degraded') {
+        if (k < 2) {
+          op = 0.9;
+        } else if (k === 2) {
+          /* fracture ring: dots displace, dim, or vanish */
+          const p = prand(i, k);
+          if (p < 0.28) missing = true;
+          else if (p < 0.62) {
+            const ang = p * 11.3;
+            const d = 4 + p * 6;
+            x += Math.cos(ang) * d; y += Math.sin(ang) * d;
+            op = 0.38; r = 1.5;
+          } else op = 0.8;
+        } else {
+          op = 0.08; col = T.ink;
+        }
+      }
+      if (!missing) dots.push(<circle key={k + '-' + i} cx={x} cy={y} r={r} fill={col} opacity={op} />);
+    }
+  });
+  return (
+    <svg width="270" height="206" viewBox="0 0 270 206" style={{ display: 'block' }}>
+      {dots}
+    </svg>
+  );
+}
+
+/* ---------- vertical slide capsule ---------- */
+function Capsule({ label, tone, chevron, h = 102 }) {
+  const tones = {
+    idle:  { border: 'rgba(244,241,234,0.38)', text: T.ink,   bg: 'rgba(244,241,234,0.06)', thumb: 'rgba(244,241,234,0.16)' },
+    mint:  { border: 'rgba(143,227,188,0.55)', text: T.mint,  bg: 'rgba(143,227,188,0.09)', thumb: 'rgba(143,227,188,0.22)' },
+    amber: { border: 'rgba(232,178,96,0.6)',   text: T.amber, bg: 'rgba(232,178,96,0.1)',   thumb: 'rgba(232,178,96,0.24)' },
+  };
+  const t = tones[tone];
+  const up = chevron === 'up';
+  return (
+    <div style={{
+      width: 56, height: h, borderRadius: 999,
+      border: '1px solid ' + t.border,
+      background: t.bg,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'space-between',
+      padding: h <= 76 ? '5px 0 4px 0' : '9px 0 8px 0',
+    }}>
+      <svg width="12" height="7" viewBox="0 0 12 7" style={{ opacity: up ? 0.9 : 0.3 }}>
+        <polyline points={up ? '1,6 6,1 11,6' : '1,1 6,6 11,1'} fill="none" stroke={t.text} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span className="mono" style={{ fontSize: 12, letterSpacing: 1.6, color: t.text, fontWeight: 500 }}>{label}</span>
+      <div style={{
+        width: 32, height: 32, borderRadius: '50%',
+        background: t.thumb, border: '1px solid ' + t.border,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div style={{ width: 10, height: 1.5, background: t.text, borderRadius: 1, opacity: 0.9 }} />
+      </div>
+    </div>
+  );
+}
+
+/* ---------- top subscription pill ---------- */
+function SubPill({ text, tone }) {
+  const c = tone === 'mint' ? T.mint : tone === 'amber' ? T.amber : T.ink;
+  return (
+    <div style={{
+      alignSelf: 'center',
+      display: 'flex', alignItems: 'center', gap: 7,
+      border: '1px solid ' + (tone === 'mint' ? 'rgba(143,227,188,0.4)' : tone === 'amber' ? 'rgba(232,178,96,0.45)' : 'rgba(244,241,234,0.28)'),
+      borderRadius: 999, padding: '5px 12px',
+      background: 'rgba(0,0,0,0.18)',
+    }}>
+      <span style={{ fontSize: 12, fontWeight: 500, color: c }}>{text}</span>
+      <span style={{ width: 3, height: 3, borderRadius: '50%', background: c, opacity: 0.6 }} />
+      <span className="mono" style={{ fontSize: 12, letterSpacing: 1.2, color: c, opacity: 0.75 }}>AUTO</span>
+    </div>
+  );
+}
+
+/* ---------- home screen shell ---------- */
+function HomeScreen({ mode }) {
+  const cfg = {
+    idle: {
+      field: T.field.idle, accent: T.ink, dim: T.inkDimIdle,
+      word: 'Not connected', italic: true,
+      sub: 'Swipe up to connect',
+      meta: 'TUNNEL DOWN · LAST VERIFIED 2H AGO',
+      capsule: { label: 'START', tone: 'idle', chevron: 'up' },
+      pill: 'My Subscription',
+    },
+    connecting: {
+      field: T.field.connecting, accent: T.mint, dim: T.inkDimIdle,
+      word: 'Verifying', italic: true,
+      sub: 'Tunnel up — checking it actually works',
+      meta: 'PROBE RING 3/5 · TLS OK · RTT 41MS',
+      capsule: { label: '···', tone: 'mint', chevron: 'up' },
+      pill: 'My Subscription',
+    },
+    verified: {
+      field: T.field.verified, accent: T.mint, dim: T.inkDimMint,
+      word: 'Verified', italic: true,
+      sub: 'Connected · Frankfurt-04 · Auto',
+      meta: 'PROBE 5/5 OK · RTT 38MS · DNS CLEAN',
+      capsule: { label: 'STOP', tone: 'mint', chevron: 'down' },
+      pill: 'My Subscription',
+    },
+    degraded: {
+      field: T.field.degraded, accent: T.amber, dim: T.inkDimAmber,
+      word: 'Degraded', italic: true,
+      sub: 'Tunnel up — verification failed',
+      meta: 'PROBE 2/5 · DNS TIMED OUT · RING 3 FRACTURED',
+      capsule: { label: 'STOP', tone: 'amber', chevron: 'down' },
+      pill: 'My Subscription',
+    },
+  }[mode];
+
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      background: 'radial-gradient(circle at 50% 74%, ' + cfg.field.glow + ' 0%, ' + cfg.field.base + ' 68%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '10px 0 6px 0',
+      position: 'relative',
+    }}>
+      <SubPill text={cfg.pill} tone={mode === 'verified' ? 'mint' : mode === 'degraded' ? 'amber' : 'idle'} />
+
+      <div style={{ textAlign: 'center', marginTop: 14 }}>
+        <div className="serif" style={{
+          fontSize: 34, fontWeight: 600, lineHeight: 1.05,
+          fontStyle: cfg.italic ? 'italic' : 'normal',
+          color: cfg.accent,
+        }}>{cfg.word}</div>
+        <div style={{ fontSize: 14, color: cfg.dim, marginTop: 6 }}>{cfg.sub}</div>
+      </div>
+
+      <div style={{ position: 'relative', marginTop: 2 }}>
+        <ProbeDots mode={mode} accent={cfg.accent} />
+        <div style={{ position: 'absolute', left: '50%', top: 103, transform: 'translate(-50%, -50%)' }}>
+          <Capsule {...cfg.capsule} />
+        </div>
+      </div>
+
+      {mode === 'degraded' && (
+        <div style={{
+          alignSelf: 'center', marginTop: -2,
+          border: '1px solid rgba(232,178,96,0.55)', borderRadius: 999,
+          padding: '6px 14px', background: 'rgba(232,178,96,0.1)',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: T.amber }}>See diagnosis</span>
+          <svg width="12" height="8" viewBox="0 0 12 8">
+            <polyline points="1,4 10,4 7,1 10,4 7,7" fill="none" stroke={T.amber} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+
+      <div style={{ flex: 1 }} />
+      <div className="mono" style={{
+        textAlign: 'center', fontSize: 12, letterSpacing: 1,
+        color: cfg.dim, opacity: 0.9, paddingBottom: 4,
+      }}>{cfg.meta}</div>
+    </div>
+  );
+}
+
+/* ---------- diagnostic screen ---------- */
+function DiagRow({ label, text, color }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+      <span className="mono" style={{
+        fontSize: 12, letterSpacing: 1.2, color: T.amber,
+        width: 74, flexShrink: 0, paddingTop: 2,
+      }}>{label}</span>
+      <span style={{ fontSize: 14, lineHeight: 1.4, color: color }}>{text}</span>
+    </div>
+  );
+}
+
+function DiagnosticScreen() {
+  const f = T.field.diagnostic;
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      background: 'radial-gradient(circle at 50% 100%, ' + f.glow + ' 0%, ' + f.base + ' 70%)',
+      display: 'flex', flexDirection: 'column',
+      padding: '8px 16px 6px 16px',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <span className="mono" style={{
+          fontSize: 12, letterSpacing: 1.6, color: T.inkDimDiag,
+          border: '1px solid ' + T.hairline, borderRadius: 999, padding: '5px 12px',
+        }}>DIAGNOSIS</span>
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <span className="mono" style={{
+          fontSize: 12, letterSpacing: 1.4, color: T.amber,
+          border: '1px solid rgba(232,178,96,0.55)', borderRadius: 4,
+          padding: '3px 8px', background: 'rgba(232,178,96,0.1)',
+        }}>CLIENT-FIXABLE</span>
+        <div className="serif" style={{
+          fontSize: 20, fontWeight: 600, fontStyle: 'italic',
+          lineHeight: 1.15, color: T.ink, marginTop: 6,
+        }}>Your network is hijacking DNS lookups</div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
+        <DiagRow label="CAUSE" text="Router answers DNS itself and drops requests." color={T.inkDimDiag} />
+        <DiagRow label="IMPACT" text="Tunnel is up, but no domain resolves." color={T.inkDimDiag} />
+        <DiagRow label="NEXT" text="Switch to a verified resolver. Snapshot saved — reversible." color={T.inkDimDiag} />
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <span className="mono" style={{ fontSize: 12, letterSpacing: 1.2, color: T.inkDimDiag }}>CONFIDENCE</span>
+          <span className="mono" style={{ fontSize: 12, color: T.ink }}>86%</span>
+        </div>
+        <div style={{ height: 3, background: 'rgba(244,241,234,0.12)', borderRadius: 2, marginTop: 6 }}>
+          <div style={{ width: '86%', height: '100%', background: T.amber, borderRadius: 2 }} />
+        </div>
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <Capsule label="REPAIR" tone="amber" chevron="up" h={72} />
+        <span style={{ fontSize: 14, color: T.inkDimDiag }}>Slide to repair</span>
+        <span className="mono" style={{ fontSize: 12, color: T.inkDimDiag, opacity: 0.85, letterSpacing: 0.6, paddingBottom: 2 }}>SNAPSHOT 09:41 · REVERSIBLE</span>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- signature detail: the fracture, framed ---------- */
+function SignatureFrame() {
+  /* enlarged frame of degraded ring-3 fracture, gallery-mounted */
+  const amber = T.amber;
+  return (
+    <div style={{
+      background: '#E9E6DE',
+      padding: 10,
+      boxShadow: '0 10px 30px rgba(0,0,0,0.45)',
+    }}>
+      <div style={{ background: '#0B0B0C', padding: '14px 16px 12px 16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <span className="serif" style={{ fontSize: 20, fontStyle: 'italic', fontWeight: 600, color: T.ink }}>The fracture, ring 3</span>
+          <span className="mono" style={{ fontSize: 12, color: T.meta, letterSpacing: 1 }}>T=1.84S · 4:1</span>
+        </div>
+        <svg width="470" height="100" viewBox="0 0 470 100" style={{ display: 'block', marginTop: 6 }}>
+          {/* nominal row */}
+          <text x="0" y="28" fill={T.meta} fontSize="12" fontFamily="JetBrains Mono, monospace" letterSpacing="1">R2 NOMINAL</text>
+          {[0,1,2,3,4].map(i => (
+            <circle key={'n'+i} cx={130 + i * 46} cy={24} r={9} fill={amber} opacity={0.92} />
+          ))}
+          {/* fractured row */}
+          <text x="0" y="80" fill={T.meta} fontSize="12" fontFamily="JetBrains Mono, monospace" letterSpacing="1">R3 FRACTURE</text>
+          <circle cx={130} cy={76} r={9} fill={amber} opacity={0.92} />
+          {/* displaced dot with trail */}
+          <line x1={176} y1={76} x2={190} y2={62} stroke={amber} strokeWidth="1" opacity="0.35" />
+          <circle cx={192} cy={60} r={7.5} fill={amber} opacity="0.55" />
+          <text x={204} y={52} fill={amber} fontSize="12" fontFamily="JetBrains Mono, monospace" opacity="0.9">Δ6.2px</text>
+          {/* dimmed dot */}
+          <circle cx={268} cy={76} r={4.5} fill={amber} opacity="0.38" />
+          <text x={280} y={80} fill={amber} fontSize="12" fontFamily="JetBrains Mono, monospace" opacity="0.9">dim 38%</text>
+          {/* lost dot */}
+          <circle cx={360} cy={76} r={9} fill="none" stroke={amber} strokeWidth="1" strokeDasharray="3 3" opacity="0.55" />
+          <text x={376} y={80} fill={amber} fontSize="12" fontFamily="JetBrains Mono, monospace" opacity="0.9">lost</text>
+          {/* displaced down */}
+          <line x1={452} y1={80} x2={444} y2={90} stroke={amber} strokeWidth="1" opacity="0.35" />
+          <circle cx={442} cy={92} r={7} fill={amber} opacity="0.5" />
+        </svg>
+        <div className="mono" style={{ fontSize: 12, color: T.meta, letterSpacing: 0.8, marginTop: 6 }}>
+          PROBE RING 3/5 · 8 OF 32 DOTS LOST · DNS TIMEOUT 2.0S · FRAME ENLARGED 400%
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- palette strip ---------- */
+const swatches = [
+  { name: 'Field · Idle',     hex: '#141A24', oklch: 'oklch(0.18 0.02 260)', light: true },
+  { name: 'Field · Verified', hex: '#0E352C', oklch: 'oklch(0.27 0.05 170)', light: true },
+  { name: 'Field · Degraded', hex: '#38290D', oklch: 'oklch(0.28 0.06 75)',  light: true },
+  { name: 'Signal · Mint',    hex: '#8FE3BC', oklch: 'oklch(0.84 0.11 160)', light: false },
+  { name: 'Signal · Amber',   hex: '#E8B260', oklch: 'oklch(0.78 0.12 78)',  light: false },
+  { name: 'Ink · Warm',       hex: '#F4F1EA', oklch: 'oklch(0.95 0.01 95)',  light: false },
+];
+
+function Palette() {
+  return (
+    <div>
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1.6, color: T.meta, marginBottom: 8 }}>PALETTE — FIELD IS STATE</div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {swatches.map(s => (
+          <div key={s.hex} style={{ flex: 1 }}>
+            <div style={{
+              height: 36, background: s.hex, borderRadius: 3,
+              border: '1px solid rgba(244,241,234,0.12)',
+              display: 'flex', alignItems: 'flex-end', padding: 4,
+            }}>
+              <span className="mono" style={{ fontSize: 12, color: s.light ? T.ink : '#101010' }}>{s.hex}</span>
+            </div>
+            <div style={{ fontSize: 12, color: T.ink, marginTop: 5, fontWeight: 500 }}>{s.name}</div>
+            <div className="mono" style={{ fontSize: 12, color: T.meta }}>{s.oklch}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- typography note ---------- */
+function TypeNote() {
+  return (
+    <div>
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1.6, color: T.meta, marginBottom: 8 }}>TYPE — THREE REGISTERS</div>
+      <div className="serif" style={{ fontSize: 26, fontStyle: 'italic', fontWeight: 600, color: T.ink }}>Cormorant Garamond</div>
+      <div style={{ fontSize: 12, color: T.meta, marginTop: 2 }}>display · the state of the field, set with gallery gravity</div>
+      <div style={{ fontSize: 15, fontWeight: 500, color: T.ink, marginTop: 10, fontFamily: "-apple-system, 'SF Pro Text', Inter, sans-serif" }}>-apple-system / Inter</div>
+      <div style={{ fontSize: 12, color: T.meta, marginTop: 2 }}>body · the tools, quietly receding</div>
+      <div className="mono" style={{ fontSize: 14, color: T.ink, marginTop: 10, letterSpacing: 1 }}>JETBRAINS MONO</div>
+      <div style={{ fontSize: 12, color: T.meta, marginTop: 2 }}>evidence · probe readouts, set like EXIF data</div>
+    </div>
+  );
+}
+
+/* ---------- screen metadata plate ---------- */
+function Plate({ children }) {
+  return (
+    <div className="mono" style={{
+      textAlign: 'center', fontSize: 12, letterSpacing: 1,
+      color: T.meta, marginTop: 10,
+    }}>{children}</div>
+  );
+}
+
+/* ---------- board ---------- */
+const boardStyles = {
+  page: {
+    padding: '22px 26px 24px 26px',
+    maxWidth: 1600, margin: '0 auto',
+  },
+  headerRow: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+    borderBottom: '1px solid ' + T.hairline, paddingBottom: 14, marginBottom: 18,
+  },
+  screensRow: {
+    display: 'flex', gap: 20, justifyContent: 'center', alignItems: 'flex-start',
+  },
+  band: {
+    display: 'grid', gridTemplateColumns: '1.35fr 0.75fr 1.3fr',
+    gap: 26, marginTop: 22, paddingTop: 16,
+    borderTop: '1px solid ' + T.hairline,
+    alignItems: 'start',
+  },
+};
+
+function Board() {
+  return (
+    <div style={boardStyles.page}>
+      <div style={boardStyles.headerRow}>
+        <div>
+          <div className="mono" style={{ fontSize: 12, letterSpacing: 2, color: T.meta }}>
+            ROUTEVA · HI-FI DIRECTION BOARD · DARKROOM-VERIFIED
+          </div>
+          <div className="serif" style={{ fontSize: 36, fontWeight: 600, fontStyle: 'italic', lineHeight: 1.1, marginTop: 6 }}>
+            The screen is a darkroom. Light is earned.
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', maxWidth: 380, paddingBottom: 4 }}>
+          <div className="serif" style={{ fontSize: 16, fontStyle: 'italic', color: T.ink, lineHeight: 1.35 }}>
+            “A darkroom, not a dashboard — the interface stays black and quiet until the probe earns the light.”
+          </div>
+          <div className="mono" style={{ fontSize: 12, color: T.meta, marginTop: 8, lineHeight: 1.5, letterSpacing: 0.5 }}>
+            FORM FOLLOWS THE PROBE — FIELD COLOR, RIPPLE RINGS AND EVERY PIXEL OF GLOW ARE LIT BY VERIFICATION RESULTS, NEVER BY DECORATION.
+          </div>
+        </div>
+      </div>
+
+      <div style={boardStyles.screensRow}>
+        <figure style={{ margin: 0 }}>
+          <IosFrame width={264} height={500} darkMode battery={82}>
+            <HomeScreen mode="idle" />
+          </IosFrame>
+          <Plate>01 · IDLE — FIELD #141A24 · RINGS UNLIT</Plate>
+        </figure>
+        <figure style={{ margin: 0 }}>
+          <IosFrame width={264} height={500} darkMode battery={82}>
+            <HomeScreen mode="connecting" />
+          </IosFrame>
+          <Plate>02 · PROBING — RING 3/5 LIGHTING · HONEST COPY</Plate>
+        </figure>
+        <figure style={{ margin: 0 }}>
+          <IosFrame width={264} height={500} darkMode battery={82}>
+            <HomeScreen mode="verified" />
+          </IosFrame>
+          <Plate>03 · VERIFIED — PROBE 5/5 OK · FULL RIPPLE</Plate>
+        </figure>
+        <figure style={{ margin: 0 }}>
+          <IosFrame width={264} height={500} darkMode battery={82}>
+            <HomeScreen mode="degraded" />
+          </IosFrame>
+          <Plate>04 · DEGRADED — AMBER, NOT GREEN · RING 3 FRACTURED</Plate>
+        </figure>
+        <figure style={{ margin: 0 }}>
+          <IosFrame width={264} height={500} darkMode battery={82}>
+            <DiagnosticScreen />
+          </IosFrame>
+          <Plate>05 · DIAGNOSIS — CLIENT-FIXABLE · SLIDE TO REPAIR</Plate>
+        </figure>
+      </div>
+
+      <div style={boardStyles.band}>
+        <Palette />
+        <TypeNote />
+        <div>
+          <div className="mono" style={{ fontSize: 12, letterSpacing: 1.6, color: T.meta, marginBottom: 8 }}>SIGNATURE DETAIL — THE MOMENT PROOF FAILS</div>
+          <SignatureFrame />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<Board />);
+  </script>
+</body>
+</html>

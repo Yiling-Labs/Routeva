@@ -14,7 +14,8 @@
 
 - [ ] 功能/范围讨论过程落入 `docs/sessions/`  
 - [ ] 收敛结论写入 `PRODUCT.md` 内容区与/或 `docs/prd/PRD.md`  
-- [ ] 设计稿进 `design/`，上架图进 `gtm/`，不混用  
+- [ ] 设计探索进 `design/**/_explore/`，采用稿进 `design/**/current/`；上架图只从 current 导出到 `gtm/`  
+- [ ] 设计多版本规则见 [design-versions.md](./design-versions.md)  
 - [ ] 发版/上架前过本类型 `docs/guides/<type>.md` 与 `gtm/specs/`  
 
 ## 明确不是本文件的职责

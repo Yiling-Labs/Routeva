@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Direction A · Functional Brutalism</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #e8e8e8;
+      color: #111;
+      min-height: 100vh;
+      padding: 40px 32px 80px;
+    }
+    .meta { max-width: 1100px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+    .meta p { font-size: 14px; color: #444; margin-top: 8px; max-width: 62ch; line-height: 1.5; }
+    .tag { display: inline-block; font-size: 11px; border: 1px solid #111; padding: 2px 8px; margin-top: 12px; }
+    .row { display: flex; flex-wrap: wrap; gap: 36px; justify-content: center; align-items: flex-start; }
+    .lab { font-size: 12px; font-style: italic; color: #555; margin-bottom: 8px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Direction A · Functional Brutalism</h1>
+    <p>Logic: roulette #17. Hairline lists, system type, link blue, high density — honest tool, zero decoration. Form from content: failure is a labeled row, not a hero illustration.</p>
+    <span class="tag">ROUTEVA · CRAFT P0 · EN</span>
+  </div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const iosFrameStyles = {
+      wrapper: { display: 'inline-block', padding: 12, background: '#000', borderRadius: 60, boxShadow: '0 0 0 2px #1f2937, 0 20px 60px rgba(0,0,0,0.3)', position: 'relative' },
+      screen: { position: 'relative', borderRadius: 48, overflow: 'hidden', background: '#fff' },
+      statusBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', fontSize: 16, fontWeight: 600, fontFamily: '-apple-system, sans-serif', zIndex: 20, pointerEvents: 'none' },
+      dynamicIsland: { position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 124, height: 36, background: '#000', borderRadius: 999, zIndex: 30 },
+      statusIcons: { display: 'flex', alignItems: 'center', gap: 6 },
+      signalIcon: { display: 'flex', alignItems: 'flex-end', gap: 2, height: 12 },
+      signalBar: { width: 3, background: 'currentColor', borderRadius: 1 },
+      batteryIcon: { width: 26, height: 12, border: '1.5px solid currentColor', borderRadius: 3, padding: 1, position: 'relative', opacity: 0.8 },
+      batteryCap: { position: 'absolute', top: 3, right: -3, width: 2, height: 6, background: 'currentColor', borderRadius: '0 1px 1px 0' },
+      content: { position: 'absolute', top: 54, left: 0, right: 0, bottom: 34, overflow: 'auto' },
+      homeIndicator: { position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', width: 140, height: 5, background: 'rgba(0,0,0,0.3)', borderRadius: 999, zIndex: 10 },
+    };
+    function IosFrame({ children, time = '9:41', battery = 84, darkMode = false }) {
+      const textColor = darkMode ? '#fff' : '#000';
+      return (
+        <div style={iosFrameStyles.wrapper}>
+          <div style={{ ...iosFrameStyles.screen, width: 393, height: 852, background: darkMode ? '#000' : '#FBFBFB' }}>
+            <div style={{ ...iosFrameStyles.statusBar, color: textColor }}>
+              <span>{time}</span>
+              <div style={iosFrameStyles.statusIcons}>
+                <div style={iosFrameStyles.signalIcon}>
+                  {[4,6,9,11].map((h,i)=><div key={i} style={{...iosFrameStyles.signalBar, height:h}}/>)}
+                </div>
+                <div style={iosFrameStyles.batteryIcon}>
+                  <div style={{ width: battery+'%', height: '100%', background: 'currentColor', borderRadius: 1 }} />
+                  <div style={iosFrameStyles.batteryCap} />
+                </div>
+              </div>
+            </div>
+            <div style={iosFrameStyles.dynamicIsland} />
+            <div style={iosFrameStyles.content}>{children}</div>
+            <div style={iosFrameStyles.homeIndicator} />
+          </div>
+        </div>
+      );
+    }
+
+    const blue = '#0000EE';
+    const line = '#E0E0E0';
+    const ink = '#111';
+
+    function Tab({ active }) {
+      const items = ['Home', 'Activity', 'Agent'];
+      return (
+        <div style={{ display: 'flex', borderTop: `1px solid ${line}`, background: '#FBFBFB', position: 'absolute', left: 0, right: 0, bottom: 0, height: 52, paddingBottom: 4 }}>
+          {items.map(t => (
+            <div key={t} style={{ flex: 1, textAlign: 'center', fontSize: 11, paddingTop: 10, color: t === active ? ink : '#888', fontWeight: t === active ? 600 : 400, borderTop: t === active ? `2px solid ${ink}` : '2px solid transparent' }}>{t}</div>
+          ))}
+        </div>
+      );
+    }
+
+    function Shell({ title, children, tab = 'Home' }) {
+      return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif', color: ink, position: 'relative', paddingBottom: 52 }}>
+          <div style={{ padding: '8px 16px 10px', borderBottom: `1px solid ${line}`, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em' }}>ROUTEVA</span>
+            <span style={{ fontSize: 13, color: '#666' }}>{title}</span>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto' }}>{children}</div>
+          <Tab active={tab} />
+        </div>
+      );
+    }
+
+    function HomeConnected() {
+      return (
+        <Shell title="Home">
+          <div style={{ padding: '0 16px' }}>
+            <div style={{ borderBottom: `1px solid ${line}`, padding: '20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</div>
+                <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>Connected</div>
+                <div style={{ fontSize: 13, color: '#006600', marginTop: 2 }}>Verified · probe OK</div>
+              </div>
+              <button style={{ width: 72, height: 72, borderRadius: 0, border: `2px solid ${ink}`, background: ink, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>ON</button>
+            </div>
+            {[
+              ['Active', 'Skyline-US'],
+              ['Node', 'us-west-14 · 48ms'],
+              ['Policy', 'Auto'],
+              ['Note', 'Stable for 12 min'],
+            ].map(([k,v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 0', borderBottom: `1px solid ${line}`, fontSize: 14 }}>
+                <span style={{ color: '#666' }}>{k}</span>
+                <span style={{ fontWeight: 500 }}>{v}</span>
+              </div>
+            ))}
+            <p style={{ fontSize: 13, color: blue, textDecoration: 'underline', marginTop: 16, cursor: 'pointer' }}>View activity</p>
+          </div>
+        </Shell>
+      );
+    }
+
+    function Diagnostic() {
+      return (
+        <Shell title="Diagnose">
+          <div style={{ padding: '0 16px' }}>
+            <div style={{ borderBottom: `1px solid ${line}`, padding: '16px 0' }}>
+              <span style={{ fontSize: 11, border: `1px solid ${ink}`, padding: '2px 6px', fontWeight: 700 }}>CLIENT-FIXABLE</span>
+              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 12, lineHeight: 1.25 }}>Current node stopped responding</div>
+              <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>Confidence 0.86</div>
+            </div>
+            {[
+              ['Why', 'Handshake timed out after Wi‑Fi change.'],
+              ['Impact', 'Apps may hang until a working node is used.'],
+              ['Next', 'Safe Repair can switch node and rebuild the tunnel.'],
+            ].map(([k,v]) => (
+              <div key={k} style={{ padding: '14px 0', borderBottom: `1px solid ${line}` }}>
+                <div style={{ fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k}</div>
+                <div style={{ fontSize: 14, marginTop: 4, lineHeight: 1.45 }}>{v}</div>
+              </div>
+            ))}
+            <button style={{ marginTop: 20, width: '100%', padding: 14, background: ink, color: '#fff', border: 0, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Repair</button>
+            <p style={{ fontSize: 12, color: '#666', marginTop: 10, lineHeight: 1.4 }}>You confirm once. We snapshot first; fail → roll back.</p>
+          </div>
+        </Shell>
+      );
+    }
+
+    function Repair() {
+      return (
+        <Shell title="Repair">
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Confirm Repair</div>
+            <p style={{ fontSize: 13, color: '#444', lineHeight: 1.45, marginBottom: 16 }}>We’ll try allowlisted steps only, then re-run Connectivity Probe.</p>
+            {['1 · Prefer better-scored node', '2 · Rebuild VPN tunnel', '3 · Roll back if probe fails'].map((t,i) => (
+              <div key={i} style={{ border: `1px solid ${line}`, borderBottom: i < 2 ? 'none' : `1px solid ${line}`, padding: '12px 12px', fontSize: 13 }}>{t}</div>
+            ))}
+            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+              <button style={{ flex: 1, padding: 14, border: `1px solid ${ink}`, background: '#fff', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button style={{ flex: 1, padding: 14, border: 0, background: ink, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Confirm</button>
+            </div>
+          </div>
+        </Shell>
+      );
+    }
+
+    function Import() {
+      return (
+        <Shell title="Import">
+          <div style={{ padding: '16px' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2 }}>Paste your subscription</div>
+            <p style={{ fontSize: 13, color: '#444', marginTop: 8, lineHeight: 1.45 }}>We don’t sell nodes. You bring the link.</p>
+            <div style={{ marginTop: 16, border: `1px solid ${ink}`, minHeight: 100, padding: 12, fontSize: 13, color: '#999' }}>subscription URL or config…</div>
+            <button style={{ marginTop: 12, width: '100%', padding: 14, background: ink, color: '#fff', border: 0, fontWeight: 700, cursor: 'pointer' }}>Import</button>
+            <div style={{ marginTop: 20, borderTop: `1px solid ${line}`, paddingTop: 12 }}>
+              {['Paste from clipboard', 'Scan QR', 'Open file', 'Single-node URI'].map(t => (
+                <div key={t} style={{ padding: '12px 0', borderBottom: `1px solid ${line}`, fontSize: 14, color: blue, textDecoration: 'underline', cursor: 'pointer' }}>{t}</div>
+              ))}
+            </div>
+          </div>
+        </Shell>
+      );
+    }
+
+    function Phone({ label, children }) {
+      return (
+        <div>
+          <div className="lab">{label}</div>
+          <IosFrame>{children}</IosFrame>
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <div className="row">
+          <Phone label="Home · Connected (Verified)"><HomeConnected /></Phone>
+          <Phone label="Diagnostic · Client-Fixable"><Diagnostic /></Phone>
+          <Phone label="Repair · One-tap consent"><Repair /></Phone>
+          <Phone label="Import"><Import /></Phone>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

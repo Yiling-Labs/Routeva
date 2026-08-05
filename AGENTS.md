@@ -32,7 +32,7 @@
 |---|---|
 | 可运行应用代码 | `app/` |
 | 营销站代码/内容 | `website/` |
-| 线框/高保真 | `design/` |
+| 线框/高保真 | `design/**/current/`（探索在 `_explore/`） |
 | 商店与宣发素材、文案 | `gtm/` |
 | 规格与需求正文 | `docs/prd/`、`PRODUCT.md` 内容区 |
 | 未收敛讨论 / Brief 原料 | `docs/sessions/` |

@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Home Craft</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      background: #c2c2c0;
+      background-image: radial-gradient(ellipse at 30% 15%, #d8d8d6 0%, #b6b6b4 50%, #a4a4a2 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px 24px 80px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .meta { max-width: 1480px; margin: 0 auto 32px; }
+    .meta h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.035em; }
+    .meta p { font-size: 14px; color: #3a3a3a; margin-top: 10px; max-width: 68ch; line-height: 1.55; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      border: 1px solid #333; padding: 4px 11px; border-radius: 999px;
+      background: rgba(255,255,255,0.4);
+    }
+    .row {
+      display: flex; flex-wrap: wrap; gap: 40px;
+      justify-content: center; align-items: flex-start;
+      max-width: 1600px; margin: 0 auto;
+    }
+    .phone-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .lab {
+      font-size: 12px; font-weight: 650; color: #2a2a2a; text-align: center; max-width: 260px; line-height: 1.35;
+    }
+    .lab span { display: block; font-weight: 400; color: #555; margin-top: 3px; font-size: 11px; }
+
+    @keyframes thumb-busy {
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 1; }
+    }
+    .probe-anchor { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 1; }
+    /* Individual lit dots — no CSS border rings (pin is discrete dots) */
+    .noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px;
+      mix-blend-mode: overlay;
+    }
+    .halftone {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 48%;
+      pointer-events: none;
+      background-image: radial-gradient(circle, currentColor 0.85px, transparent 1.05px);
+      background-size: 4.5px 4.5px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 48%, #000 100%);
+      mask-image: linear-gradient(180deg, transparent 0%, #000 48%, #000 100%);
+      opacity: 0.2;
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Home · Connect storyboard</h1>
+    <p>
+      Sequence: <strong>Idle</strong> (no dots) → <strong>Swipe ⅓</strong> (1 ring) →
+      <strong>Swipe ⅔</strong> (2 rings) → <strong>Connecting</strong> (3 rings) →
+      <strong>Connected</strong> (green field). Interactive plays the full flow.
+    </p>
+    <div class="tags">
+      <span class="tag">HOME FIRST</span>
+      <span class="tag">3-RING IGNITE</span>
+      <span class="tag">NO DOTS ON IDLE</span>
+      <span class="tag">BLACK → GREEN</span>
+    </div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useCallback } = React;
+
+    /* —— Tokens (pin-matched type + color) ——
+     * Measured against Pinterest ref ~393pt width:
+     *  Primary status ≈ 30pt / 700 / white on both skins
+     *  Secondary (Canada / node) ≈ 15pt / 500 / ~55% white
+     *  Foot hint ≈ 12pt / 400 / ~38% white
+     *  START/STOP ≈ 11pt / 800 / tracking 0.14em
+     */
+    const TYPE = {
+      font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif',
+      // Pin timer 00:45:29
+      timer: { size: 40, weight: 300, tracking: '-0.02em', lineHeight: 1.05 },
+      // Mbps row under timer
+      speed: { size: 12, weight: 500, tracking: '0.01em' },
+      // Primary status
+      status: { size: 30, weight: 700, tracking: '-0.028em', lineHeight: 1.12 },
+      // Country / node label (pin "Canada")
+      secondary: { size: 15, weight: 500, tracking: '0.01em', lineHeight: 1.25 },
+      // Bottom swipe hint
+      hint: { size: 12, weight: 400, tracking: '0.01em' },
+      capsule: { size: 11, weight: 800, tracking: '0.14em' },
+      meta: { size: 13, weight: 500, tracking: '0.02em' },
+    };
+
+    /**
+     * Demo nodes — cover-flow label uses `node` + protocol badge
+     * protocol: ss | vmess | vless | trojan | hy2  (P0 interop surface)
+     */
+    // Quiet labels — monochrome, low contrast (protocol is secondary)
+    const PROTO = {
+      ss:     { label: 'SS',     full: 'Shadowsocks' },
+      vmess:  { label: 'VMess',  full: 'VMess' },
+      vless:  { label: 'VLESS',  full: 'VLESS' },
+      trojan: { label: 'Trojan', full: 'Trojan' },
+      hy2:    { label: 'Hy2',    full: 'Hysteria2' },
+    };
+    const NODES = [
+      { id: 'za1', cc: 'za', flag: '🇿🇦', name: 'South Africa', node: 'JNB-Edge-02', protocol: 'ss' },
+      { id: 'us1', cc: 'us', flag: '🇺🇸', name: 'United States', node: 'LAX-08', protocol: 'vmess' },
+      { id: 'hk1', cc: 'hk', flag: '🇭🇰', name: 'Hong Kong', node: 'HKG-01', protocol: 'vmess' },
+      { id: 'us2', cc: 'us', flag: '🇺🇸', name: 'United States', node: 'SJC-12', protocol: 'trojan' },
+      { id: 'de1', cc: 'de', flag: '🇩🇪', name: 'Germany', node: 'FRA-04', protocol: 'hy2' },
+      { id: 'gb1', cc: 'gb', flag: '🇬🇧', name: 'United Kingdom', node: 'LON-05', protocol: 'ss' },
+      { id: 'hk2', cc: 'hk', flag: '🇭🇰', name: 'Hong Kong', node: 'HKG-Premium-3', protocol: 'trojan' },
+    ];
+    const flagSrc = (cc) => `https://flagcdn.com/w160/${cc}.png`;
+    const DEFAULT_NODE_ID = 'hk1';
+
+    /** Quiet protocol meta — secondary to node name */
+    function ProtocolBadge({ protocol, size = 'md' }) {
+      const p = PROTO[protocol] || PROTO.ss;
+      const fs = size === 'sm' ? 10 : 11;
+      return (
+        <span
+          title={p.full}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            fontFamily: TYPE.font,
+            fontSize: fs,
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+            lineHeight: 1.2,
+            color: 'rgba(255,255,255,0.38)',
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ opacity: 0.45, marginRight: 5 }}>·</span>
+          {p.label}
+        </span>
+      );
+    }
+
+    function NodeLabel({ node, size = 'md' }) {
+      return (
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: size === 'sm' ? 4 : 5,
+          flexWrap: 'wrap',
+        }}>
+          <span>{node.node}</span>
+          <ProtocolBadge protocol={node.protocol} size={size} />
+        </span>
+      );
+    }
+
+    const SKIN = {
+      black: {
+        bg: 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)',
+        // Pin: pure white primary on charcoal
+        title: 'rgba(255,255,255,0.96)',
+        secondary: 'rgba(255,255,255,0.55)',
+        mute: 'rgba(255,255,255,0.38)',
+        hint: 'rgba(255,255,255,0.36)',
+        chip: 'rgba(255,255,255,0.72)',
+        chipBg: 'rgba(255,255,255,0.08)',
+        chipBorder: 'rgba(255,255,255,0.12)',
+        halftone: 'rgba(255,255,255,0.55)',
+        dark: true,
+      },
+      green: {
+        // Seamless mint field — soft vertical only, no hard top “band”
+        // Matches pin: continuous wash, darker only near bottom capsule zone
+        bg: 'linear-gradient(180deg, #4d7a6c 0%, #3f6b5e 28%, #355f54 55%, #2a4f46 78%, #1f3f38 100%)',
+        title: 'rgba(255,255,255,0.96)',
+        secondary: 'rgba(255,255,255,0.58)',
+        mute: 'rgba(255,255,255,0.42)',
+        hint: 'rgba(255,255,255,0.40)',
+        chip: 'rgba(255,255,255,0.88)',
+        chipBg: 'rgba(255,255,255,0.16)',
+        chipBorder: 'rgba(255,255,255,0.22)',
+        halftone: 'rgba(0,30,24,0.85)',
+        dark: false,
+      },
+    };
+
+    function IosFrame({ field = 'black', children }) {
+      // Full-bleed field (status bar included) — one continuous surface
+      const s = SKIN[field] || SKIN.black;
+      const c = '#fff';
+      const homeBar = 'rgba(255,255,255,0.35)';
+      return (
+        <div style={{
+          display: 'inline-block', padding: 11, background: '#0a0a0a', borderRadius: 58,
+          boxShadow: '0 0 0 1px #2a2a2a, 0 32px 80px rgba(0,0,0,0.36), inset 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          <div style={{
+            position: 'relative', width: 393, height: 852, borderRadius: 48,
+            overflow: 'hidden',
+            background: s.bg,
+            transition: 'background 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 28px 0', fontSize: 15, fontWeight: 600, color: c, pointerEvents: 'none',
+            }}>
+              <span>9:41</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 11 }}>
+                  {[4, 6, 8, 11].map((h, i) => (
+                    <div key={i} style={{ width: 3, height: h, background: c, borderRadius: 1, opacity: 0.9 }} />
+                  ))}
+                </div>
+                <svg width="16" height="12" viewBox="0 0 16 12" fill={c} style={{ opacity: 0.9 }}>
+                  <path d="M8 2.2c2.2 0 4.1 0.9 5.5 2.3l-1.2 1.2A5.8 5.8 0 0 0 8 3.8a5.8 5.8 0 0 0-4.3 1.9L2.5 4.5A7.6 7.6 0 0 1 8 2.2zm0 3.2c1.3 0 2.4.5 3.3 1.4L10 8a2.8 2.8 0 0 0-4 0L4.7 6.8A4.6 4.6 0 0 1 8 5.4zM8 10.5a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4z" />
+                </svg>
+                <div style={{
+                  width: 25, height: 12, border: `1.5px solid ${c}`, borderRadius: 3,
+                  padding: 1, position: 'relative', opacity: 0.9,
+                }}>
+                  <div style={{ width: '78%', height: '100%', background: c, borderRadius: 1 }} />
+                  <div style={{
+                    position: 'absolute', top: 3, right: -3, width: 2, height: 5,
+                    background: c, borderRadius: '0 1px 1px 0', opacity: 0.7,
+                  }} />
+                </div>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+              width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
+            }} />
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20 }}>
+              {children}
+            </div>
+            <div style={{
+              position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+              width: 128, height: 5, borderRadius: 999, zIndex: 40,
+              background: homeBar,
+              transition: 'background 0.45s ease',
+            }} />
+          </div>
+        </div>
+      );
+    }
+
+    function IconList({ color }) {
+      return (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M4 7h16M4 12h12M4 17h14" stroke={color} strokeWidth="1.85" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function IconAgent({ color }) {
+      return (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4a6 6 0 0 0-6 6v1.1c0 .75-.3 1.45-.85 1.95L4 14.6V16h16v-1.4l-1.15-1.55c-.55-.5-.85-1.2-.85-1.95V10a6 6 0 0 0-6-6z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M10 18.2a2 2 0 0 0 4 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function IconGear({ color }) {
+      return (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.6" />
+          <path d="M12 3v2.1M12 18.9V21M3 12h2.1M18.9 12H21M5.7 5.7l1.5 1.5M16.8 16.8l1.5 1.5M5.7 18.3l1.5-1.5M16.8 7.2l1.5-1.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function IconPower({ size = 22, color = '#fff' }) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v9" stroke={color} strokeWidth="2.25" strokeLinecap="round" />
+          <path d="M7.15 6.35a7.3 7.3 0 1 0 9.7 0" stroke={color} strokeWidth="2.25" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function Chevron({ dir = 'up', color, size = 16 }) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" style={{ transform: dir === 'down' ? 'rotate(180deg)' : 'none' }}>
+          <path d="M6 14l6-6 6 6" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    }
+
+    function GlassOrb({ children, light }) {
+      // On green field: subtle glass, same family as field — not a bright white “header bar”
+      return (
+        <div style={{
+          width: 40, height: 40, borderRadius: 999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: light
+            ? 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)'
+            : 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
+          boxShadow: light
+            ? 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 14px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.14)'
+            : 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+        }}>
+          {children}
+        </div>
+      );
+    }
+
+    function TopChrome({ light }) {
+      // Icons always light-on-field so chrome doesn’t read as a dark/light strip
+      const c = 'rgba(255,255,255,0.82)';
+      return (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '8px 22px 0', height: 48, position: 'relative', zIndex: 6,
+          background: 'transparent',
+        }}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <GlassOrb light={light}><IconList color={c} /></GlassOrb>
+            <GlassOrb light={light}><IconAgent color={c} /></GlassOrb>
+          </div>
+          <GlassOrb light={light}><IconGear color={c} /></GlassOrb>
+        </div>
+      );
+    }
+
+    function MapWash({ light }) {
+      const stroke = light ? 'rgba(255,255,255,0.55)' : '#fff';
+      return (
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          // No strong mid/top radial — that created a “panel” band
+          opacity: light ? 0.07 : 0.1,
+          backgroundImage: `
+            url("data:image/svg+xml,${encodeURIComponent(`
+              <svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'>
+                <g fill='none' stroke='${stroke}' stroke-width='1' opacity='0.45'>
+                  <ellipse cx='200' cy='148' rx='158' ry='88'/>
+                  <path d='M42 148 Q100 78 200 98 T358 138'/>
+                  <path d='M58 178 Q140 218 220 168 T348 188'/>
+                  <path d='M82 118 Q160 58 242 108'/>
+                  <circle cx='128' cy='138' r='2.5'/><circle cx='248' cy='128' r='2.5'/>
+                </g>
+              </svg>
+            `)}")
+          `,
+          backgroundSize: '130% auto',
+          backgroundPosition: 'center 42%',
+          backgroundRepeat: 'no-repeat',
+        }} />
+      );
+    }
+
+    /** Looping 0→1 phase for lit-dot sweep */
+    function usePhase(ms = 2200, active = true) {
+      const [t, setT] = useState(0);
+      useEffect(() => {
+        if (!active) return;
+        let raf = 0;
+        const t0 = performance.now();
+        const tick = (now) => {
+          setT(((now - t0) % ms) / ms);
+          raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+      }, [ms, active]);
+      return t;
+    }
+
+    /**
+     * Pin dot field driven by ignite ∈ [0,1]:
+     *  0   = idle white ring (dim)
+     *  0→1 = green arcs light up gradually (inner→outer, center→sides)  ← START→STOP story
+     *  1   = full live state + soft looping pulse
+     */
+    function PinDotField({ ignite = 0 }) {
+      const phase = usePhase(2000, ignite > 0.92);
+      const dots = [];
+
+      // 3-arc geometry — only appears once user starts swipe/connect (no dots on pure Idle)
+      const ARCS = [
+        { r: 56,  n: 28, size: 3.2 },
+        { r: 78,  n: 34, size: 2.85 },
+        { r: 100, n: 40, size: 2.5 },
+      ];
+
+      // Green arcs light ring-by-ring as ignite 0→1
+      // ~0.00–0.34 ring1 · ~0.34–0.67 ring2 · ~0.67–1.0 ring3
+      if (ignite > 0.02) {
+        const nArcs = ARCS.length;
+
+        ARCS.forEach((arc, ai) => {
+          const ringU = nArcs <= 1 ? 0 : ai / (nArcs - 1);
+          const ringStart = ringU * (2 / 3); // 0, 1/3, 2/3
+          const ringSpan = 0.32;
+          const ringLit = Math.max(0, Math.min(1, (ignite - ringStart) / ringSpan));
+
+          const wave = phase;
+          const ringPulse = ignite > 0.95
+            ? Math.max(
+                Math.exp(-Math.pow((ringU - wave) * 3.4, 2)),
+                Math.exp(-Math.pow((ringU - (wave - 1)) * 3.4, 2)),
+              )
+            : 0;
+
+          for (let i = 0; i < arc.n; i++) {
+            const u = i / (arc.n - 1);
+            const ang = -0.12 * Math.PI + 1.24 * Math.PI * u;
+            const south = Math.max(0, Math.sin(ang));
+            const sideFall = Math.pow(south, 0.35);
+
+            const fromCenter = Math.abs(u - 0.5) * 2;
+            const dotStart = ringStart + fromCenter * ringSpan * 0.85;
+            const dotLit = Math.max(0, Math.min(1, (ignite - dotStart) / 0.1));
+
+            const on = Math.min(ringLit, 0.15 + 0.85 * dotLit) * sideFall;
+            if (on < 0.04) continue;
+
+            const brightness = on * (0.55 + 0.45 * sideFall) + ringPulse * 0.7 * sideFall * on;
+            const opacity = Math.min(1, brightness);
+            const size = arc.size * (0.65 + 0.5 * on + 0.35 * ringPulse + 0.2 * sideFall);
+            const hot = on > 0.75 || ringPulse > 0.45;
+            const atFront = dotLit > 0.2 && dotLit < 0.95 && ignite < 0.98;
+
+            const px = Math.max(2, Math.round(size * (atFront ? 1.12 : 1)));
+            dots.push({
+              x: Math.cos(ang) * arc.r,
+              y: Math.sin(ang) * arc.r,
+              size: px,
+              opacity,
+              color: hot || atFront ? '#9affd4' : '#2ee88a',
+              blur: hot || atFront,
+              kind: 'live',
+            });
+          }
+        });
+      }
+
+      if (!dots.length) return null;
+
+      // Perfect circles: fixed square box + transform translate(-50%,-50%) only (no scale on parent)
+      return (
+        <div style={{
+          position: 'absolute', left: 0, top: 0, width: 0, height: 0,
+          pointerEvents: 'none',
+        }}>
+          {dots.map((d, i) => (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                left: d.x,
+                top: d.y,
+                width: d.size,
+                height: d.size,
+                borderRadius: '50%',
+                background: d.color,
+                opacity: Math.max(0.04, Math.min(1, d.opacity)),
+                transform: 'translate(-50%, -50%)',
+                WebkitTransform: 'translate(-50%, -50%)',
+                boxShadow: d.kind === 'live' && d.blur
+                  ? `0 0 ${Math.round(4 + d.size)}px rgba(80,255,180,0.75)`
+                  : 'none',
+                // prevent font/layout from stretching
+                flexShrink: 0,
+                boxSizing: 'border-box',
+              }}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    /**
+     * Capsule + 3-ring ignite.
+     * mode: idle | connecting | connected
+     * progress 0–1: optional forced thumb position (static storyboard frames)
+     * igniteForce 0–1: optional forced ring light (static storyboard)
+     * frozen: no drag/tap (static boards)
+     */
+    function ConnectStage({
+      mode,
+      onConnect,
+      onDisconnect,
+      hintColor,
+      progress = null,
+      igniteForce = null,
+      frozen = false,
+    }) {
+      const TRACK_W = 82;
+      const TRACK_H = 186;
+      const THUMB_H = 78;
+      const PAD = 8;
+      const Y_START = PAD;
+      const Y_STOP = TRACK_H - THUMB_H - PAD;
+      const STAGE_W = 252;
+      const STAGE_H = 300;
+      const trackLeft = (STAGE_W - TRACK_W) / 2;
+      const trackTop = (STAGE_H - TRACK_H) / 2;
+      const SLIDE_MS = 480;
+      const ease = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+      const yFromProgress = (p) => Y_START + (Y_STOP - Y_START) * Math.max(0, Math.min(1, p));
+
+      const targetForMode = (m) => (
+        m === 'connected' || m === 'connecting' ? Y_STOP : Y_START
+      );
+
+      const [y, setY] = useState(() => (
+        progress != null ? yFromProgress(progress) : targetForMode(mode)
+      ));
+      const [dragging, setDragging] = useState(false);
+      const [sliding, setSliding] = useState(false);
+      // Idle: 0 (no dots). Connecting/connected: 1. Storyboard can force.
+      const [ignite, setIgnite] = useState(() => {
+        if (igniteForce != null) return igniteForce;
+        if (mode === 'connected' || mode === 'connecting') return 1;
+        return 0;
+      });
+      const dragOrigin = useRef(0);
+      const yAtDown = useRef(Y_START);
+      const moved = useRef(false);
+      const slideTimer = useRef(null);
+      const igniteRaf = useRef(0);
+      const prevMode = useRef(mode);
+
+      const animateIgnite = useCallback((from, to, ms, then) => {
+        cancelAnimationFrame(igniteRaf.current);
+        const t0 = performance.now();
+        const tick = (now) => {
+          const u = Math.min(1, (now - t0) / ms);
+          const e = 1 - Math.pow(1 - u, 3);
+          setIgnite(from + (to - from) * e);
+          if (u < 1) {
+            igniteRaf.current = requestAnimationFrame(tick);
+          } else {
+            setIgnite(to);
+            then && then();
+          }
+        };
+        igniteRaf.current = requestAnimationFrame(tick);
+      }, []);
+
+      // Storyboard: freeze thumb + ignite
+      useEffect(() => {
+        if (progress != null) setY(yFromProgress(progress));
+        if (igniteForce != null) setIgnite(igniteForce);
+      }, [progress, igniteForce]);
+
+      // Live mode changes (interactive)
+      useEffect(() => {
+        if (frozen || progress != null) return;
+        if (dragging || sliding) return;
+        setY(targetForMode(mode));
+
+        if (mode === 'connecting') {
+          animateIgnite(ignite < 0.05 ? 0 : ignite, 1, 900);
+        } else if (mode === 'connected') {
+          setIgnite(1);
+        } else if (mode === 'idle') {
+          animateIgnite(ignite > 0.05 ? ignite : 0, 0, 400);
+        }
+        prevMode.current = mode;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [mode, dragging, sliding, animateIgnite, frozen, progress]);
+
+      useEffect(() => () => {
+        clearTimeout(slideTimer.current);
+        cancelAnimationFrame(igniteRaf.current);
+      }, []);
+
+      const slideTo = useCallback((targetY, then) => {
+        setSliding(true);
+        setDragging(false);
+        setY(targetY);
+        clearTimeout(slideTimer.current);
+        slideTimer.current = setTimeout(() => {
+          setSliding(false);
+          then && then();
+        }, SLIDE_MS);
+      }, []);
+
+      const pDown = (y - Y_START) / (Y_STOP - Y_START); // 0 top → 1 bottom
+
+      const onPointerDown = (e) => {
+        if (frozen || mode === 'connecting' || sliding) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setDragging(true);
+        moved.current = false;
+        dragOrigin.current = e.clientY;
+        yAtDown.current = y;
+      };
+      const onPointerMove = (e) => {
+        if (!dragging) return;
+        const dy = e.clientY - dragOrigin.current;
+        if (Math.abs(dy) > 4) moved.current = true;
+        setY(Math.max(Y_START, Math.min(Y_STOP, yAtDown.current + dy)));
+      };
+      const onPointerUp = () => {
+        if (!dragging) return;
+        setDragging(false);
+        const p = (y - Y_START) / (Y_STOP - Y_START);
+        if (mode === 'idle') {
+          if (p > 0.52) {
+            // Drag already partially lit dots via onAmt; commit full ignite
+            animateIgnite(Math.max(ignite, p), 1, 850);
+            onConnect && onConnect();
+            slideTo(Y_STOP);
+          } else {
+            animateIgnite(ignite, 0, 320);
+            slideTo(Y_START);
+          }
+        } else if (mode === 'connected') {
+          if (p < 0.48) {
+            animateIgnite(1, 0, 480);
+            slideTo(Y_START, () => onDisconnect && onDisconnect());
+          } else {
+            slideTo(Y_STOP);
+          }
+        }
+      };
+
+      const onTap = () => {
+        if (frozen || dragging || sliding || mode === 'connecting') return;
+        if (moved.current) return;
+        if (mode === 'idle') {
+          animateIgnite(0, 1, 1000);
+          onConnect && onConnect();
+          slideTo(Y_STOP);
+        } else if (mode === 'connected') {
+          animateIgnite(1, 0, 520);
+          slideTo(Y_START, () => onDisconnect && onDisconnect());
+        }
+      };
+
+      const isOn = mode === 'connected';
+      const isBusy = mode === 'connecting' || (progress != null && progress > 0.2 && progress < 0.99 && mode !== 'connected');
+      // visual “on” strength follows thumb position while dragging/sliding
+      const onAmt = (progress != null)
+        ? progress
+        : (dragging || sliding || isBusy ? pDown : (isOn ? 1 : 0));
+
+      const trackBg = onAmt > 0.5
+        ? 'linear-gradient(180deg, rgba(10,32,26,0.45) 0%, rgba(6,22,18,0.72) 100%)'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(0,0,0,0.4) 100%)';
+      const thumbBg = onAmt > 0.55
+        ? 'linear-gradient(160deg, #9aefc8 0%, #52c292 40%, #2fa06e 100%)'
+        : isBusy
+          ? 'linear-gradient(160deg, #5a8a7a 0%, #345a50 100%)'
+          : 'linear-gradient(160deg, #424a52 0%, #1c2228 50%, #12161a 100%)';
+      const thumbFg = onAmt > 0.55 ? 'rgba(6,28,20,0.92)' : 'rgba(255,255,255,0.92)';
+      const thumbShadow = onAmt > 0.55
+        ? '0 12px 32px rgba(40,210,140,0.48), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 8px rgba(0,0,0,0.12)'
+        : '0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -3px 10px rgba(0,0,0,0.42)';
+
+      // Mid-swipe: keep START until fully home as connecting/connected
+      const label = mode === 'connecting' ? '…'
+        : mode === 'connected' || (onAmt > 0.92 && mode !== 'idle') ? 'STOP'
+        : 'START';
+      const hint = mode === 'connecting'
+        ? 'Connecting…'
+        : mode === 'connected'
+          ? 'Swipe Up To Stop'
+          : 'Swipe Down To Connect';
+
+      const thumbCx = STAGE_W / 2;
+      const thumbCy = trackTop + y + THUMB_H / 2;
+      // While dragging toward connect, preview ignite with thumb progress
+      // Drag preview: thumb travel maps to ring ignite (1/3 · 2/3 · 1)
+      const dragPreview = dragging && mode === 'idle' ? pDown : 0;
+      const igniteView = igniteForce != null
+        ? igniteForce
+        : Math.max(ignite, dragPreview);
+      // Arcs always under STOP seat (fixed) so swipe frames match Connected
+      const stopSeatCy = trackTop + Y_STOP + THUMB_H / 2;
+      const fieldCx = STAGE_W / 2;
+      const fieldCy = stopSeatCy;
+
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: STAGE_W, height: STAGE_H }}>
+            {/* Dots: ignite 0→1 = gradual light-up (START→STOP story) */}
+            <div className="probe-anchor" style={{ left: fieldCx, top: fieldCy }} aria-hidden>
+              <PinDotField ignite={igniteView} />
+            </div>
+
+            <div style={{
+              position: 'absolute', left: trackLeft, top: trackTop,
+              width: TRACK_W, height: TRACK_H, borderRadius: 999,
+              background: trackBg,
+              transition: dragging ? 'none' : `background ${SLIDE_MS}ms ${ease}`,
+              boxShadow: onAmt > 0.5
+                ? 'inset 0 2px 16px rgba(0,0,0,0.38), 0 0 0 1px rgba(120,255,190,0.14), 0 18px 44px rgba(0,0,0,0.16)'
+                : 'inset 0 2px 18px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.09), 0 18px 44px rgba(0,0,0,0.32)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
+              touchAction: 'none', userSelect: 'none', zIndex: 2,
+            }}>
+              {/* Idle: chevron DOWN below START (pin) */}
+              {(mode === 'idle' || (mode === 'connecting' && onAmt < 0.9)) && onAmt < 0.75 && (
+                <div style={{
+                  position: 'absolute', bottom: 16, left: 0, right: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  opacity: 0.5 * (1 - onAmt), pointerEvents: 'none',
+                  transition: `opacity ${SLIDE_MS}ms ${ease}`,
+                }}>
+                  <span style={{
+                    fontFamily: TYPE.font, fontSize: 8, fontWeight: 700,
+                    letterSpacing: '0.18em', color: 'rgba(255,255,255,0.40)',
+                  }}>SWIPE</span>
+                  <Chevron dir="down" color="rgba(255,255,255,0.55)" />
+                </div>
+              )}
+              {/* Connected: chevron UP above STOP (pin) */}
+              {(mode === 'connected' || onAmt > 0.55) && onAmt > 0.4 && (
+                <div style={{
+                  position: 'absolute', top: 16, left: 0, right: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  opacity: 0.48 * onAmt, pointerEvents: 'none',
+                  transition: `opacity ${SLIDE_MS}ms ${ease}`,
+                }}>
+                  <Chevron dir="up" color="rgba(180,255,220,0.6)" />
+                  <span style={{
+                    fontFamily: TYPE.font, fontSize: 8, fontWeight: 700,
+                    letterSpacing: '0.18em', color: 'rgba(200,255,230,0.55)',
+                  }}>SWIPE</span>
+                </div>
+              )}
+
+              <div
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerCancel={onPointerUp}
+                onClick={onTap}
+                style={{
+                  position: 'absolute', left: 7, width: 68, height: THUMB_H, top: y,
+                  borderRadius: 999, background: thumbBg, boxShadow: thumbShadow,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: 5, cursor: isBusy || sliding ? 'wait' : 'grab',
+                  transition: dragging
+                    ? 'background 0.15s, box-shadow 0.15s'
+                    : `top ${SLIDE_MS}ms ${ease}, background ${SLIDE_MS}ms ${ease}, box-shadow ${SLIDE_MS}ms ${ease}`,
+                  zIndex: 3,
+                  animation: isBusy ? 'thumb-busy 1.1s ease-in-out infinite' : 'none',
+                }}
+              >
+                <span style={{
+                  fontFamily: TYPE.font,
+                  fontSize: TYPE.capsule.size,
+                  fontWeight: TYPE.capsule.weight,
+                  letterSpacing: TYPE.capsule.tracking,
+                  color: thumbFg,
+                  lineHeight: 1,
+                  transition: `color ${SLIDE_MS}ms ${ease}`,
+                }}>
+                  {label}
+                </span>
+                <IconPower size={22} color={thumbFg} />
+                <div style={{
+                  position: 'absolute', top: 12, width: 6, height: 6, borderRadius: '50%',
+                  background: onAmt > 0.55 ? '#0f3' : '#3d7',
+                  boxShadow: onAmt > 0.55 ? '0 0 10px #5f5' : '0 0 7px rgba(60,220,140,0.55)',
+                  transition: `background ${SLIDE_MS}ms ${ease}`,
+                }} />
+              </div>
+
+              {/* Travel wash while dragging toward connect */}
+              {dragging && mode === 'idle' && pDown > 0.08 && (
+                <div style={{
+                  position: 'absolute', inset: 4, borderRadius: 999, pointerEvents: 'none',
+                  background: `radial-gradient(circle at 50% ${20 + pDown * 60}%, rgba(80,220,160,${0.22 * pDown}) 0%, transparent 68%)`,
+                }} />
+              )}
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: 2,
+            fontFamily: TYPE.font,
+            fontSize: TYPE.hint.size,
+            fontWeight: TYPE.hint.weight,
+            letterSpacing: TYPE.hint.tracking,
+            color: hintColor,
+            minHeight: 16,
+            transition: `opacity ${SLIDE_MS}ms ${ease}`,
+          }}>
+            {hint}
+          </div>
+        </div>
+      );
+    }
+
+    /** Pin connected top: large session clock + refined down/up rates */
+    function SessionStats({ seconds, downMbps, upMbps, light }) {
+      const c = 'rgba(255,255,255,0.96)';
+      const mute = light ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.45)';
+      const pad = (n) => String(n).padStart(2, '0');
+      // Pin silhouette: 00:45:29 → hh:mm:ss (use hours always for three groups)
+      const hh = Math.floor(seconds / 3600);
+      const mm = Math.floor((seconds % 3600) / 60);
+      const ss = seconds % 60;
+      const clock = `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+
+      return (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontFamily: TYPE.font,
+            fontSize: TYPE.timer.size,
+            fontWeight: TYPE.timer.weight,
+            letterSpacing: TYPE.timer.tracking,
+            lineHeight: TYPE.timer.lineHeight,
+            color: c,
+            fontVariantNumeric: 'tabular-nums',
+            textShadow: light ? '0 2px 24px rgba(0,0,0,0.15)' : '0 2px 20px rgba(0,0,0,0.35)',
+          }}>
+            {clock}
+          </div>
+          <div style={{
+            marginTop: 10,
+            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 20,
+            fontFamily: TYPE.font,
+            fontSize: TYPE.speed.size,
+            fontWeight: TYPE.speed.weight,
+            color: mute,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.85 }}>
+                <path d="M6 2v8M3.5 7.5L6 10l2.5-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{downMbps.toFixed(1)}</span>
+              <span style={{ opacity: 0.5, fontWeight: 400, fontSize: 11, marginLeft: 2 }}>Mb/s</span>
+            </span>
+            <span style={{ width: 1, height: 11, background: 'currentColor', opacity: 0.2 }} />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.85 }}>
+                <path d="M6 10V2M3.5 4.5L6 2l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{upMbps.toFixed(1)}</span>
+              <span style={{ opacity: 0.5, fontWeight: 400, fontSize: 11, marginLeft: 2 }}>Mb/s</span>
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    /**
+     * Flag cover-flow item — perfect circle, photo flag + glass chrome
+     */
+    function FlagOrb({ cc, flag, selected, dim }) {
+      const size = 56; // fixed square → true circle under uniform scale
+      return (
+        <div style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          position: 'relative',
+          boxSizing: 'border-box',
+          flexShrink: 0,
+          // Outer plate
+          background: selected
+            ? 'linear-gradient(155deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.08) 55%, rgba(0,0,0,0.12) 100%)'
+            : 'linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 100%)',
+          boxShadow: selected
+            ? [
+                '0 0 0 1.5px rgba(255,255,255,0.55)',
+                '0 0 0 5px rgba(255,255,255,0.10)',
+                '0 16px 36px rgba(0,0,0,0.45)',
+                '0 2px 0 rgba(255,255,255,0.12)',
+                'inset 0 1px 0 rgba(255,255,255,0.55)',
+                'inset 0 -8px 16px rgba(0,0,0,0.18)',
+              ].join(', ')
+            : [
+                '0 0 0 1px rgba(255,255,255,0.12)',
+                '0 8px 18px rgba(0,0,0,0.32)',
+                'inset 0 1px 0 rgba(255,255,255,0.18)',
+              ].join(', '),
+        }}>
+          {/* Flag disc — circular crop, slightly inset */}
+          <div style={{
+            position: 'absolute',
+            inset: selected ? 4 : 3,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            background: '#1a2228',
+            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.25)',
+          }}>
+            <img
+              src={flagSrc(cc)}
+              alt=""
+              draggable={false}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                display: 'block',
+                filter: dim ? 'saturate(0.75) brightness(0.78)' : 'saturate(1.05) brightness(1.02)',
+                transform: 'scale(1.08)', // avoid edge letterboxing
+              }}
+              onError={(e) => {
+                // fallback to emoji if CDN blocked
+                e.currentTarget.style.display = 'none';
+                const p = e.currentTarget.parentElement;
+                if (p && !p.querySelector('[data-emoji]')) {
+                  const s = document.createElement('span');
+                  s.dataset.emoji = '1';
+                  s.textContent = flag;
+                  s.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;';
+                  p.appendChild(s);
+                }
+              }}
+            />
+          </div>
+          {/* Specular cap — glass highlight */}
+          <div style={{
+            position: 'absolute',
+            left: '12%',
+            right: '12%',
+            top: selected ? 5 : 4,
+            height: '38%',
+            borderRadius: '50% 50% 40% 40%',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.06) 55%, transparent 100%)',
+            pointerEvents: 'none',
+          }} />
+        </div>
+      );
+    }
+
+    /**
+     * Cover-flow: center hero, sides recede with uniform scale + depth
+     */
+    function FlagCoverFlow({ nodes, index, onChange, interactive }) {
+      const drag = useRef({ x: 0, active: false, moved: false });
+      const [dragX, setDragX] = useState(0);
+
+      const onDown = (e) => {
+        if (!interactive) return;
+        drag.current = { x: e.clientX, active: true, moved: false };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      };
+      const onMove = (e) => {
+        if (!drag.current.active) return;
+        const dx = e.clientX - drag.current.x;
+        if (Math.abs(dx) > 6) drag.current.moved = true;
+        setDragX(dx);
+      };
+      const onUp = () => {
+        if (!drag.current.active) return;
+        drag.current.active = false;
+        const dx = dragX;
+        setDragX(0);
+        if (dx < -36 && index < nodes.length - 1) onChange(index + 1);
+        else if (dx > 36 && index > 0) onChange(index - 1);
+      };
+
+      const BASE = 56;
+      // Spacing: enough air between orbs without looking sparse
+      const STEP = 72;
+
+      return (
+        <div style={{ width: '100%', userSelect: 'none' }}>
+          <div
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+            style={{
+              position: 'relative',
+              height: 118,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: interactive ? 'grab' : 'default',
+              touchAction: 'pan-y',
+              maskImage: 'linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%)',
+            }}
+          >
+            {nodes.map((n, i) => {
+              const dist = i - index - dragX / STEP;
+              const ad = Math.abs(dist);
+              // Soft cover-flow scale (hero clear, sides step down)
+              const scale = ad < 0.5 ? 1.26
+                : ad < 1.5 ? 0.88
+                : ad < 2.5 ? 0.76
+                : 0.66;
+              const opacity = ad < 0.5 ? 1
+                : ad < 1.5 ? 0.8
+                : ad < 2.5 ? 0.5
+                : 0.3;
+              // Moderate arc: depth without a deep smile (sweet spot ~1.8–2.2)
+              // y = k·d²  →  neighbor ~2px, second ~8px, third ~18px
+              const y = Math.min(18, ad * ad * 2.0);
+              const x = dist * STEP;
+              const isCenter = ad < 0.45;
+              return (
+                <div
+                  key={n.id}
+                  onClick={() => {
+                    if (drag.current.moved) return;
+                    if (interactive) onChange(i);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: BASE,
+                    height: BASE,
+                    transform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`,
+                    WebkitTransform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`,
+                    transformOrigin: 'center center',
+                    opacity,
+                    transition: drag.current.active
+                      ? 'none'
+                      : 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease',
+                    zIndex: 30 - Math.round(ad * 6),
+                    boxSizing: 'border-box',
+                    willChange: 'transform, opacity',
+                  }}
+                >
+                  <FlagOrb cc={n.cc} flag={n.flag} selected={isCenter} dim={!isCenter} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    /**
+     * Story states:
+     *  idle | swipe01 | swipe02 | connecting | connected | cant | setup
+     */
+    function HomeScreen({ state, modeHint = null, interactive = false }) {
+      const [live, setLive] = useState(state === 'swipe01' || state === 'swipe02' ? 'idle' : state);
+      const s = interactive ? live : state;
+      const defaultNodeIdx = NODES.findIndex((n) => n.id === DEFAULT_NODE_ID);
+      const [nodeIdx, setNodeIdx] = useState(defaultNodeIdx >= 0 ? defaultNodeIdx : 2);
+      const node = NODES[nodeIdx] || NODES[defaultNodeIdx >= 0 ? defaultNodeIdx : 2];
+
+      const [secs, setSecs] = useState(state === 'connected' ? 45 * 60 + 29 : 0);
+      const [down, setDown] = useState(12.4);
+      const [up, setUp] = useState(23.6);
+
+      useEffect(() => {
+        if (!interactive || s !== 'connected') return;
+        const t = setInterval(() => {
+          setSecs((v) => v + 1);
+          setDown((v) => Math.max(0.8, v + (Math.random() - 0.48) * 1.2));
+          setUp((v) => Math.max(0.5, v + (Math.random() - 0.48) * 0.9));
+        }, 1000);
+        return () => clearInterval(t);
+      }, [interactive, s]);
+
+      useEffect(() => {
+        if (s === 'connected' && secs === 0) setSecs(45 * 60 + 29);
+        if (s === 'idle') setSecs(0);
+      }, [s]);
+
+      const connect = () => {
+        setLive('connecting');
+        setTimeout(() => {
+          setLive('connected');
+          setSecs(0);
+        }, 1000);
+      };
+      const disconnect = () => setLive('idle');
+
+      const light = s === 'connected';
+      const sk = light ? SKIN.green : SKIN.black;
+
+      // Storyboard capsule: thumb progress + ring ignite
+      // swipe01: ~1/3 travel, ring 1 · swipe02: ~2/3, rings 1–2 · connecting: bottom, all 3
+      const story = {
+        idle:       { progress: 0,    ignite: 0,    capMode: 'idle',       frozen: true },
+        swipe01:    { progress: 0.34, ignite: 0.34, capMode: 'idle',       frozen: true },
+        swipe02:    { progress: 0.67, ignite: 0.67, capMode: 'idle',       frozen: true },
+        connecting: { progress: 1,    ignite: 1,    capMode: 'connecting', frozen: true },
+        connected:  { progress: 1,    ignite: 1,    capMode: 'connected',  frozen: true },
+        cant:       { progress: 0,    ignite: 0,    capMode: 'idle',       frozen: true },
+        setup:      { progress: 0,    ignite: 0,    capMode: 'idle',       frozen: true },
+      };
+      const board = interactive
+        ? { progress: null, ignite: null, capMode: (s === 'connected' ? 'connected' : s === 'connecting' ? 'connecting' : 'idle'), frozen: false }
+        : (story[s] || story.idle);
+
+      // Mid-swipe: still Not Connected; full slide + busy: Connecting…; success: Connected
+      const midTitle =
+        s === 'connecting' ? 'Connecting…'
+        : s === 'connected' ? 'Connected'
+        : s === 'setup' ? 'Add a subscription'
+        : s === 'cant' ? 'Can’t connect'
+        : 'Not Connected';
+
+      const showCapsule = s !== 'setup';
+      const showCoverFlow = s === 'idle' || s === 'cant' || s === 'connecting' || s === 'swipe01' || s === 'swipe02';
+      const showSession = s === 'connected';
+      const showNodePill = showCoverFlow && s !== 'setup' && s !== 'connecting';
+
+      return (
+        <IosFrame field={light ? 'green' : 'black'}>
+          <div style={{ height: '100%', position: 'relative' }}>
+            {/* Full-screen grain — same opacity top→bottom so no “header slab” */}
+            <div className="noise" style={{ opacity: light ? 0.04 : 0.06, zIndex: 1 }} />
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 1,
+              pointerEvents: 'none',
+            }}>
+              <MapWash light={light} />
+            </div>
+            {/* Halftone only lower half — pin style, not a top block */}
+            <div className="halftone" style={{
+              color: sk.halftone,
+              opacity: light ? 0.2 : 0.17,
+              zIndex: 1,
+              height: '48%',
+              top: 'auto',
+              bottom: 0,
+            }} />
+
+            <div style={{ position: 'relative', zIndex: 2, height: '100%' }}>
+            <TopChrome light={light} />
+
+            {/* ===== UPPER BAND (pin layout) ===== */}
+            {showSession && (
+              <div style={{
+                position: 'absolute', top: 72, left: 0, right: 0,
+                padding: '0 24px', textAlign: 'center', zIndex: 3,
+              }}>
+                <SessionStats
+                  seconds={interactive && s === 'connected' ? secs : (secs || 45 * 60 + 29)}
+                  downMbps={down}
+                  upMbps={up}
+                  light
+                />
+              </div>
+            )}
+
+            {showCoverFlow && (
+              <div style={{
+                position: 'absolute', top: 64, left: 0, right: 0, zIndex: 3,
+              }}>
+                <FlagCoverFlow
+                  nodes={NODES}
+                  index={nodeIdx}
+                  onChange={setNodeIdx}
+                  interactive={interactive || s === 'idle'}
+                />
+                {/* Cover-flow caption: node name + protocol badge */}
+                <div style={{
+                  textAlign: 'center',
+                  marginTop: 10,
+                  fontFamily: TYPE.font,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  letterSpacing: '0.02em',
+                  color: 'rgba(255,255,255,0.88)',
+                  textShadow: '0 1px 12px rgba(0,0,0,0.35)',
+                }}>
+                  <NodeLabel node={node} size="md" />
+                </div>
+              </div>
+            )}
+
+            {/* ===== MID STATUS (pin vertical band) ===== */}
+            <div style={{
+              position: 'absolute',
+              top: showSession ? '38%' : '42%',
+              left: 0, right: 0,
+              textAlign: 'center', padding: '0 28px', zIndex: 2,
+              transform: 'translateY(-50%)',
+            }}>
+              {showSession && (
+                <div style={{
+                  marginBottom: 6,
+                  fontFamily: TYPE.font,
+                  fontSize: TYPE.secondary.size,
+                  fontWeight: TYPE.secondary.weight,
+                  color: sk.secondary,
+                }}>
+                  {node.name}
+                </div>
+              )}
+
+              <div style={{
+                fontFamily: TYPE.font,
+                fontSize: TYPE.status.size,
+                fontWeight: TYPE.status.weight,
+                letterSpacing: TYPE.status.tracking,
+                lineHeight: TYPE.status.lineHeight,
+                color: sk.title,
+                textShadow: light
+                  ? '0 1px 12px rgba(0,0,0,0.12)'
+                  : '0 1px 18px rgba(0,0,0,0.35)',
+                transition: 'color 0.45s ease',
+              }}>
+                {midTitle}
+              </div>
+
+              {/* Pin-style Location entry — node location / picker (Idle · Swipe · Can’t connect) */}
+              {showNodePill && (
+                <div
+                  role="button"
+                  style={{
+                    marginTop: 14,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 18px 10px 14px',
+                    borderRadius: 999,
+                    background: 'linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
+                    border: '1px solid rgba(255,255,255,0.14)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 20px rgba(0,0,0,0.22)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    fontFamily: TYPE.font,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    letterSpacing: '0.01em',
+                    color: 'rgba(255,255,255,0.86)',
+                    cursor: 'default',
+                  }}
+                >
+                  {/* Location / pin icon */}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.9, flexShrink: 0 }}>
+                    <path
+                      d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.7" />
+                  </svg>
+                  <span>Location</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.45, marginLeft: 2 }}>
+                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
+
+              {showSession && (
+                <div style={{
+                  marginTop: 10,
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  fontFamily: TYPE.font,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: 'rgba(255,255,255,0.5)',
+                }}>
+                  <span style={{ fontSize: 13, lineHeight: 1 }}>{node.flag}</span>
+                  <NodeLabel node={node} size="sm" />
+                </div>
+              )}
+
+              {modeHint && s !== 'setup' && (
+                <div style={{
+                  marginTop: 10,
+                  fontFamily: TYPE.font,
+                  fontSize: TYPE.meta.size,
+                  fontWeight: TYPE.meta.weight,
+                  color: sk.mute,
+                }}>
+                  {modeHint}
+                </div>
+              )}
+
+              {s === 'setup' && (
+                <div style={{
+                  marginTop: 10,
+                  fontFamily: TYPE.font,
+                  fontSize: TYPE.secondary.size,
+                  color: sk.secondary,
+                }}>
+                  Paste a link you already have
+                </div>
+              )}
+            </div>
+
+            {/* Capsule */}
+            <div style={{
+              position: 'absolute', left: 0, right: 0, bottom: s === 'setup' ? 56 : 20,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 5,
+            }}>
+              {showCapsule ? (
+                <ConnectStage
+                  mode={board.capMode}
+                  progress={board.progress}
+                  igniteForce={board.ignite}
+                  frozen={board.frozen}
+                  onConnect={interactive ? connect : undefined}
+                  onDisconnect={interactive ? disconnect : undefined}
+                  hintColor={sk.hint}
+                />
+              ) : (
+                <button style={{
+                  border: 'none', cursor: 'pointer',
+                  minWidth: 220, padding: '17px 28px', borderRadius: 18,
+                  background: 'linear-gradient(160deg, #8fe8c0 0%, #4bb98a 48%, #2f9a6c 100%)',
+                  boxShadow: '0 12px 32px rgba(50,190,130,0.35), inset 0 1px 0 rgba(255,255,255,0.45)',
+                  color: '#0a1f18', fontSize: 16, fontWeight: 800,
+                }}>
+                  Add subscription
+                </button>
+              )}
+            </div>
+            </div>
+          </div>
+        </IosFrame>
+      );
+    }
+
+    function App() {
+      // Connect storyboard (left → right):
+      // Idle → Swipe 1/3 (1 ring) → Swipe 2/3 (2 rings) → Connecting (3 rings) → Connected
+      return (
+        <div className="row">
+          <div className="phone-col">
+            <div className="lab">1 · Idle<span>No dots · START top</span></div>
+            <HomeScreen state="idle" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">2 · Swipe ~⅓<span>Thumb mid · ring 1 lit</span></div>
+            <HomeScreen state="swipe01" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">3 · Swipe ~⅔<span>Thumb lower · rings 1–2</span></div>
+            <HomeScreen state="swipe02" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">4 · Connecting<span>Thumb bottom · 3 rings · Connecting…</span></div>
+            <HomeScreen state="connecting" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">5 · Connected<span>Green field · session + speeds</span></div>
+            <HomeScreen state="connected" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">Interactive<span>Drag/tap full sequence</span></div>
+            <HomeScreen state="idle" interactive />
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Routeva · Direction 03 — The Honest Instrument</title>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #DEDBD3;
+    font-family: 'Archivo', -apple-system, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+  }
+  /* Let the field colour bleed under the status bar: the frame's content
+     slot clips by default; the rounded screen above it still clips. */
+  #root div[style*="overflow: auto"] { overflow: visible !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+/* ============================================================
+   IosFrame — inlined from huashu-design/assets/ios_frame.jsx
+   (iPhone 15 Pro bezel, Dynamic Island, status bar, home indicator)
+   ============================================================ */
+const iosFrameStyles = {
+  wrapper: { display: 'inline-block', padding: 12, background: '#000', borderRadius: 60, boxShadow: '0 0 0 2px #1f2937, 0 20px 60px rgba(0,0,0,0.3)', position: 'relative' },
+  screen: { position: 'relative', borderRadius: 48, overflow: 'hidden', background: '#fff' },
+  statusBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px 0 32px', fontSize: 16, fontWeight: 600, fontFamily: '-apple-system, "SF Pro Text", sans-serif', zIndex: 20, pointerEvents: 'none' },
+  dynamicIsland: { position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 124, height: 36, background: '#000', borderRadius: 999, zIndex: 30 },
+  statusIcons: { display: 'flex', alignItems: 'center', gap: 6 },
+  signalIcon: { display: 'flex', alignItems: 'flex-end', gap: 2, height: 12 },
+  signalBar: { width: 3, background: 'currentColor', borderRadius: 1 },
+  batteryIcon: { width: 26, height: 12, border: '1.5px solid currentColor', borderRadius: 3, padding: 1, position: 'relative', opacity: 0.8 },
+  batteryCap: { position: 'absolute', top: 3, right: -3, width: 2, height: 6, background: 'currentColor', borderRadius: '0 1px 1px 0' },
+  content: { position: 'absolute', top: 54, left: 0, right: 0, bottom: 34, overflow: 'auto' },
+  homeIndicator: { position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', width: 140, height: 5, background: 'rgba(0,0,0,0.3)', borderRadius: 999, zIndex: 10 },
+  homeIndicatorDark: { background: 'rgba(255,255,255,0.5)' },
+};
+
+function IosFrame({ children, width = 393, height = 852, time = '9:41', battery = 100, darkMode = false, showStatusBar = true, showDynamicIsland = true, showHomeIndicator = true }) {
+  const textColor = darkMode ? '#fff' : '#000';
+  return (
+    <div style={iosFrameStyles.wrapper}>
+      <div style={{ ...iosFrameStyles.screen, width, height, background: darkMode ? '#000' : '#fff' }}>
+        {showStatusBar && (
+          <div style={{ ...iosFrameStyles.statusBar, color: textColor }}>
+            <span>{time}</span>
+            <div style={iosFrameStyles.statusIcons}>
+              <div style={iosFrameStyles.signalIcon}>
+                <div style={{ ...iosFrameStyles.signalBar, height: 4 }} />
+                <div style={{ ...iosFrameStyles.signalBar, height: 6 }} />
+                <div style={{ ...iosFrameStyles.signalBar, height: 9 }} />
+                <div style={{ ...iosFrameStyles.signalBar, height: 11 }} />
+              </div>
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none" style={{ color: textColor }}>
+                <path d="M8 11.5a1 1 0 100-2 1 1 0 000 2z" fill="currentColor" />
+                <path d="M3 7.5a7 7 0 0110 0" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+                <path d="M1 4.5a11 11 0 0114 0" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" opacity="0.7" />
+              </svg>
+              <div style={iosFrameStyles.batteryIcon}>
+                <div style={{ width: `${battery}%`, height: '100%', background: 'currentColor', borderRadius: 1, opacity: 0.9 }} />
+                <div style={iosFrameStyles.batteryCap} />
+              </div>
+            </div>
+          </div>
+        )}
+        {showDynamicIsland && <div style={iosFrameStyles.dynamicIsland} />}
+        <div style={iosFrameStyles.content}>{children}</div>
+        {showHomeIndicator && <div style={{ ...iosFrameStyles.homeIndicator, ...(darkMode ? iosFrameStyles.homeIndicatorDark : {}) }} />}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Routeva — Direction 03 · THE HONEST INSTRUMENT
+   Discipline: Dieter Rams — "Good design is honest."
+   ============================================================ */
+
+const MONO = '"IBM Plex Mono", monospace';
+const DISP = '"Archivo", -apple-system, sans-serif';
+const BODY = '-apple-system, "SF Pro Text", sans-serif';
+
+const TONES = {
+  ink: {
+    field: '#1E2126', fg: '#EFEBE3',
+    line: 'rgba(239,235,227,.28)', lineStrong: 'rgba(239,235,227,.42)',
+    track: 'rgba(239,235,227,.06)', thumb: '#2B2F36',
+    knurl: 'rgba(239,235,227,.5)', notch: 'rgba(239,235,227,.85)',
+    dot: '#7ED0AE', ripple: '#E9E4D8',
+  },
+  mint: {
+    field: '#2E6B52', fg: '#F4FAF6',
+    line: 'rgba(244,250,246,.30)', lineStrong: 'rgba(244,250,246,.46)',
+    track: 'rgba(18,42,31,.28)', thumb: '#23523E',
+    knurl: 'rgba(244,250,246,.55)', notch: 'rgba(244,250,246,.92)',
+    dot: '#BFE8D2', ripple: '#E4F4EA',
+  },
+  amber: {
+    field: '#7C5A1C', fg: '#FBF6EA',
+    line: 'rgba(251,246,234,.32)', lineStrong: 'rgba(251,246,234,.48)',
+    track: 'rgba(56,38,8,.30)', thumb: '#6A4B13',
+    knurl: 'rgba(251,246,234,.55)', notch: 'rgba(251,246,234,.92)',
+    dot: '#F0C97A', ripple: '#F7E8C8',
+  },
+};
+
+/* ---------- Probe ripple: a measurement, not a decoration ---------- */
+function Ripple({ tone, mode }) {
+  const cx = 196.5, cy = 560;
+  const radii = [104, 132, 160, 188, 216];
+  const dots = [];
+  radii.forEach((r, ri) => {
+    const n = Math.floor((150 * Math.PI / 180) * r / 16);
+    for (let i = 0; i <= n; i++) {
+      const a = (15 + 150 * (i / n)) * Math.PI / 180;
+      let x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+      let o = 0.12, rr = 2.3;
+      if (mode === 'idle') { o = 0.13; }
+      if (mode === 'probing') {
+        if (ri < 2) { o = 0.95; rr = 2.7; }
+        else if (ri === 2) { o = i % 2 === 0 ? 0.9 : 0.14; rr = i % 2 === 0 ? 2.6 : 2.3; }
+      }
+      if (mode === 'verified') { o = 0.88; rr = 2.6; }
+      if (mode === 'degraded') {
+        if (ri < 2) { o = 0.9; rr = 2.6; }
+        else if (ri === 2) {
+          const seed = (ri * 37 + i * 13) % 10;
+          if (seed < 3) return;                       // dropped packets: the ring breaks
+          x += ((i * 7 + ri * 3) % 11) - 5;           // displaced: the fracture frame
+          y += ((i * 5 + ri * 11) % 9) - 4;
+          o = 0.18 + seed * 0.05;
+        }
+      }
+      dots.push(<circle key={ri + '-' + i} cx={x} cy={y} r={rr} fill={tone.ripple} opacity={o} />);
+    }
+  });
+  return (
+    <svg width="393" height="852" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+      {dots}
+    </svg>
+  );
+}
+
+/* ---------- Vertical slide capsule: the only primary action ---------- */
+function Chevron({ up, color }) {
+  return (
+    <svg width="18" height="10" viewBox="0 0 18 10">
+      <path d={up ? 'M2 8 L9 2 L16 8' : 'M2 2 L9 8 L16 2'} stroke={color} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function Capsule({ tone, label, travel, chevronUp, top, left, scale = 1 }) {
+  const trackH = 176, thumb = 56, pad = 9;
+  const thumbTop = pad + (1 - travel) * (trackH - thumb - pad * 2);
+  const labelTop = travel === 0 ? 42 : (travel === 1 ? trackH - 34 : trackH / 2 - 8);
+  return (
+    <div style={{ position: 'absolute', top, left, marginLeft: -38 * scale, width: 76, height: trackH, transform: `scale(${scale})`, transformOrigin: 'top center' }}>
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 38, border: `1px solid ${tone.lineStrong}`, background: tone.track }} />
+      {chevronUp !== null && (
+        <div style={{ position: 'absolute', top: chevronUp ? 16 : trackH - 26, left: 0, right: 0, display: 'flex', justifyContent: 'center', opacity: .7 }}>
+          <Chevron up={chevronUp} color={tone.fg} />
+        </div>
+      )}
+      {label && (
+        <div style={{ position: 'absolute', top: labelTop, left: 0, right: 0, textAlign: 'center', fontSize: 12, fontWeight: 600, letterSpacing: 2.5, color: tone.fg, opacity: .85 }}>{label}</div>
+      )}
+      {/* the thumb: knurled like a Braun dial — grip you can feel */}
+      <div style={{ position: 'absolute', left: '50%', marginLeft: -28, top: thumbTop, width: 56, height: 56, borderRadius: 28, background: `repeating-conic-gradient(from 0deg, ${tone.knurl} 0deg 3deg, transparent 3deg 7deg)` }}>
+        <div style={{ position: 'absolute', inset: 6, borderRadius: 22, background: tone.thumb, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 16, height: 2.5, borderRadius: 2, background: tone.notch }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Shared screen chrome ---------- */
+function Field({ tone, children }) {
+  return (
+    <div style={{ position: 'absolute', top: -54, left: 0, width: 393, height: 852, background: tone.field, color: tone.fg, fontFamily: BODY }}>
+      {children}
+    </div>
+  );
+}
+
+function SubPill({ tone }) {
+  return (
+    <div style={{ position: 'absolute', top: 70, left: 24, display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${tone.line}`, borderRadius: 999, padding: '7px 13px' }}>
+      <div style={{ width: 6, height: 6, borderRadius: 3, background: tone.dot }} />
+      <span style={{ fontSize: 12, fontWeight: 500, letterSpacing: .3 }}>My Subscription</span>
+      <span style={{ opacity: .35, fontSize: 12 }}>·</span>
+      <span style={{ fontFamily: MONO, fontSize: 12, opacity: .75, letterSpacing: .5 }}>AUTO</span>
+    </div>
+  );
+}
+
+function Status({ tone, kicker, title, sub }) {
+  return (
+    <div style={{ position: 'absolute', top: 138, left: 28, right: 28 }}>
+      <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 3, opacity: .55 }}>{kicker}</div>
+      <div style={{ fontFamily: DISP, fontSize: 29, fontWeight: 600, lineHeight: 1.16, marginTop: 12, letterSpacing: -.2 }}>{title}</div>
+      <div style={{ fontSize: 15, lineHeight: 1.5, opacity: .8, marginTop: 10, maxWidth: 300 }}>{sub}</div>
+    </div>
+  );
+}
+
+function Hint({ tone, children, bottom = 52 }) {
+  return (
+    <div style={{ position: 'absolute', bottom, left: 0, right: 0, textAlign: 'center', fontSize: 14, opacity: .75, letterSpacing: .2 }}>{children}</div>
+  );
+}
+
+/* ---------- The five plates ---------- */
+function ScreenIdle() {
+  const t = TONES.ink;
+  return (
+    <Field tone={t}>
+      <Ripple tone={t} mode="idle" />
+      <SubPill tone={t} />
+      <Status tone={t} kicker="ROUTE — STANDBY" title="Not connected." sub="Nothing is routed yet. Start when you're ready." />
+      <Capsule tone={t} label="START" travel={0} chevronUp={true} top={472} left="50%" />
+      <Hint tone={t}>Swipe up to connect</Hint>
+    </Field>
+  );
+}
+
+function ScreenProbing() {
+  const t = TONES.ink;
+  return (
+    <Field tone={t}>
+      <Ripple tone={t} mode="probing" />
+      <SubPill tone={t} />
+      <Status tone={t} kicker="ESTABLISHING TUNNEL" title="Verifying connection…" sub="Tunnel is up. The probe is loading real sites — 4 of 12 answered." />
+      <Capsule tone={t} label="···" travel={0.55} chevronUp={null} top={472} left="50%" />
+      <Hint tone={t}>Checking that sites actually load</Hint>
+    </Field>
+  );
+}
+
+function ScreenVerified() {
+  const t = TONES.mint;
+  return (
+    <Field tone={t}>
+      <Ripple tone={t} mode="verified" />
+      <SubPill tone={t} />
+      <Status tone={t} kicker="ROUTE — ACTIVE" title="Verified · Connected" sub="Frankfurt 04 · Auto — all 12 probes passed." />
+      <Capsule tone={t} label="STOP" travel={1} chevronUp={false} top={472} left="50%" />
+      <Hint tone={t} bottom={66}>Swipe down to stop</Hint>
+      <div style={{ position: 'absolute', bottom: 44, left: 0, right: 0, textAlign: 'center', fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, opacity: .5 }}>RTT 38 MS · STABLE</div>
+    </Field>
+  );
+}
+
+function ScreenDegraded() {
+  const t = TONES.amber;
+  return (
+    <Field tone={t}>
+      <Ripple tone={t} mode="degraded" />
+      <SubPill tone={t} />
+      <Status tone={t} kicker="ROUTE — UNVERIFIED" title="Tunnel up — verification failed" sub="Traffic is flowing, but 9 of 12 probes failed. Something is filtering this route." />
+      <Capsule tone={t} label="STOP" travel={1} chevronUp={false} top={472} left="50%" />
+      <div style={{ position: 'absolute', bottom: 50, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${t.lineStrong}`, borderRadius: 999, padding: '11px 20px', fontSize: 14, fontWeight: 500 }}>
+          See diagnosis
+          <svg width="14" height="10" viewBox="0 0 14 10"><path d="M1 5 H12 M8 1 L12 5 L8 9" stroke={t.fg} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </div>
+      </div>
+    </Field>
+  );
+}
+
+function DiagRow({ label, children }) {
+  return (
+    <div style={{ marginBottom: 13 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2.2, opacity: .5, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 14, lineHeight: 1.45 }}>{children}</div>
+    </div>
+  );
+}
+
+function ScreenDiagnostic() {
+  const t = TONES.ink;
+  const ink = '#1E2126';
+  const hairline = 'rgba(30,33,38,.14)';
+  return (
+    <Field tone={t}>
+      <SubPill tone={t} />
+      <div style={{ position: 'absolute', top: 124, left: 20, right: 20, bottom: 42, background: '#EFEBE3', color: ink, borderRadius: 26, padding: '20px 22px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, background: '#7C5A1C', color: '#FBF6EA', borderRadius: 5, padding: '5px 9px' }}>CLIENT-FIXABLE</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, opacity: .45 }}>CASE 0417</span>
+        </div>
+        <div style={{ fontFamily: DISP, fontSize: 21, fontWeight: 600, lineHeight: 1.25, marginTop: 14, letterSpacing: -.2 }}>
+          A custom DNS profile is overriding the tunnel
+        </div>
+        <div style={{ height: 1, background: hairline, margin: '14px 0' }} />
+        <DiagRow label="CAUSE">This iPhone's encrypted DNS profile answers before the tunnel can.</DiagRow>
+        <DiagRow label="IMPACT">The tunnel connects, but site names never resolve — every page times out.</DiagRow>
+        <DiagRow label="NEXT STEP">Pause the DNS profile, then re-verify. A snapshot is saved first — undo anytime.</DiagRow>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2.2, opacity: .5 }}>CONFIDENCE</span>
+          <div style={{ width: 110, height: 4, background: 'rgba(30,33,38,.12)', borderRadius: 2 }}>
+            <div style={{ width: '92%', height: '100%', background: ink, borderRadius: 2 }} />
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1 }}>HIGH · 92%</span>
+        </div>
+        <div style={{ height: 1, background: hairline, margin: '2px 0 14px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <div style={{ position: 'relative', width: 52, height: 118, flexShrink: 0 }}>
+            <Capsule tone={{ ...t, field: '#EFEBE3', fg: ink, line: 'rgba(30,33,38,.3)', lineStrong: 'rgba(30,33,38,.45)', track: 'rgba(30,33,38,.05)', thumb: ink, knurl: 'rgba(30,33,38,.55)', notch: '#EFEBE3' }}
+              label="FIX" travel={0} chevronUp={true} top={0} left="50%" scale={0.67} />
+          </div>
+          <div>
+            <div style={{ fontFamily: DISP, fontSize: 15, fontWeight: 600 }}>Slide to repair</div>
+            <div style={{ fontSize: 12.5, opacity: .6, marginTop: 4, lineHeight: 1.4 }}>Verifies the fix before applying it.</div>
+          </div>
+        </div>
+      </div>
+    </Field>
+  );
+}
+
+/* ---------- Scaled phone plate ---------- */
+function Phone({ children }) {
+  const s = 0.55;
+  return (
+    <div style={{ width: 417 * s, height: 876 * s, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ transform: `scale(${s})`, transformOrigin: 'top left', width: 417, height: 876 }}>
+        <IosFrame darkMode time="9:41" battery={86}>{children}</IosFrame>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Board furniture ---------- */
+const inkC = '#1E2126';
+const hair = 'rgba(30,33,38,.18)';
+const hairSoft = 'rgba(30,33,38,.10)';
+
+function BoardLabel({ children, style }) {
+  return <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2.5, color: inkC, opacity: .55, ...style }}>{children}</div>;
+}
+
+function Swatch({ name, hex, oklch, note }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+      <div style={{ width: 56, height: 34, borderRadius: 6, background: hex, border: '1px solid rgba(30,33,38,.25)', flexShrink: 0 }} />
+      <div style={{ width: 118 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: inkC }}>{name}</div>
+        <div style={{ fontSize: 11, color: inkC, opacity: .5 }}>{note}</div>
+      </div>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: inkC, opacity: .8 }}>{hex}</div>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: inkC, opacity: .5 }}>{oklch}</div>
+    </div>
+  );
+}
+
+function SignatureDetail() {
+  /* 250% loupe of the capsule thumb + the probe fracture frame */
+  const knurlBig = 'repeating-conic-gradient(from 0deg, rgba(239,235,227,.55) 0deg 3deg, transparent 3deg 7deg)';
+  return (
+    <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start' }}>
+      {/* loupe */}
+      <div style={{ position: 'relative', width: 196, height: 196, borderRadius: '50%', border: `1px solid ${hair}`, background: inkC, overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ position: 'absolute', left: '50%', marginLeft: -75, bottom: -34, width: 150, height: 150, borderRadius: '50%', background: knurlBig }}>
+          <div style={{ position: 'absolute', inset: 16, borderRadius: '50%', background: '#2B2F36', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 44, height: 7, borderRadius: 4, background: 'rgba(239,235,227,.9)' }} />
+          </div>
+        </div>
+        {/* detent ticks at 72% travel */}
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{ position: 'absolute', right: 26, top: 30 + i * 9, width: i === 1 ? 14 : 8, height: 1.5, background: '#EFEBE3', opacity: i === 1 ? .9 : .45 }} />
+        ))}
+        <div style={{ position: 'absolute', top: 14, left: 18, fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, color: '#EFEBE3', opacity: .6 }}>×2.5</div>
+      </div>
+      {/* callouts */}
+      <div style={{ flex: 1 }}>
+        {[
+          ['01', 'Knurled thumb, 0.4 mm grooves — machined like a Braun dial; grip you can feel, no glass slip.'],
+          ['02', 'Haptic detent at 72% travel — the capsule clicks home before the tunnel is asked to start. No accidental connects.'],
+          ['03', 'The ripple is the probe, drawn live: each dot is one answered measurement. In the fracture frame (right, t = 0.32 s) ring three breaks — that is the diagnosis, not decoration.'],
+        ].map(([n, txt]) => (
+          <div key={n} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: inkC, opacity: .45, paddingTop: 2 }}>{n}</span>
+            <span style={{ fontSize: 13, lineHeight: 1.5, color: inkC }}>{txt}</span>
+          </div>
+        ))}
+        {/* fracture frame inset */}
+        <svg width="330" height="46" style={{ marginTop: 2 }}>
+          <BoardLabel style={{ position: 'absolute' }} />
+          {Array.from({ length: 30 }).map((_, i) => {
+            const broken = i > 14 && i < 23;
+            const dx = broken ? ((i * 7) % 9) - 4 : 0;
+            const dy = broken ? ((i * 5) % 7) - 3 : 0;
+            const x = 8 + i * 11 + dx, y = 30 + Math.sin(i / 29 * Math.PI) * -14 + dy;
+            if (broken && i % 3 === 0) return null;
+            return <circle key={i} cx={x} cy={y} r="2.4" fill={inkC} opacity={broken ? .35 : .85} />;
+          })}
+          <text x="8" y="12" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 1.5 }} fill={inkC} opacity=".5">FIG 5.2 — PROBE FRACTURE FRAME, T=0.32S</text>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- The board ---------- */
+function Board() {
+  const plates = [
+    ['PLATE 01', 'HOME · IDLE', <ScreenIdle />],
+    ['PLATE 02', 'HOME · PROBING', <ScreenProbing />],
+    ['PLATE 03', 'HOME · VERIFIED', <ScreenVerified />],
+    ['PLATE 04', 'HOME · DEGRADED', <ScreenDegraded />],
+    ['PLATE 05', 'DIAG · CLIENT-FIXABLE', <ScreenDiagnostic />],
+  ];
+  return (
+    <div style={{
+      width: 1600, height: 1000, background: '#F2EFE9', position: 'relative', overflow: 'hidden',
+      padding: '36px 44px', color: inkC,
+      backgroundImage: 'repeating-linear-gradient(0deg, rgba(30,33,38,.045) 0 1px, transparent 1px 100px), repeating-linear-gradient(90deg, rgba(30,33,38,.045) 0 1px, transparent 1px 100px)',
+    }}>
+      {/* header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <BoardLabel>ROUTEVA · HI-FI DIRECTION 03 / 03 — SLUG: HONEST-INSTRUMENT</BoardLabel>
+          <div style={{ fontFamily: DISP, fontSize: 34, fontWeight: 600, letterSpacing: -.5, marginTop: 8 }}>The Honest Instrument</div>
+          <div style={{ fontSize: 13, opacity: .6, marginTop: 6 }}>
+            In the discipline of <b>Dieter Rams (Braun)</b> — “Good design is honest.” The field shows only what the probe has proven.
+          </div>
+        </div>
+        <div style={{ width: 620, borderLeft: `1px solid ${hair}`, paddingLeft: 22 }}>
+          <div style={{ fontSize: 13.5, lineHeight: 1.55 }}>
+            <b>Temperament —</b> a calibrated instrument, not a gadget: calm, exact, and unafraid to say “not yet”.
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.55, marginTop: 8 }}>
+            <b>Form source —</b> the Connectivity Probe itself. Every dot on screen is a real measurement, so the interface is the data, laid bare.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: hair, margin: '20px 0 0' }} />
+
+      {/* plates */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 22, marginTop: 18 }}>
+        {plates.map(([pn, name, screen]) => (
+          <div key={pn}>
+            <Phone>{screen}</Phone>
+            <div style={{ borderTop: `1px solid ${hair}`, marginTop: 10, paddingTop: 7, textAlign: 'center' }}>
+              <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: 1.5 }}>
+                <span style={{ opacity: .5 }}>{pn}</span>&nbsp;&nbsp;—&nbsp;&nbsp;{name}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* bottom band */}
+      <div style={{ position: 'absolute', left: 44, right: 44, bottom: 30, borderTop: `1px solid ${hair}`, paddingTop: 16, display: 'flex', gap: 30 }}>
+        {/* palette */}
+        <div style={{ width: 470 }}>
+          <BoardLabel style={{ marginBottom: 12 }}>FIELD PALETTE — STATE IS THE WHOLE FIELD, NEVER A DOT</BoardLabel>
+          <Swatch name="Field · Ink" note="Idle" hex="#1E2126" oklch="oklch(24.7% 0.010 261)" />
+          <Swatch name="Field · Mint" note="Verified" hex="#2E6B52" oklch="oklch(48.0% 0.076 164)" />
+          <Swatch name="Field · Amber" note="Degraded" hex="#7C5A1C" oklch="oklch(49.2% 0.089 79)" />
+          <Swatch name="Signal" note="Probe accent" hex="#7ED0AE" oklch="oklch(79.5% 0.095 166)" />
+        </div>
+
+        <div style={{ width: 1, background: hairSoft }} />
+
+        {/* type */}
+        <div style={{ width: 330 }}>
+          <BoardLabel style={{ marginBottom: 12 }}>TYPE — THE INSTRUMENT SPEAKS PLAINLY</BoardLabel>
+          <div style={{ fontFamily: DISP, fontSize: 24, fontWeight: 600 }}>Verified · Connected</div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, opacity: .5, marginTop: 2, letterSpacing: 1 }}>ARCHIVO 600 — GROTESQUE, AKZIDENZ LINEAGE</div>
+          <div style={{ fontFamily: BODY, fontSize: 14, marginTop: 12, lineHeight: 1.45 }}>Tunnel is up. The probe is loading real sites — 4 of 12 answered.</div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, opacity: .5, marginTop: 2, letterSpacing: 1 }}>-APPLE-SYSTEM 14 — NATIVE BODY, ZERO ORNAMENT</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, marginTop: 12, letterSpacing: 1.5 }}>PROBE 12/12 · RTT 38 MS</div>
+          <div style={{ fontFamily: MONO, fontSize: 10.5, opacity: .5, marginTop: 2, letterSpacing: 1 }}>PLEX MONO — MEASUREMENTS ONLY</div>
+        </div>
+
+        <div style={{ width: 1, background: hairSoft }} />
+
+        {/* signature detail */}
+        <div style={{ flex: 1 }}>
+          <BoardLabel style={{ marginBottom: 12 }}>SIGNATURE DETAIL — FIG 5.1 · CAPSULE THUMB AT 250%</BoardLabel>
+          <SignatureDetail />
+        </div>
+      </div>
+
+      {/* corner registration marks */}
+      {[[18, 18], [1564, 18], [18, 964], [1564, 964]].map(([x, y], i) => (
+        <div key={i} style={{ position: 'absolute', left: x, top: y, fontFamily: MONO, fontSize: 12, opacity: .35 }}>+</div>
+      ))}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<Board />);
+</script>
+</body>
+</html>

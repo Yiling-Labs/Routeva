@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Direction B · System Trust</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: #d1d1d6; color: #1c1c1e; min-height: 100vh; padding: 40px 32px 80px; }
+    .meta { max-width: 1100px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .meta p { font-size: 14px; color: #3a3a3c; margin-top: 8px; max-width: 62ch; line-height: 1.5; }
+    .tag { display: inline-block; font-size: 11px; background: #1c1c1e; color: #fff; padding: 3px 10px; border-radius: 20px; margin-top: 12px; }
+    .row { display: flex; flex-wrap: wrap; gap: 36px; justify-content: center; }
+    .lab { font-size: 12px; font-style: italic; color: #3a3a3c; margin-bottom: 8px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Direction B · System Trust</h1>
+    <p>Logic: reality anchor — iOS Settings / system VPN calm + Cloudflare WARP “big status” honesty. Centered connect control, grouped lists, SF stack. Teal = verified (not AI purple).</p>
+    <span class="tag">ROUTEVA · CRAFT P0 · EN</span>
+  </div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const iosFrameStyles = {
+      wrapper: { display: 'inline-block', padding: 12, background: '#000', borderRadius: 60, boxShadow: '0 0 0 2px #1f2937, 0 20px 60px rgba(0,0,0,0.3)', position: 'relative' },
+      screen: { position: 'relative', borderRadius: 48, overflow: 'hidden' },
+      statusBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', fontSize: 16, fontWeight: 600, zIndex: 20, pointerEvents: 'none' },
+      dynamicIsland: { position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 124, height: 36, background: '#000', borderRadius: 999, zIndex: 30 },
+      signalIcon: { display: 'flex', alignItems: 'flex-end', gap: 2, height: 12 },
+      signalBar: { width: 3, background: 'currentColor', borderRadius: 1 },
+      batteryIcon: { width: 26, height: 12, border: '1.5px solid currentColor', borderRadius: 3, padding: 1, position: 'relative', opacity: 0.8 },
+      batteryCap: { position: 'absolute', top: 3, right: -3, width: 2, height: 6, background: 'currentColor', borderRadius: '0 1px 1px 0' },
+      content: { position: 'absolute', top: 54, left: 0, right: 0, bottom: 34, overflow: 'auto' },
+      homeIndicator: { position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', width: 140, height: 5, background: 'rgba(0,0,0,0.25)', borderRadius: 999, zIndex: 10 },
+    };
+    function IosFrame({ children, time = '9:41', battery = 84 }) {
+      return (
+        <div style={iosFrameStyles.wrapper}>
+          <div style={{ ...iosFrameStyles.screen, width: 393, height: 852, background: '#F2F2F7' }}>
+            <div style={{ ...iosFrameStyles.statusBar, color: '#000' }}>
+              <span>{time}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={iosFrameStyles.signalIcon}>{[4,6,9,11].map((h,i)=><div key={i} style={{...iosFrameStyles.signalBar,height:h}}/>)}</div>
+                <div style={iosFrameStyles.batteryIcon}><div style={{width:battery+'%',height:'100%',background:'currentColor',borderRadius:1}}/><div style={iosFrameStyles.batteryCap}/></div>
+              </div>
+            </div>
+            <div style={iosFrameStyles.dynamicIsland} />
+            <div style={iosFrameStyles.content}>{children}</div>
+            <div style={iosFrameStyles.homeIndicator} />
+          </div>
+        </div>
+      );
+    }
+
+    const teal = '#0A7A6A';
+    const blue = '#007AFF';
+    const card = { background: '#fff', borderRadius: 12, overflow: 'hidden' };
+    const row = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '0.5px solid rgba(60,60,67,0.12)', fontSize: 16 };
+
+    function TabBar({ active }) {
+      const tabs = [
+        { id: 'Home', icon: '●' },
+        { id: 'Activity', icon: '☰' },
+        { id: 'Agent', icon: '◇' },
+      ];
+      return (
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 56, background: 'rgba(249,249,249,0.94)', backdropFilter: 'blur(20px)', borderTop: '0.5px solid rgba(60,60,67,0.18)', display: 'flex', paddingBottom: 6 }}>
+          {tabs.map(t => (
+            <div key={t.id} style={{ flex: 1, textAlign: 'center', paddingTop: 6, color: t.id === active ? blue : '#8E8E93', fontSize: 10 }}>
+              <div style={{ fontSize: 18, lineHeight: 1.2 }}>{t.icon}</div>
+              {t.id}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function HomeConnected() {
+      return (
+        <div style={{ height: '100%', position: 'relative', paddingBottom: 56 }}>
+          <div style={{ textAlign: 'center', paddingTop: 12, fontSize: 17, fontWeight: 600 }}>Routeva</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 24px 24px' }}>
+            <button style={{ width: 128, height: 128, borderRadius: '50%', border: 0, background: teal, color: '#fff', boxShadow: '0 8px 28px rgba(10,122,106,0.35)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.9 }}>Verified</span>
+              <span style={{ fontSize: 20, fontWeight: 700 }}>Connected</span>
+            </button>
+            <div style={{ marginTop: 16, fontSize: 15, color: '#3C3C43', textAlign: 'center', lineHeight: 1.4 }}>
+              Outbound check passed<br/>
+              <span style={{ color: '#8E8E93', fontSize: 13 }}>us-west-14 · Auto</span>
+            </div>
+          </div>
+          <div style={{ margin: '0 16px', ...card }}>
+            <div style={row}><span style={{ color: '#8E8E93' }}>Subscription</span><span>Skyline-US</span></div>
+            <div style={row}><span style={{ color: '#8E8E93' }}>Policy</span><span style={{ color: blue }}>Auto</span></div>
+            <div style={{ ...row, borderBottom: 0 }}><span style={{ color: '#8E8E93' }}>Health</span><span>Stable · 12 min</span></div>
+          </div>
+          <p style={{ margin: '14px 20px', fontSize: 13, color: '#8E8E93', textAlign: 'center' }}>Failover may switch nodes quietly to stay verified.</p>
+          <TabBar active="Home" />
+        </div>
+      );
+    }
+
+    function Diagnostic() {
+      return (
+        <div style={{ height: '100%', position: 'relative', paddingBottom: 56, background: '#F2F2F7' }}>
+          <div style={{ textAlign: 'center', padding: '12px 16px', fontSize: 17, fontWeight: 600 }}>Diagnosis</div>
+          <div style={{ margin: '8px 16px', ...card, padding: 16 }}>
+            <div style={{ display: 'inline-block', background: 'rgba(10,122,106,0.12)', color: teal, fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20 }}>Client-Fixable</div>
+            <div style={{ fontSize: 22, fontWeight: 700, marginTop: 12, letterSpacing: -0.4, lineHeight: 1.25 }}>Current node stopped responding</div>
+            <div style={{ fontSize: 13, color: '#8E8E93', marginTop: 6 }}>Confidence 86%</div>
+          </div>
+          <div style={{ margin: '12px 16px', ...card }}>
+            <div style={{ padding: 16, borderBottom: '0.5px solid rgba(60,60,67,0.12)' }}>
+              <div style={{ fontSize: 13, color: '#8E8E93' }}>Why</div>
+              <div style={{ fontSize: 15, marginTop: 4, lineHeight: 1.4 }}>Handshake timed out after Wi‑Fi change.</div>
+            </div>
+            <div style={{ padding: 16, borderBottom: '0.5px solid rgba(60,60,67,0.12)' }}>
+              <div style={{ fontSize: 13, color: '#8E8E93' }}>Impact</div>
+              <div style={{ fontSize: 15, marginTop: 4, lineHeight: 1.4 }}>Apps may hang until a working node is used.</div>
+            </div>
+            <div style={{ padding: 16 }}>
+              <div style={{ fontSize: 13, color: '#8E8E93' }}>Next</div>
+              <div style={{ fontSize: 15, marginTop: 4, lineHeight: 1.4 }}>Safe Repair can switch node and rebuild the tunnel.</div>
+            </div>
+          </div>
+          <div style={{ padding: '8px 16px' }}>
+            <button style={{ width: '100%', padding: 16, border: 0, borderRadius: 12, background: blue, color: '#fff', fontSize: 17, fontWeight: 600, cursor: 'pointer' }}>Repair</button>
+            <p style={{ fontSize: 12, color: '#8E8E93', textAlign: 'center', marginTop: 10 }}>Snapshot first. Fail → roll back.</p>
+          </div>
+          <TabBar active="Home" />
+        </div>
+      );
+    }
+
+    function Repair() {
+      return (
+        <div style={{ height: '100%', background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'flex-end' }}>
+          <div style={{ background: '#F2F2F7', borderRadius: '14px 14px 0 0', width: '100%', padding: '12px 16px 40px' }}>
+            <div style={{ width: 36, height: 5, background: '#C7C7CC', borderRadius: 3, margin: '0 auto 16px' }} />
+            <div style={{ fontSize: 20, fontWeight: 700, textAlign: 'center' }}>Confirm Repair</div>
+            <p style={{ fontSize: 14, color: '#3C3C43', textAlign: 'center', margin: '8px 12px 16px', lineHeight: 1.4 }}>Allowlisted steps only. Then Connectivity Probe.</p>
+            <div style={{ ...card, marginBottom: 16 }}>
+              {['Prefer better-scored node', 'Rebuild VPN tunnel', 'Roll back if probe fails'].map((t,i,a)=>(
+                <div key={t} style={{ ...row, borderBottom: i < a.length-1 ? '0.5px solid rgba(60,60,67,0.12)' : 0 }}>
+                  <span style={{ fontSize: 15 }}>{t}</span>
+                </div>
+              ))}
+            </div>
+            <button style={{ width: '100%', padding: 16, border: 0, borderRadius: 12, background: blue, color: '#fff', fontSize: 17, fontWeight: 600, marginBottom: 8, cursor: 'pointer' }}>Confirm</button>
+            <button style={{ width: '100%', padding: 16, border: 0, borderRadius: 12, background: '#fff', color: blue, fontSize: 17, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      );
+    }
+
+    function Import() {
+      return (
+        <div style={{ height: '100%', position: 'relative', paddingBottom: 56 }}>
+          <div style={{ textAlign: 'center', padding: '12px 16px', fontSize: 17, fontWeight: 600 }}>Add Subscription</div>
+          <div style={{ padding: '8px 24px 16px', textAlign: 'center' }}>
+            <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.5, lineHeight: 1.15 }}>Paste your subscription</div>
+            <p style={{ fontSize: 15, color: '#8E8E93', marginTop: 8, lineHeight: 1.4 }}>We don’t sell nodes. You bring the link.</p>
+          </div>
+          <div style={{ margin: '0 16px', ...card, padding: 14, minHeight: 88, color: '#C7C7CC', fontSize: 16 }}>subscription URL or config…</div>
+          <div style={{ padding: '16px' }}>
+            <button style={{ width: '100%', padding: 16, border: 0, borderRadius: 12, background: blue, color: '#fff', fontSize: 17, fontWeight: 600, cursor: 'pointer' }}>Import</button>
+          </div>
+          <div style={{ margin: '0 16px', ...card }}>
+            {['Paste from Clipboard', 'Scan QR Code', 'Choose File', 'Single-node URI'].map((t,i,a)=>(
+              <div key={t} style={{ ...row, color: blue, borderBottom: i < a.length-1 ? '0.5px solid rgba(60,60,67,0.12)' : 0, cursor: 'pointer' }}>{t}</div>
+            ))}
+          </div>
+          <TabBar active="Home" />
+        </div>
+      );
+    }
+
+    function Phone({ label, children }) {
+      return (
+        <div>
+          <div className="lab">{label}</div>
+          <IosFrame>{children}</IosFrame>
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <div className="row">
+          <Phone label="Home · Big connect control"><HomeConnected /></Phone>
+          <Phone label="Diagnostic · Grouped cards"><Diagnostic /></Phone>
+          <Phone label="Repair · Action sheet"><Repair /></Phone>
+          <Phone label="Import · System lists"><Import /></Phone>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

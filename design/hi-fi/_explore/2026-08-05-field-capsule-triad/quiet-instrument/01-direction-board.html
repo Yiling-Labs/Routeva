@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Routeva · quiet-instrument — Direction Board 02</title>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #0C0F11; }
+  body {
+    font-family: 'Space Grotesk', -apple-system, 'SF Pro Text', sans-serif;
+    color: #F2EFE9;
+    -webkit-font-smoothing: antialiased;
+  }
+  .qi-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  .qi-hairline { border: 1px solid rgba(242,239,233,0.14); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+/* ============================================================
+   quiet-instrument — Routeva direction 02
+   Benchmark migration: Halide Mark II (Lux) — Apple Design
+   Award 2022, Visuals & Graphics. Matte-black instrument
+   panel, amber signal color, technical mono readouts,
+   migrated onto the pin's field / capsule / ripple frame.
+   ============================================================ */
+
+/* ---- iOS device frame (inlined from huashu-design/assets/ios_frame.jsx) ---- */
+const iosFrameStyles = {
+  wrapper: { display: 'inline-block', padding: 12, background: '#000', borderRadius: 60, boxShadow: '0 0 0 2px #1f2937, 0 20px 60px rgba(0,0,0,0.3)', position: 'relative' },
+  screen: { position: 'relative', borderRadius: 48, overflow: 'hidden', background: '#fff' },
+  statusBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px 0 32px', fontSize: 16, fontWeight: 600, fontFamily: '-apple-system, "SF Pro Text", sans-serif', zIndex: 20, pointerEvents: 'none' },
+  dynamicIsland: { position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 124, height: 36, background: '#000', borderRadius: 999, zIndex: 30 },
+  statusIcons: { display: 'flex', alignItems: 'center', gap: 6 },
+  signalIcon: { display: 'flex', alignItems: 'flex-end', gap: 2, height: 12 },
+  signalBar: { width: 3, background: 'currentColor', borderRadius: 1 },
+  batteryIcon: { width: 26, height: 12, border: '1.5px solid currentColor', borderRadius: 3, padding: 1, position: 'relative', opacity: 0.8 },
+  batteryCap: { position: 'absolute', top: 3, right: -3, width: 2, height: 6, background: 'currentColor', borderRadius: '0 1px 1px 0' },
+  content: { position: 'absolute', top: 54, left: 0, right: 0, bottom: 34, overflow: 'hidden' },
+  homeIndicator: { position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', width: 140, height: 5, background: 'rgba(0,0,0,0.3)', borderRadius: 999, zIndex: 10 },
+  homeIndicatorDark: { background: 'rgba(255,255,255,0.5)' },
+};
+
+function IosFrame({ children, width = 393, height = 852, time = '9:41', battery = 100, darkMode = false }) {
+  const textColor = darkMode ? '#fff' : '#000';
+  return (
+    <div style={iosFrameStyles.wrapper}>
+      <div style={{ ...iosFrameStyles.screen, width, height, background: darkMode ? '#000' : '#fff' }}>
+        <div style={{ ...iosFrameStyles.statusBar, color: textColor }}>
+          <span>{time}</span>
+          <div style={iosFrameStyles.statusIcons}>
+            <div style={iosFrameStyles.signalIcon}>
+              <div style={{ ...iosFrameStyles.signalBar, height: 4 }} />
+              <div style={{ ...iosFrameStyles.signalBar, height: 6 }} />
+              <div style={{ ...iosFrameStyles.signalBar, height: 9 }} />
+              <div style={{ ...iosFrameStyles.signalBar, height: 11 }} />
+            </div>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" style={{ color: textColor }}>
+              <path d="M8 11.5a1 1 0 100-2 1 1 0 000 2z" fill="currentColor" />
+              <path d="M3 7.5a7 7 0 0110 0" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+              <path d="M1 4.5a11 11 0 0114 0" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" opacity="0.7" />
+            </svg>
+            <div style={iosFrameStyles.batteryIcon}>
+              <div style={{ width: `${battery}%`, height: '100%', background: 'currentColor', borderRadius: 1, opacity: 0.9 }} />
+              <div style={iosFrameStyles.batteryCap} />
+            </div>
+          </div>
+        </div>
+        <div style={iosFrameStyles.dynamicIsland} />
+        <div style={iosFrameStyles.content}>{children}</div>
+        <div style={{ ...iosFrameStyles.homeIndicator, ...(darkMode ? iosFrameStyles.homeIndicatorDark : {}) }} />
+      </div>
+    </div>
+  );
+}
+
+/* ---- design tokens ---- */
+const QI = {
+  ink:       '#12181B', // Idle field — charcoal instrument panel
+  mint:      '#0F3D33', // Verified field — deep desaturated mint
+  amberField:'#3A2C0D', // Degraded field — burnt amber
+  amber:     '#F0B429', // signal amber accent (Halide heritage)
+  mintAcc:   '#46C28E', // verified accent
+  paper:     '#F2EFE9', // warm off-white ink
+  dim:       'rgba(242,239,233,0.62)',
+  faint:     'rgba(242,239,233,0.38)',
+};
+
+/* ---- glyphs (SVG, no emoji) ---- */
+function PowerGlyph({ color, size = 26 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 4v7.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M6.4 6.6a7.6 7.6 0 1 0 11.2 0" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+function Chevron({ up, color, size = 14 }) {
+  return (
+    <svg width={size} height={size * 0.62} viewBox="0 0 16 10" fill="none">
+      <path d={up ? 'M2 8 L8 2 L14 8' : 'M2 2 L8 8 L14 2'} stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* ---- Probe ripple: radial dot matrix (data, not decoration) ---- */
+function rippleDots({ cx, cy, state, color }) {
+  const dots = [];
+  const rings = 7, startR = 118, step = 15;
+  for (let i = 0; i < rings; i++) {
+    const r = startR + i * step;
+    const n = 10 + i * 2;
+    for (let j = 0; j < n; j++) {
+      const t = n === 1 ? 0 : j / (n - 1);
+      const ang = Math.PI * (0.06 + 0.88 * t); // bottom semicircle
+      let x = cx + r * Math.cos(ang);
+      let y = cy + r * Math.sin(ang);
+      let op = 0.16, rad = 2.2;
+      if (state === 'idle') {
+        op = 0.14;
+      } else if (state === 'probing') {
+        if (i < 3) op = 0.92;
+        else if (i === 3) op = j < n * 0.55 ? 0.92 : 0.12;
+        else op = 0.1;
+      } else if (state === 'verified') {
+        op = Math.max(0.34, 0.95 - i * 0.07);
+      } else if (state === 'degraded') {
+        if (i < 3) { op = 0.88; }
+        else {
+          const f1 = (Math.sin(i * 37.7 + j * 91.3) * 43758.5453) % 1;
+          const f2 = (Math.sin(i * 12.9 + j * 45.1) * 24634.6345) % 1;
+          const r1 = Math.abs(f1), r2 = Math.abs(f2);
+          x += (r1 - 0.5) * (i - 1) * 5;
+          y += (r2 - 0.5) * (i - 1) * 5 + (i - 2) * 2.5;
+          op = Math.max(0.05, 0.52 - (i - 3) * 0.1);
+          rad = 1.8;
+          if (r1 > 0.74) op = 0; // dropped packets — dots go missing
+        }
+      }
+      if (op <= 0.01) continue;
+      dots.push(<circle key={i + '-' + j} cx={x} cy={y} r={rad} fill={color} opacity={op} />);
+    }
+  }
+  return dots;
+}
+
+/* ---- the capsule: vertical slide switch, machined ---- */
+function Capsule({ accent, mode }) {
+  // mode: 'start' (knob bottom) | 'stop' (knob top) | 'repair' (knob bottom, amber)
+  const knobTop = mode === 'stop' ? 12 : 84;
+  const label = mode === 'stop' ? 'STOP' : mode === 'repair' ? 'SLIDE TO REPAIR' : 'START';
+  return (
+    <div style={{ position: 'relative', width: 96, height: 200 }}>
+      {/* detent ticks, both flanks */}
+      {[0,1,2,3,4,5,6,7].map(i => (
+        <React.Fragment key={i}>
+          <div style={{ position: 'absolute', left: -13, top: 24 + i * 20, width: 6, height: 1.5, background: 'rgba(242,239,233,0.3)' }} />
+          <div style={{ position: 'absolute', right: -13, top: 24 + i * 20, width: 6, height: 1.5, background: 'rgba(242,239,233,0.3)' }} />
+        </React.Fragment>
+      ))}
+      {/* track */}
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 48, background: 'rgba(242,239,233,0.05)', border: '1px solid rgba(242,239,233,0.17)', boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.5)' }} />
+      {/* chevron + label, opposite the knob */}
+      <div style={{ position: 'absolute', left: 0, right: 0, top: mode === 'stop' ? 128 : 22, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+        {mode !== 'stop' && <Chevron up color={QI.faint} />}
+        <div className="qi-mono" style={{ fontSize: 11, letterSpacing: '0.18em', color: mode === 'repair' ? QI.amber : QI.dim, fontWeight: 500 }}>{label}</div>
+        {mode === 'stop' && <Chevron up={false} color={QI.faint} />}
+      </div>
+      {/* knob */}
+      <div style={{
+        position: 'absolute', left: 12, width: 72, height: 104, borderRadius: 36, top: knobTop,
+        background: 'linear-gradient(180deg, #32393F 0%, #1B2025 100%)',
+        border: '1px solid rgba(242,239,233,0.24)',
+        boxShadow: '0 10px 24px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.14)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <PowerGlyph color={accent} />
+      </div>
+      {/* commit LED */}
+      <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', top: mode === 'stop' ? 6 : 194, width: 10, height: 3, borderRadius: 2, background: accent, opacity: 0.9 }} />
+    </div>
+  );
+}
+
+/* ---- screen shell: full-bleed field under status bar & home indicator ---- */
+function ScreenShell({ field, children }) {
+  return (
+    <div style={{ position: 'absolute', top: -54, left: 0, right: 0, bottom: -34, background: field }}>
+      {/* anodized vignette */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(130% 95% at 50% 34%, rgba(255,255,255,0.055) 0%, rgba(0,0,0,0.0) 46%, rgba(0,0,0,0.42) 100%)' }} />
+      {/* brushed panel micro-texture */}
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.5, background: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.014) 0 1px, transparent 1px 3px)' }} />
+      {children}
+    </div>
+  );
+}
+
+function SubPill() {
+  return (
+    <div style={{ position: 'absolute', top: 66, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+      <div className="qi-mono" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px', borderRadius: 999, border: '1px solid rgba(242,239,233,0.2)', background: 'rgba(0,0,0,0.22)', fontSize: 11, letterSpacing: '0.12em', color: QI.paper }}>
+        <span style={{ width: 5, height: 5, borderRadius: 3, background: QI.paper, opacity: 0.7 }} />
+        MY SUBSCRIPTION
+        <span style={{ color: QI.faint }}>·</span>
+        <span style={{ color: QI.dim }}>AUTO</span>
+      </div>
+    </div>
+  );
+}
+
+function StatusBlock({ eyebrow, headline, sub, accent }) {
+  return (
+    <div style={{ position: 'absolute', top: 124, left: 28, right: 28 }}>
+      <div className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.16em', color: accent || QI.dim, marginBottom: 10, fontWeight: 500 }}>{eyebrow}</div>
+      <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.12, color: QI.paper }}>{headline}</div>
+      {sub && <div className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.06em', color: QI.dim, marginTop: 10 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function CapsuleStage({ state, accent, capsuleMode }) {
+  return (
+    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 34, height: 400 }}>
+      <svg width="393" height="400" style={{ position: 'absolute', inset: 0 }}>
+        {rippleDots({ cx: 196.5, cy: 165, state, color: accent })}
+      </svg>
+      <div style={{ position: 'absolute', left: '50%', top: 165, transform: 'translate(-50%,-50%)' }}>
+        <Capsule accent={accent} mode={capsuleMode} />
+      </div>
+    </div>
+  );
+}
+
+function HintLine({ children }) {
+  return (
+    <div className="qi-mono" style={{ position: 'absolute', bottom: 18, left: 0, right: 0, textAlign: 'center', fontSize: 12, letterSpacing: '0.1em', color: QI.dim }}>{children}</div>
+  );
+}
+
+/* ============================ the 5 screens ============================ */
+
+function ScreenIdle() {
+  return (
+    <ScreenShell field={QI.ink}>
+      <SubPill />
+      <StatusBlock eyebrow="STANDBY · AUTO MODE" headline="Ready." sub="LAST PROBE — NEVER RUN" />
+      <CapsuleStage state="idle" accent={QI.paper} capsuleMode="start" />
+      <HintLine>SWIPE UP TO CONNECT</HintLine>
+    </ScreenShell>
+  );
+}
+
+function ScreenProbing() {
+  return (
+    <ScreenShell field={QI.ink}>
+      <SubPill />
+      <StatusBlock eyebrow="PROBE 04 / 08 — RUNNING" headline={'Verifying\u2026'} sub="TUNNEL UP · TLS HANDSHAKE OK" accent={QI.amber} />
+      <CapsuleStage state="probing" accent={QI.amber} capsuleMode="stop" />
+      <HintLine>RINGS LIGHT AS CHECKS PASS</HintLine>
+    </ScreenShell>
+  );
+}
+
+function ScreenVerified() {
+  return (
+    <ScreenShell field={QI.mint}>
+      <SubPill />
+      <StatusBlock eyebrow="VERIFIED · CONNECTED" headline="Auto-7 · US East" sub="TUNNEL UP · PROBE PASSED 3/3 · RTT 41MS" accent={QI.mintAcc} />
+      <CapsuleStage state="verified" accent={QI.mintAcc} capsuleMode="stop" />
+      <HintLine>SWIPE DOWN TO STOP</HintLine>
+    </ScreenShell>
+  );
+}
+
+function ScreenDegraded() {
+  return (
+    <ScreenShell field={QI.amberField}>
+      <SubPill />
+      <StatusBlock eyebrow="TUNNEL UP · PROBE 0/3" headline="Verification failed." sub="TRAFFIC PAUSED — NOTHING IS LEAKING" accent={QI.amber} />
+      {/* diagnosis entry */}
+      <div style={{ position: 'absolute', top: 268, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+        <div className="qi-mono" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 999, border: '1px solid rgba(240,180,41,0.55)', background: 'rgba(240,180,41,0.1)', color: QI.amber, fontSize: 12, letterSpacing: '0.1em', fontWeight: 500 }}>
+          SEE DIAGNOSIS
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3l3 3-3 3" stroke={QI.amber} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+      </div>
+      <CapsuleStage state="degraded" accent={QI.amber} capsuleMode="stop" />
+      <HintLine>RIPPLE STALLS WHERE THE PROBE DIED</HintLine>
+    </ScreenShell>
+  );
+}
+
+function DiagRow({ label, children }) {
+  return (
+    <div style={{ display: 'flex', gap: 14, padding: '12px 0', borderTop: '1px solid rgba(242,239,233,0.12)' }}>
+      <div className="qi-mono" style={{ width: 74, flexShrink: 0, fontSize: 12, letterSpacing: '0.14em', color: QI.faint, paddingTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 14, lineHeight: 1.45, color: QI.paper, fontFamily: '-apple-system, "SF Pro Text", sans-serif' }}>{children}</div>
+    </div>
+  );
+}
+
+function ScreenDiagnostic() {
+  return (
+    <ScreenShell field={QI.ink}>
+      {/* amber wash from the top — carries the Degraded truth into the card */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 300, background: 'linear-gradient(180deg, rgba(58,44,13,0.55), rgba(58,44,13,0))' }} />
+      <div style={{ position: 'absolute', top: 66, left: 24, right: 24 }}>
+        <div className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.16em', color: QI.dim, marginBottom: 12 }}>DIAGNOSIS · D-104</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(240,180,41,0.6)', color: QI.amber, fontSize: 12, letterSpacing: '0.14em', fontWeight: 600 }} className="qi-mono">
+          CLIENT-FIXABLE
+        </div>
+        <div style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.18, color: QI.paper, marginTop: 16 }}>
+          Private DNS is intercepting the probe.
+        </div>
+        <div className="qi-mono" style={{ fontSize: 12, color: QI.dim, marginTop: 8, letterSpacing: '0.04em' }}>THE TUNNEL ITSELF IS HEALTHY.</div>
+
+        <div style={{ marginTop: 18 }}>
+          <DiagRow label="CAUSE">A Private DNS profile answers probe queries before the tunnel can.</DiagRow>
+          <DiagRow label="IMPACT">Traffic is paused. Nothing routes until verification passes.</DiagRow>
+          <DiagRow label="NEXT">Turn off Private DNS, then slide to repair. A snapshot is kept — one tap rolls back.</DiagRow>
+        </div>
+
+        {/* confidence gauge */}
+        <div style={{ marginTop: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+            <span className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.14em', color: QI.faint }}>CONFIDENCE</span>
+            <span className="qi-mono" style={{ fontSize: 14, color: QI.amber, fontWeight: 600 }}>86%</span>
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => (
+              <div key={i} style={{ flex: 1, height: 10, borderRadius: 2, background: i < 10 ? QI.amber : 'rgba(242,239,233,0.14)', opacity: i < 10 ? (0.55 + i * 0.04) : 1 }} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ position: 'absolute', bottom: 58, left: '50%', transform: 'translateX(-50%)' }}>
+        <Capsule accent={QI.amber} mode="repair" />
+      </div>
+    </ScreenShell>
+  );
+}
+
+/* ============================ the board ============================ */
+
+const SCREEN_SCALE = 0.42;
+const FW = 417 * SCREEN_SCALE;  // frame width incl. bezel
+const FH = 876 * SCREEN_SCALE;  // frame height incl. bezel
+
+function ScreenCell({ num, title, note, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ width: FW, height: FH, position: 'relative' }}>
+        <div style={{ transform: `scale(${SCREEN_SCALE})`, transformOrigin: 'top left', position: 'absolute', top: 0, left: 0 }}>
+          <IosFrame darkMode battery={82}>{children}</IosFrame>
+        </div>
+      </div>
+      <div style={{ width: FW + 10 }}>
+        <div className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.16em', color: QI.amber, marginBottom: 5 }}>{num}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em', color: QI.paper }}>{title}</div>
+        <div style={{ fontSize: 12, lineHeight: 1.5, color: QI.dim, marginTop: 4 }}>{note}</div>
+      </div>
+    </div>
+  );
+}
+
+function Swatch({ name, hex, oklch, bg, dark }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ width: 34, height: 34, borderRadius: 8, background: bg, border: '1px solid rgba(242,239,233,0.18)', flexShrink: 0 }} />
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: QI.paper }}>{name}</div>
+        <div className="qi-mono" style={{ fontSize: 11, color: QI.dim }}>{hex}</div>
+        <div className="qi-mono" style={{ fontSize: 11, color: QI.faint }}>{oklch}</div>
+      </div>
+    </div>
+  );
+}
+
+function LeaderNote({ top, left, width, text }) {
+  return (
+    <div style={{ position: 'absolute', top, left, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ width: 5, height: 5, borderRadius: 3, background: QI.amber, flexShrink: 0 }} />
+      <div style={{ width, height: 1, background: 'rgba(240,180,41,0.5)', flexShrink: 0 }} />
+      <div className="qi-mono" style={{ fontSize: 11, lineHeight: 1.5, color: QI.dim, letterSpacing: '0.04em', maxWidth: 210 }}>{text}</div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div style={{ width: 1560, margin: '0 auto', padding: '36px 0 40px', display: 'flex', gap: 0 }}>
+
+      {/* left instrument rail — ruler ticks */}
+      <div style={{ width: 52, flexShrink: 0, position: 'relative', borderRight: '1px solid rgba(242,239,233,0.14)', marginRight: 28 }}>
+        <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 10, background: 'repeating-linear-gradient(180deg, rgba(242,239,233,0.28) 0 1px, transparent 1px 12px)' }} />
+        <div style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: 18, background: 'repeating-linear-gradient(180deg, rgba(242,239,233,0.4) 0 1px, transparent 1px 60px)' }} />
+        <div className="qi-mono" style={{ position: 'absolute', top: 420, left: -160, width: 380, transform: 'rotate(-90deg)', transformOrigin: 'center', fontSize: 12, letterSpacing: '0.34em', color: QI.faint, textAlign: 'center' }}>
+          FIELD · CAPSULE · PROBE — INSTRUMENT SPEC
+        </div>
+      </div>
+
+      <div style={{ flex: 1 }}>
+        {/* header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: 22, borderBottom: '1px solid rgba(242,239,233,0.14)' }}>
+          <div>
+            <div className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.22em', color: QI.amber, marginBottom: 12 }}>
+              ROUTEVA — HI-FI DIRECTION 02 / BENCHMARK MIGRATION
+            </div>
+            <div style={{ fontSize: 54, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1 }}>quiet-instrument</div>
+          </div>
+          <div style={{ maxWidth: 620, textAlign: 'right' }}>
+            <div style={{ fontSize: 14, lineHeight: 1.6, color: QI.paper }}>
+              气质定位：一台可信的仪器，不是 VPN 玩具——冷静、精确，每个像素都在报告连接真值。
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: QI.dim, marginTop: 6 }}>
+              Form 来自内容：场域色是表盘背光，胶囊是机身上唯一的旋钮，点阵波纹是 Probe 的示数——没有不带数据的装饰。
+            </div>
+            <div className="qi-mono" style={{ fontSize: 11, lineHeight: 1.6, color: QI.faint, marginTop: 8, letterSpacing: '0.04em' }}>
+              REF — HALIDE MARK II (LUX), APPLE DESIGN AWARD 2022 · VISUALS & GRAPHICS. MATTE PANEL + AMBER SIGNAL + MONO READOUTS, MIGRATED ONTO THE PIN'S FRAME.
+            </div>
+          </div>
+        </div>
+
+        {/* main zone: screens row + right spec column */}
+        <div style={{ display: 'flex', gap: 32, marginTop: 28 }}>
+          <div style={{ display: 'flex', gap: 24 }}>
+            <ScreenCell num="01 / IDLE" title="Home · Idle" note="Field at rest — dormant rings, one capsule. No flags, no map, no timer.">
+              <ScreenIdle />
+            </ScreenCell>
+            <ScreenCell num="02 / PROBING" title="Home · Connecting" note="Ripple is the probe: rings light one by one as checks pass.">
+              <ScreenProbing />
+            </ScreenCell>
+            <ScreenCell num="03 / VERIFIED" title="Home · Connected" note="Mint only after tunnel + probe both pass. The gesture left a trace.">
+              <ScreenVerified />
+            </ScreenCell>
+            <ScreenCell num="04 / DEGRADED" title="Home · Degraded" note="Amber, never green. Rings fracture where the probe died.">
+              <ScreenDegraded />
+            </ScreenCell>
+            <ScreenCell num="05 / DIAGNOSIS" title="Diagnostic · Client-Fixable" note="Bucket tag, plain-language cause / impact / next, slide to repair.">
+              <ScreenDiagnostic />
+            </ScreenCell>
+          </div>
+
+          {/* right spec column — datasheet margin */}
+          <div style={{ width: 448, flexShrink: 0, borderLeft: '1px solid rgba(242,239,233,0.14)', paddingLeft: 28, display: 'flex', flexDirection: 'column' }}>
+
+            {/* colorway */}
+            <div style={{ paddingBottom: 20, borderBottom: '1px solid rgba(242,239,233,0.14)' }}>
+              <div className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.2em', color: QI.faint, marginBottom: 12 }}>FIELD COLORWAY — STATE IS THE BACKGROUND</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 14px' }}>
+                <Swatch name="Idle · Ink"       hex="#12181B" oklch="oklch(0.24 0.012 215)" bg="#12181B" />
+                <Swatch name="Verified · Mint"  hex="#0F3D33" oklch="oklch(0.34 0.055 168)" bg="#0F3D33" />
+                <Swatch name="Degraded · Amber" hex="#3A2C0D" oklch="oklch(0.31 0.052 78)"  bg="#3A2C0D" />
+                <Swatch name="Signal Amber"     hex="#F0B429" oklch="oklch(0.79 0.148 80)"  bg="#F0B429" />
+                <Swatch name="Verified Accent"  hex="#46C28E" oklch="oklch(0.72 0.128 160)" bg="#46C28E" />
+                <Swatch name="Ink · Paper"      hex="#F2EFE9" oklch="oklch(0.94 0.008 90)"  bg="#F2EFE9" />
+              </div>
+            </div>
+
+            {/* type */}
+            <div style={{ padding: '20px 0', borderBottom: '1px solid rgba(242,239,233,0.14)' }}>
+              <div className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.2em', color: QI.faint, marginBottom: 12 }}>TYPE — DIAL FACE + READOUT</div>
+              <div style={{ fontSize: 23, fontWeight: 600, letterSpacing: '-0.015em', color: QI.paper }}>Verified · Connected</div>
+              <div className="qi-mono" style={{ fontSize: 11, color: QI.faint, margin: '3px 0 12px' }}>Space Grotesk 600 — status headlines, tracking −1.5%</div>
+              <div className="qi-mono" style={{ fontSize: 14, letterSpacing: '0.14em', color: QI.amber, fontWeight: 500 }}>PROBE 04/08 · RTT 41MS · 86%</div>
+              <div className="qi-mono" style={{ fontSize: 11, color: QI.faint, margin: '3px 0 12px' }}>IBM Plex Mono 500 — readouts & labels ≥12px</div>
+              <div style={{ fontSize: 14, lineHeight: 1.5, color: QI.dim, fontFamily: '-apple-system, "SF Pro Text", sans-serif' }}>
+                Body sets in -apple-system at 14px minimum — honest sentences, no error codes.
+              </div>
+            </div>
+
+            {/* signature detail */}
+            <div style={{ paddingTop: 20, position: 'relative', flex: 1, minHeight: 216 }}>
+              <div className="qi-mono" style={{ fontSize: 12, letterSpacing: '0.2em', color: QI.faint }}>SIGNATURE DETAIL — THE CAPSULE, MACHINED</div>
+              <div style={{ position: 'absolute', left: 6, top: 46, transform: 'scale(0.8)', transformOrigin: 'top left' }}>
+                <Capsule accent={QI.amber} mode="start" />
+              </div>
+              <LeaderNote top={64}  left={130} width={34} text="24 detent ticks — haptic commit at 72% travel, no half-states" />
+              <LeaderNote top={128} left={118} width={46} text="Graphite knob, 1pt hairline ring, glyph in the current truth's signal color" />
+              <LeaderNote top={192} left={130} width={34} text="Commit LED mirrors ripple ring 01 — finger and probe never disagree" />
+            </div>
+          </div>
+        </div>
+
+        {/* footer */}
+        <div className="qi-mono" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, paddingTop: 14, borderTop: '1px solid rgba(242,239,233,0.14)', fontSize: 11, letterSpacing: '0.14em', color: QI.faint }}>
+          <span>ROUTEVA · DIRECTION 02 / 03 · 2026-08-05</span>
+          <span>NO FLAGS · NO PAYWALL · NO FAKE GREEN · NO EMOJI</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Direction C · Warm Editorial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "DM Sans", system-ui, sans-serif; background: #e8e0d4; color: #1a1714; min-height: 100vh; padding: 40px 32px 80px; }
+    .meta { max-width: 1100px; margin: 0 auto 28px; }
+    .meta h1 { font-family: Newsreader, Georgia, serif; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+    .meta p { font-size: 14px; color: #4a433c; margin-top: 8px; max-width: 62ch; line-height: 1.55; }
+    .tag { display: inline-block; font-size: 11px; color: #C45C3E; border-bottom: 1px solid #C45C3E; padding-bottom: 2px; margin-top: 14px; letter-spacing: 0.04em; }
+    .row { display: flex; flex-wrap: wrap; gap: 36px; justify-content: center; }
+    .lab { font-size: 12px; font-style: italic; font-family: Newsreader, serif; color: #5c534a; margin-bottom: 8px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Direction C · Warm Editorial</h1>
+    <p>Logic: “best designer” — publication-grade trust (warm paper + ink + single terracotta accent). Diagnosis reads like a clear editorial lede; Home keeps a quiet status lamp. Serif for meaning, sans for controls.</p>
+    <span class="tag">ROUTEVA · CRAFT P0 · EN</span>
+  </div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const paper = '#F7F1E8';
+    const ink = '#1A1714';
+    const mute = '#6B6258';
+    const line = '#E5DCD0';
+    const clay = '#C45C3E';
+    const ok = '#2F6B4F';
+
+    const iosFrameStyles = {
+      wrapper: { display: 'inline-block', padding: 12, background: '#1a1714', borderRadius: 60, boxShadow: '0 0 0 2px #3d342c, 0 20px 60px rgba(0,0,0,0.28)', position: 'relative' },
+      screen: { position: 'relative', borderRadius: 48, overflow: 'hidden' },
+      statusBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', fontSize: 16, fontWeight: 600, fontFamily: 'DM Sans, sans-serif', zIndex: 20, pointerEvents: 'none' },
+      dynamicIsland: { position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 124, height: 36, background: '#000', borderRadius: 999, zIndex: 30 },
+      signalIcon: { display: 'flex', alignItems: 'flex-end', gap: 2, height: 12 },
+      signalBar: { width: 3, background: 'currentColor', borderRadius: 1 },
+      batteryIcon: { width: 26, height: 12, border: '1.5px solid currentColor', borderRadius: 3, padding: 1, position: 'relative', opacity: 0.85 },
+      batteryCap: { position: 'absolute', top: 3, right: -3, width: 2, height: 6, background: 'currentColor', borderRadius: '0 1px 1px 0' },
+      content: { position: 'absolute', top: 54, left: 0, right: 0, bottom: 34, overflow: 'auto' },
+      homeIndicator: { position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', width: 140, height: 5, background: 'rgba(0,0,0,0.28)', borderRadius: 999, zIndex: 10 },
+    };
+    function IosFrame({ children, time = '9:41', battery = 84 }) {
+      return (
+        <div style={iosFrameStyles.wrapper}>
+          <div style={{ ...iosFrameStyles.screen, width: 393, height: 852, background: paper }}>
+            <div style={{ ...iosFrameStyles.statusBar, color: ink }}>
+              <span>{time}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={iosFrameStyles.signalIcon}>{[4,6,9,11].map((h,i)=><div key={i} style={{...iosFrameStyles.signalBar,height:h}}/>)}</div>
+                <div style={iosFrameStyles.batteryIcon}><div style={{width:battery+'%',height:'100%',background:'currentColor',borderRadius:1}}/><div style={iosFrameStyles.batteryCap}/></div>
+              </div>
+            </div>
+            <div style={iosFrameStyles.dynamicIsland} />
+            <div style={iosFrameStyles.content}>{children}</div>
+            <div style={iosFrameStyles.homeIndicator} />
+          </div>
+        </div>
+      );
+    }
+
+    function Tab({ active }) {
+      return (
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 54, borderTop: `1px solid ${line}`, background: paper, display: 'flex', paddingBottom: 4 }}>
+          {['Home', 'Activity', 'Agent'].map(t => (
+            <div key={t} style={{ flex: 1, textAlign: 'center', paddingTop: 12, fontSize: 11, letterSpacing: '0.04em', color: t === active ? clay : mute, fontWeight: t === active ? 600 : 400 }}>{t}</div>
+          ))}
+        </div>
+      );
+    }
+
+    function HomeConnected() {
+      return (
+        <div style={{ height: '100%', position: 'relative', paddingBottom: 54, fontFamily: 'DM Sans, sans-serif', color: ink }}>
+          <div style={{ padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={{ fontFamily: 'Newsreader, serif', fontSize: 22, fontWeight: 600 }}>Routeva</span>
+            <span style={{ fontSize: 12, color: mute }}>Auto</span>
+          </div>
+          <div style={{ padding: '28px 24px 8px', textAlign: 'center' }}>
+            <div style={{ width: 14, height: 14, borderRadius: '50%', background: ok, margin: '0 auto 16px', boxShadow: `0 0 0 6px rgba(47,107,79,0.15)` }} />
+            <div style={{ fontFamily: 'Newsreader, serif', fontSize: 32, fontWeight: 600, letterSpacing: -0.5 }}>Connected</div>
+            <div style={{ fontSize: 14, color: ok, marginTop: 6, fontWeight: 500 }}>Verified · probe OK</div>
+            <button style={{ marginTop: 28, width: 160, height: 48, borderRadius: 24, border: `1.5px solid ${ink}`, background: ink, color: paper, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Disconnect</button>
+          </div>
+          <div style={{ margin: '28px 20px 0', borderTop: `1px solid ${line}`, paddingTop: 16 }}>
+            {[
+              ['Active', 'Skyline-US'],
+              ['Node', 'us-west-14 · 48ms'],
+              ['Note', 'Stable for 12 minutes'],
+            ].map(([k,v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', fontSize: 14 }}>
+                <span style={{ color: mute }}>{k}</span>
+                <span style={{ fontWeight: 500 }}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <Tab active="Home" />
+        </div>
+      );
+    }
+
+    function Diagnostic() {
+      return (
+        <div style={{ height: '100%', position: 'relative', paddingBottom: 54, fontFamily: 'DM Sans, sans-serif', color: ink }}>
+          <div style={{ padding: '10px 20px', fontSize: 13, color: mute }}>Diagnosis</div>
+          <div style={{ padding: '4px 20px 0' }}>
+            <div style={{ fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: clay, fontWeight: 600 }}>Client-Fixable</div>
+            <h1 style={{ fontFamily: 'Newsreader, serif', fontSize: 28, fontWeight: 600, lineHeight: 1.2, marginTop: 10, letterSpacing: -0.4 }}>
+              Current node stopped responding
+            </h1>
+            <p style={{ fontSize: 13, color: mute, marginTop: 8 }}>Confidence · 0.86</p>
+          </div>
+          <div style={{ margin: '20px 20px 0', borderTop: `1px solid ${line}` }}>
+            {[
+              ['Why', 'Handshake timed out after the Wi‑Fi change.'],
+              ['Impact', 'Apps may hang until a working node is used.'],
+              ['Next', 'A safe Repair can switch node and rebuild the tunnel.'],
+            ].map(([k,v]) => (
+              <div key={k} style={{ padding: '16px 0', borderBottom: `1px solid ${line}` }}>
+                <div style={{ fontFamily: 'Newsreader, serif', fontStyle: 'italic', fontSize: 15, color: clay }}>{k}</div>
+                <div style={{ fontSize: 15, marginTop: 6, lineHeight: 1.5 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: '20px' }}>
+            <button style={{ width: '100%', height: 50, borderRadius: 8, border: 0, background: clay, color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>Repair</button>
+            <p style={{ fontSize: 12, color: mute, textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>One confirmation. Snapshot first; fail rolls back.</p>
+          </div>
+          <Tab active="Home" />
+        </div>
+      );
+    }
+
+    function Repair() {
+      return (
+        <div style={{ height: '100%', fontFamily: 'DM Sans, sans-serif', color: ink, padding: '16px 20px' }}>
+          <div style={{ fontSize: 13, color: mute, marginBottom: 8 }}>Repair</div>
+          <h1 style={{ fontFamily: 'Newsreader, serif', fontSize: 26, fontWeight: 600 }}>Confirm once</h1>
+          <p style={{ fontSize: 14, color: mute, marginTop: 8, lineHeight: 1.5 }}>Allowlisted steps only — then we re-run the Connectivity Probe.</p>
+          <ol style={{ marginTop: 24, paddingLeft: 18, lineHeight: 1.8, fontSize: 14 }}>
+            <li>Prefer a better-scored node</li>
+            <li>Rebuild the VPN tunnel</li>
+            <li>Roll back if the probe fails</li>
+          </ol>
+          <div style={{ position: 'absolute', left: 20, right: 20, bottom: 48, display: 'flex', gap: 10 }}>
+            <button style={{ flex: 1, height: 48, borderRadius: 8, border: `1.5px solid ${ink}`, background: 'transparent', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+            <button style={{ flex: 1, height: 48, borderRadius: 8, border: 0, background: clay, color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Confirm</button>
+          </div>
+        </div>
+      );
+    }
+
+    function Import() {
+      return (
+        <div style={{ height: '100%', position: 'relative', paddingBottom: 54, fontFamily: 'DM Sans, sans-serif', color: ink, padding: '12px 20px' }}>
+          <div style={{ fontFamily: 'Newsreader, serif', fontSize: 13, fontStyle: 'italic', color: clay, marginBottom: 12 }}>Get started</div>
+          <h1 style={{ fontFamily: 'Newsreader, serif', fontSize: 30, fontWeight: 600, lineHeight: 1.15, letterSpacing: -0.4 }}>Paste your subscription</h1>
+          <p style={{ fontSize: 14, color: mute, marginTop: 10, lineHeight: 1.5 }}>We don’t sell nodes. You bring the link — we connect, explain, and repair what we can.</p>
+          <div style={{ marginTop: 20, border: `1.5px solid ${ink}`, borderRadius: 4, minHeight: 96, padding: 14, fontSize: 14, color: '#B0A89E' }}>subscription URL or config…</div>
+          <button style={{ marginTop: 14, width: '100%', height: 50, borderRadius: 8, border: 0, background: ink, color: paper, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Import</button>
+          <div style={{ marginTop: 24 }}>
+            {['Clipboard', 'QR code', 'File', 'Single-node URI'].map(t => (
+              <div key={t} style={{ padding: '12px 0', borderBottom: `1px solid ${line}`, fontSize: 14, color: clay, cursor: 'pointer' }}>{t} →</div>
+            ))}
+          </div>
+          <Tab active="Home" />
+        </div>
+      );
+    }
+
+    function Phone({ label, children }) {
+      return (
+        <div>
+          <div className="lab">{label}</div>
+          <IosFrame>{children}</IosFrame>
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <div className="row">
+          <Phone label="Home · Status lamp + quiet type"><HomeConnected /></Phone>
+          <Phone label="Diagnostic · Editorial lede"><Diagnostic /></Phone>
+          <Phone label="Repair · Confirm once"><Repair /></Phone>
+          <Phone label="Import · Warm onboarding"><Import /></Phone>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
