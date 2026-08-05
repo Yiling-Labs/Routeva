@@ -148,13 +148,18 @@ private struct HomeIdleContent: View {
 
             Spacer()
 
-            capsule
-                .padding(.bottom, 20)
+            ConnectCapsuleView(
+                connection: connection,
+                onConnect: onConnect,
+                onDisconnect: onDisconnect
+            )
+            .padding(.bottom, 14)
 
             Text(hint)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(RoutevaTheme.textMuted)
                 .padding(.bottom, 36)
+                .accessibilityHidden(hint.trimmingCharacters(in: .whitespaces).isEmpty)
         }
     }
 
@@ -192,24 +197,6 @@ private struct HomeIdleContent: View {
         case .connecting: return " "
         case .connected: return "Swipe up to stop"
         case .cantConnect: return " "
-        }
-    }
-
-    /// Temporary buttons until full capsule gesture lands.
-    private var capsule: some View {
-        VStack(spacing: 12) {
-            switch connection {
-            case .idle, .cantConnect:
-                PrimaryButton(title: "Connect", action: onConnect)
-                    .padding(.horizontal, 48)
-            case .connecting:
-                ProgressView()
-                    .tint(.white)
-                    .padding()
-            case .connected:
-                GhostButton(title: "Disconnect", action: onDisconnect)
-                    .padding(.horizontal, 48)
-            }
         }
     }
 

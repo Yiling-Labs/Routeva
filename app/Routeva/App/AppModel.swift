@@ -88,14 +88,19 @@ final class AppModel: ObservableObject {
         subscriptions[idx].lastUpdatedAt = Date()
     }
 
-    // MARK: - Connection gesture stubs (ADR 0018)
+    // MARK: - Connection (ADR 0018 capsule → later VPN + Probe ADR 0007)
+
+    private var connectTask: Task<Void, Never>?
 
     func beginConnect() {
         guard hasSubscription else { return }
+        guard connection == .idle || connection == .cantConnect else { return }
+        connectTask?.cancel()
         connection = .connecting
-        // Real path: VPN permission + tunnel + probe (ADR 0007).
-        Task {
-            try? await Task.sleep(nanoseconds: 900_000_000)
+        // Real path: system VPN prompt + tunnel + Connectivity Probe.
+        connectTask = Task {
+            try? await Task.sleep(nanoseconds: 1_100_000_000)
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 if case .connecting = connection {
                     connection = .connected(since: Date())
@@ -105,6 +110,7 @@ final class AppModel: ObservableObject {
     }
 
     func disconnect() {
+        connectTask?.cancel()
         connection = .idle
     }
 
