@@ -77,10 +77,10 @@
 
 ### 4.1 首次启动与导入
 
-- ≤3 屏说明：需自有订阅、会诊断修复、不卖节点。
-- 申请 VPN 前说明用途；不要求注册/邮箱。
-- 自动识别格式；失败给具体原因；失败不覆盖已有配置。
-- 导入结果：名称、节点数、支持/不支持数、到期/流量（若有）、更新时间。
+- **First-Run（ADR 0019）：** Welcome（仅一次：headline + 一句副文，自备订阅 / 不卖节点）→ Home Empty → 用户主动 Add subscription。**无** 1·2·3 卡片墙；**无** 应用内 VPN 说明页。
+- **VPN 权限：** 首次真正连接手势时出 **iOS 系统 VPN 弹窗**；拒绝 → 回 Home Idle；同意 → 连接至 Connection Success。用途说明放商店/隐私文案，不单独做应用内说明屏。不要求注册/邮箱。
+- **Add Subscription：** Paste from Clipboard 为主，Scan QR / Import file 为辅；**无**手填主 UI、**无**「剪贴板已发现」独立页。解析为叠在 Add 上的 **Parsing 模态**。失败：页内短句 + Paste again；**不覆盖**已有配置。
+- **导入成功：** 直接回 **Home Idle（同壳）** + 短 toast（名称 · 节点数等；**2–3s** 自动消失）；设 Active；**不**自动连。详细字段（到期/流量/更新时间等）进订阅详情/Settings，不挡首次路径。
 - **多订阅模型（Active Subscription）：** 可保存多份 Subscription；同一时间仅 **1 个 Active** 用于连接 / 选节点 / Probe / 诊断 / Repair / Failover。切换 Active 须用户明确操作，记入 Activity；不默认合并多订阅节点池；不做多隧道并行。首次导入的订阅自动成为 Active。
 - **Subscription Refresh（少打扰）：**
   - **触发：** 冷启动或用户点连接，且 Active 距上次成功更新 ≥ **T**（默认 **6h**）→ 尝试更新 Active。
@@ -249,7 +249,7 @@
 
 | 优先级 | 路径 |
 |---|---|
-| **P0 Craft** | Onboarding→导入→VPN 说明→首次连上；Home 连接态；诊断结果卡；Repair 确认/进度/成功或回滚（Beta 无付费墙） |
+| **P0 Craft** | Welcome→Home Empty→Add（Parsing 模态）→Home Idle+toast；首次连接出系统 VPN 弹窗（无自建说明页）→连上；Home 连接态；诊断结果卡；Repair 确认/进度/成功或回滚（Beta 无付费墙） |
 | **P0 能力 / P1 Craft** | **Activity 可查**（事件全、文案清）；Agent 工具过程与撤销展示 |
 | **P2** | 高级模式与深层设置 |
 
