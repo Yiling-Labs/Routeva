@@ -74,7 +74,7 @@
 - **有订阅：** `[ Help ] [ Subscriptions ] …… [ Settings ]`（ADR 0020 / **0036**）  
 - **Empty：** `[ Help ] …… [ Settings ]`（无 Subscriptions）  
 - **Help** = soft glass **pill**（助手图标 + *Help* 字样），非抽象 Agent 圆标  
-- **Activity** 不进顶栏 → Settings 二级  
+- **Activity** 不进顶栏、**不进** Settings 根页（ADR **0051**）；触点优先 Help / 诊断·Repair  
 - 二级：push 或 sheet；关闭用 Close / 系统 back  
 - 诊断 / 修复：优先 **底 sheet 玻璃卡**（与早期 probe 诊断语言一致）  
 
@@ -87,9 +87,9 @@
 | **Diagnostic** | 叠在 dimmed Home（Can’t connect 黑场）；底 glass sheet；四桶白话；Why/Impact/Next；主 CTA；**次要 Ask Help**（Not sure 时可作主 CTA）。权威：`07-diagnostic.html` |
 | **Repair** | 同场材质进度卡；Snapshot 文案；Cancel = ghost；验证后回绿场或失败 sheet |
 | **Subscriptions** | Field Black；**单列表**（Active 行加强 + Update）；流量/到期有则显示、无则隐藏；**到期必带 Expires/Expired 标签**（已过期暖警示色，非连接绿）；禁止裸日期贴 nodes；**少文案**；无 All 第二层 |
-| **Activity** | Settings 内二级；Black 场；时间线轻分割；图标线框、低饱和 |
-| **Help / Agent** | Black 场；顶 **信任条**；空态求助文案 + chips；气泡轻量；输入条 glass 胶囊；边界页 Can/Can’t。权威：`06-agent.html`（ADR 0035–0039） |
-| **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → History → App** 三段；App 仅 Subscriptions + About；隐私经 About → Privacy Policy；**无** 根页 Privacy / Appearance / Advanced / Cloud AI 开关。**Overrides O3：** 空态/列表提示 *exceptions, not a full rule set*；CTA *Add exception*；根计数数字/None 不写 *rules*（ADR 0045）。权威：`05-settings.html` |
+| **Activity** | **非**独立一级/Settings 二级主入口（ADR **0051**）。若后续做完整时间线：Black 场；轻分割；图标线框、低饱和；优先从 Help / 诊断上下文进入 |
+| **Help / Agent** | Black 场；顶 **信任条**（Cloud 默认 On）；空态求助文案 + chips；气泡轻量；输入条 glass 胶囊；边界页 Can/Can’t。权威：`06-agent.html`（ADR 0035–0043） |
+| **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → App** 两段（**无** History · ADR **0051**）；App 仅 Subscriptions + About；隐私经 About → Privacy Policy；**无** 根页 Privacy / Appearance / Advanced / Cloud AI / Activity / Snapshots。**Overrides O3：** 空态/列表提示 *exceptions, not a full rule set*；CTA *Add exception*；根计数数字/None 不写 *rules*（ADR 0045）。权威：`05-settings.html` |
 
 ## 9. 自检清单（新屏交付前）
 

@@ -1,9 +1,11 @@
 # Privacy / About 内容闭集（修订：隐私不进根页）
 
-**About ›（根页 App 入口）：** 产品名+版本、**一句隐私承诺**（*Privacy first. We don’t upload your information.*）、Links（Privacy Policy / Terms / Support）、次要 **Export diagnostic report**。不写「不卖节点」。无连点 Advanced；Beta 不强制 Rate/Share。
+**About ›（根页 App 入口）：** 产品名+版本、**一句隐私承诺**、Links（Privacy Policy / Terms of Use / Support）、次要 **Export diagnostic report**。无连点 Advanced；Beta 不强制 Rate/Share。
 
-**Privacy Policy（About 下级，非 Settings 根行）：** 本机数据说明、默认不收集短列表、Cloud AI 只读说明（无开关）、分析明示、完整政策链。不做 Cloud AI 第二 Toggle。Interactive：About → Privacy Policy → 本页；返回 About。
+**Privacy Policy：** 系统浏览器 → **`https://routeva.yilinglabs.com/privacy/`**（`website/public/privacy/`）。  
+**Terms of Use：** 系统浏览器 → **`https://routeva.yilinglabs.com/terms/`**（`website/public/terms/`）。  
+二者均 **非** 应用内长文页；与 Cloudflare Pages 站点同源。
 
-**为何：** 根页再挂 Privacy 与 About 内 Privacy Policy 重复；隐私信任集中在 About 叙事 + 下级说明页。Export 仍落 About。
+**为何：** 根页不挂 Privacy/Terms；Web 单一权威源便于审核与更新；About 只保留承诺句 + 外链发现性。
 
 **后果：** 见 CONTEXT **Settings Surface**；ADR **0034**。

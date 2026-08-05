@@ -1,0 +1,3 @@
+# Cloudflare Pages: trailing-slash canonical paths
+/privacy  /privacy/  301
+/terms    /terms/    301

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva</title>
+  <meta name="description" content="Routeva — smart proxy client. Paste a subscription you already have. Connect, explain failures, repair safely." />
+  <link rel="canonical" href="https://routeva.yilinglabs.com/" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0e11;
+      --fg: rgba(255,255,255,0.94);
+      --muted: rgba(255,255,255,0.58);
+      --quiet: rgba(255,255,255,0.4);
+      --card: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.11);
+      --mint: #7fd9b0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      background: linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      padding: 48px 24px 64px;
+    }
+    .wrap { max-width: 40rem; margin: 0 auto; }
+    .brand {
+      font-size: 13px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--quiet); margin-bottom: 28px;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 700;
+      letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 14px;
+    }
+    .lead {
+      font-size: 1.0625rem; font-weight: 500; color: var(--muted);
+      line-height: 1.55; max-width: 36ch; margin-bottom: 28px;
+    }
+    .card {
+      border-radius: 18px; padding: 18px 20px;
+      background: var(--card); border: 1px solid var(--border);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .card p { font-size: 0.9375rem; color: var(--muted); line-height: 1.5; }
+    nav { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 16px 24px; }
+    a {
+      color: var(--mint); font-size: 0.9375rem; font-weight: 600;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    footer {
+      margin-top: 48px; font-size: 0.8125rem; color: var(--quiet); line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="brand">Routeva</p>
+    <h1>Smart proxy client.<br />Your subscription, not ours.</h1>
+    <p class="lead">
+      Paste a link you already have. Connect, see honest failure reasons, and repair only what the client can fix—with your OK.
+    </p>
+    <div class="card">
+      <p>App Store and product site content will expand here. Legal pages are live now.</p>
+    </div>
+    <nav>
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Use</a>
+      <a href="/privacy/#contact">Contact</a>
+    </nav>
+    <footer>
+      © <span id="y"></span> Yiling Labs · Routeva does not sell nodes.
+    </footer>
+  </div>
+  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+</body>
+</html>

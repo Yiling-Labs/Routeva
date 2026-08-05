@@ -9,12 +9,27 @@
 _Avoid_: AI 智能代理客户端（品类句当产品名）；未定代号
 
 **Primary Market**：
-首发以 **美国 App Store** 为主；用户可以是全球持有代理订阅的人，但商店叙事、合规与首发运营按美区优先。
-_Avoid_: 未验证就默认全球多商店同步首发
+商店叙事与合规可按区优先（美区 App Store / Play 常见）；用户可以是全球持有代理订阅的人。**产品能力单源**，不以「某商店首发」拆成两个产品。
+_Avoid_: 未验证就默认全球多商店同步上架日；把商店节奏当成能力分叉
 
 **Device Scope（MVP）**：
-同一 iOS App：**iPhone 为设计与验收主设备**；**iPad 可安装使用**，但布局/多任务/键鼠等不优先打磨（基础可用即可，非 iPad 优化产品）。Mac / Apple TV / 桌面端首发不做。**最低系统：iOS 17+**。
-_Avoid_: iPad-first；通用 Apple 全家桶首发；为 iOS 16 及以下扩测试矩阵
+**双端原生同时开发**（iOS + Android）。  
+- **iOS：** 同一 App；**iPhone 为设计与验收主设备**；iPad 可装可用，布局/多任务不优先。**最低系统：iOS 17+**。  
+- **Android：** 同一产品能力；**手机为主验收**；平板/折叠基础可用。minSdk 实现期锁定。  
+Mac / Apple TV / 桌面端首发不做。
+_Avoid_: iPad-first；仅一端静默砍能力；为 iOS 16 及以下扩测试矩阵；把两端当两个 Product
+
+**Dual-Native Layout**：
+Application Source 为 `app/ios/` 与 `app/android/` 两棵独立树，互不 compile/import。产品语义在 `PRODUCT.md` / PRD / `design/**/current/` / 本文件单源。见 ADR **0049**。
+_Avoid_: 根目录 `ios/`+`android/`；默认 Flutter/RN 主壳；第三套 `app/shared` 业务实现
+
+**Platform Realization**：
+同一用户可见能力在各平台用原生 API 落地（如 StoreKit vs Play Billing；Network Extension vs VpnService）。**不是**第二条 PRODUCT 能力。
+_Avoid_: 「iOS 支付」「Android 支付」拆成两条核心能力
+
+**Platform Gap**：
+共享能力列表中一端尚未交付的项。允许暂时领先/落后，须在 PRD 或 status **显式**标注目标版本；禁止静默漂移。
+_Avoid_: 永久单端功能伪装成 Gap
 
 **Product Language (Source)**：
 面向用户的 UI、Onboarding、诊断可读文案、付费墙、商店材料与 Agent 首发质量以 **English** 为源语言（source of truth）并优先做 Craft 打磨。内部文档可用中文。布局与 i18n 工程须按 **MVP Locale Set** + 伪本地化验收。详见 ADR **0047**（策略）/ **0048**（闭集 M）。  
@@ -28,7 +43,7 @@ App UI 上架闭集（L2，ADR **0048** 取代 0047 之三语闭集）：
 _Avoid_: 15+ 语言假覆盖；Hans/Hant 混用同一串无分 locale；用上架 de 以外的方式忽视长词布局（de 已在闭集内压测）
 
 **Localization Policy（MVP）**：
-- **选择（U1）：** 仅跟随 iOS 系统首选语言；**无** Settings「Language」行（与无 Appearance 一致）。  
+- **选择（U1）：** 仅跟随系统首选语言（iOS / Android 各自系统设置）；**无** Settings「Language」行（与无 Appearance 一致）。  
 - **机翻范围（T1 · 壳层）：** 导航、Settings 行名、按钮、空态、列表壳等可对闭集内非 en locale **机翻**（无人审）。  
 - **锁 English：** 诊断四桶与失败主文案、Repair 确认/进度/回滚、隐私关键句、付费墙。高风险键无合格译文时 **显式回落 en**，优于错误机翻。  
 - **披露：** About 可有一句次要说明——部分界面为机翻，关键说明以 English 为准；**无**每屏 MT 横幅、无首次强选语言。  
@@ -70,7 +85,7 @@ _Avoid_: 视觉花活、用动效掩盖诊断不准
 
 **Craft Priority（MVP）**：
 - **P0 Craft：** Onboarding→导入→首次连上（系统 VPN 弹窗，无自建说明页）；Home 连接态；诊断结果卡（四桶）；Repair 确认/进度/成功或回滚；（商业化后）付费墙  
-- **P0 能力 / P1 Craft：** **Activity** 事件可查（Settings 二级；连接、Failover、诊断、Repair、回滚、模式切换等）——Beta 须有清晰列表，动效与视觉可后打磨；Agent 工具过程与可撤销；**Subscriptions** 一级面（单列表 + Active 态）
+- **P0 能力 / P1 Craft：** **Activity** 事件须记录且可解释（连接、Failover、诊断、Repair、回滚、模式切换等）——用户触点优先 **Help / 诊断·Repair 上下文**，**不**占 Settings 根页；完整时间线 UI 可后打磨；Agent 工具过程与可撤销；**Subscriptions** 一级面（单列表 + Active 态）
 - **P2：** 高级模式与深层设置  
 用户可见文案以 English 源打磨（见 Product Language）。
 
@@ -81,24 +96,32 @@ _Avoid_: 三栏底 Tab；顶栏常驻 Activity；顶栏诊断/刷新捷径；在
 **Home Chrome（顶栏出口）**：
 - **Help** — 用户可见标签 **Help**（内部/代码可称 Agent）；**glass pill**（图标 + *Help* 字样，非仅抽象圆标）进入 **Agent Surface**；故障裁判仍是 Diagnostic Engine。有订阅：`[ Help ] [ Subscriptions ] …… [ Settings ]`；Empty：`[ Help ] …… [ Settings ]`。无未读红点、无强迫注意动效。  
 - **Subscriptions** — 仅当已有至少一份订阅（通常已有 Active）时显示；进入 **Subscriptions Surface**  
-- **Settings** — 进入 **Settings Surface**（非订阅配置与可解释历史；非日常连接台）  
-- **Activity** — **不进顶栏**；经 Settings 二级（及 Agent 只读摘要）可查  
+- **Settings** — 进入 **Settings Surface**（连接策略 + App 元信息；**非**日常连接台；**非**事件/快照浏览器）  
+- **Activity** — **不进顶栏、不进 Settings 根页**；事件仍记录；用户触点优先 **Help / Agent 摘要** 与诊断·Repair 上下文（ADR **0051**）  
 - **Diagnostic sheet · Ask Help（次要）：** 连接失败自动诊断卡上，主 CTA（Repair / 知道了等）之外提供弱入口 **Ask Help**（文案链或 ghost，非第二实心主按钮）→ 进入 **Agent Surface**，并带上本次诊断结构化摘要。**不**取代顶栏 Help；**不**自动全屏抢主路径。  
 _Avoid_: Empty 用 + 替换 Settings；顶栏四钮塞回 Activity；入口仅抽象图标无 Help 语义；用户可见主标签写 *Agent* / *AI Chat*；诊断 sheet 上两个并列实心绿 CTA
 
 **Settings Surface**：
-从 Home 顶栏进入的一级配置面。**根页主职 = Connection Policy 优先**（ADR 0021）。**读者模型（C2，ADR 0045）：** 产品服务小白与半专业；Settings **同一套短策略闭集**，**半专业为主读者**（主动改意图），小白为**被引导的次要读者**（默认值 + 短副文 + 失败/Help 引进同一页）。**不**做简单/高级双 IA，**不**以竞品设置密度对标扩大人群（人群杠杆在 Table Stakes Connect + Self-Healing + Help）。**根页一级分组闭集（三段，自上而下）：**
-1. **Connection** — 根页固定三行（均为 › 进二级，非 Home 内联控件）：**Routing mode** · **DNS** · **Overrides**（User Override 列表/编辑，≤20）。**DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（钉节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
-2. **History** — 根页固定两行：**Activity ›**（时间序事件，能力 P0）· **Snapshots ›**（保留期内 Config Snapshot 列表与回滚确认）。**Export 脱敏报告**不占 History 根行（可落在 Activity/诊断详情/About 次要动作，细项另议）。根页**不**内嵌事件摘要列表。  
-3. **App** — 根页固定两行：**Subscriptions ›**（深链同一套 UI，含 Empty 时无顶栏入口的补偿）· **About ›**。**无** 根页 **Privacy ›**（与 About 内 Privacy Policy 重复）。**无 Appearance 行：** UI 光暗 **仅跟随系统**；**连接绿场仍仅 Connection Success**，不提供主题皮肤或「永远绿」。**Beta 不**在根页放 Restore Purchases / 付费墙 / 账号。  
-   - **About › 闭集：** 名+版本 · **一句隐私承诺**（如 *Privacy first. Temporary help context only — and you can turn cloud assist off.*；**不**写绝对 never upload）· Links（**Privacy Policy** 进应用内说明或外链、Terms、Support）· **Export diagnostic report**（脱敏，次要）。**无** 连点 Advanced、无 Rate/Share 必达。  
-   - **Privacy Policy（About 下级，非根页）：** Data on device · What we don’t collect by default · Help/Cloud **临时脱敏上下文、可关、分析后不保留** · Diagnostics 明示 · 完整政策链。无第二套 Cloud 开关（管理在 Help）。  
+从 Home 顶栏进入的一级配置面。**根页主职 = Connection Policy 优先**（ADR 0021）。**读者模型（C2，ADR 0045）：** 产品服务小白与半专业；Settings **同一套短策略闭集**，**半专业为主读者**（主动改意图），小白为**被引导的次要读者**（默认值 + 短副文 + 失败/Help 引进同一页）。**不**做简单/高级双 IA，**不**以竞品设置密度对标扩大人群（人群杠杆在 Table Stakes Connect + Self-Healing + Help）。**根页一级分组闭集（两段，自上而下 · ADR 0051）：**
+1. **Connection** — 根页固定三行（均为 › 进二级，非 Home 内联控件）：**Routing mode** · **DNS** · **Overrides**（User Override 列表/编辑；Beta **无**条数上限）。**每行标题 + 一行释义副文（English 源，短，解释标题是什么；不绑定具体选项、不写何时该改）+ 右侧当前值：**  
+   - **Routing mode** — 副文 *How traffic uses your proxy*（进入后选 Auto / Global / Direct）。  
+   - **DNS** — 副文 *How names resolve on your connection*（进入后选 Automatic / Privacy / Compatibility）。  
+   - **Overrides** — 副文 *Exceptions for specific domains*（进入后管 Domain 例外列表）。  
+   **DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（钉节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
+2. **App** — 根页固定两行：**Subscriptions ›**（深链同一套 UI，含 Empty 时无顶栏入口的补偿）· **About ›**。**无** 根页 **Privacy ›**（与 About 内 Privacy Policy 重复）。**无 Appearance 行：** UI 光暗 **仅跟随系统**；**连接绿场仍仅 Connection Success**，不提供主题皮肤或「永远绿」。**Beta 不**在根页放 Restore Purchases / 付费墙 / 账号。  
+   - **About › 闭集：** 名+版本 · **一句隐私承诺**（如 *Privacy first. Temporary help context only — and you can turn cloud assist off.*；**不**写绝对 never upload）· Links（均为系统浏览器，**非**应用内长文）：  
+     - **Privacy Policy** → **`https://routeva.yilinglabs.com/privacy/`**（副文 *How we handle your data*）  
+     - **Terms of Use** → **`https://routeva.yilinglabs.com/terms/`**（副文 *Rules for using Routeva*）  
+     - **Support** · **Export diagnostic report**（脱敏，次要）。**无** 连点 Advanced、无 Rate/Share 必达。  
+   - **Privacy Policy（Web）：** 权威正文在 **website/**；本机数据 · 默认不收集 · Help 云辅助可关 · 诊断明示。  
+   - **Terms of Use（Web）：** 客户端非节点商 · 自备订阅 · 合法使用 · 权限/Repair 边界 · 无担保/责任限制 · IAP 若上线走 Apple。无第二套 Cloud 开关（管理在 Help）。  
+**无 History 段：** 不在根页放 **Activity ›** / **Snapshots ›**（及任何「事件浏览器 / 配置时光机」主入口）。  
 **Cloud AI 不进 Settings 根页：** 开关与披露仅在 **Help / Agent Surface**（默认开、可关；见 **Cloud AI**）。根页**无**独立 Assistant 段。  
-**不上根页：** Appearance/主题包、Cloud AI 开关、订阅 CRUD 副本、Run Diagnostic 主 CTA、协议/内核/规则编辑平铺、Beta 付费墙/Restore Purchases、账号/登录、整屏 Activity 日志、**Advanced / 高级模式入口**（Beta 正式 Settings 不露；内核/日志级别/实验项无用户入口）。Export 等残留挂 Activity/诊断/About **次要动作**；订阅 Refresh 仅 Subscriptions Surface。日常连/断/选节点仍在 Home。Craft 整体属 P2（Activity 能力仍为 P0）。  
-_Avoid_: Settings 当第二连接台；Trust/History 占满根页主视觉；两套订阅管理；五段常驻 Advanced 坟场；无分组的一长串开关；Connection 段塞进节点管理或自由 DNS 编辑器；仅从 Repair 流程才能找到快照列表；Settings 再挂一套 Cloud AI 开关与 Agent 双源；Beta 根页死挂 Restore Purchases；用 Advanced 再镜像一遍 Mode/DNS/Override/Activity；Appearance 劫持连接绿场；根页双模式（简单/高级）当主 IA；用 Shadowrocket 设置清单当 backlog
+**不上根页：** History/Activity/Snapshots、Appearance/主题包、Cloud AI 开关、订阅 CRUD 副本、Run Diagnostic 主 CTA、协议/内核/规则编辑平铺、Beta 付费墙/Restore Purchases、账号/登录、整屏 Activity 日志、**Advanced / 高级模式入口**（Beta 正式 Settings 不露；内核/日志级别/实验项无用户入口）。Export 等残留挂诊断/About **次要动作**；订阅 Refresh 仅 Subscriptions Surface。日常连/断/选节点仍在 Home。Craft 整体属 P2。  
+_Avoid_: Settings 当第二连接台；Trust/History 占满根页主视觉；两套订阅管理；五段常驻 Advanced 坟场；无分组的一长串开关；Connection 段塞进节点管理或自由 DNS 编辑器；Settings 再挂一套 Cloud AI 开关与 Agent 双源；Beta 根页死挂 Restore Purchases；用 Advanced 再镜像一遍 Mode/DNS/Override/Activity；Appearance 劫持连接绿场；根页双模式（简单/高级）当主 IA；用 Shadowrocket 设置清单当 backlog
 
 **Settings Admission Gate**：
-新 Settings 项（尤其 Connection 策略）默认须同时满足：① 改变**流量/连接策略意图**；② **半专业**会主动找来改；③ **小白**在失败/Help 时能一句话引进**同一**页；④ 可用**短闭集 + 意图文案**表达；⑤ 与 Home / Repair / Help **同源**、不造第二真相。不满足则不进正式 Settings（自动化、实现常数、或以后再议）。**例外：** History（Activity / Snapshots）与 About 等走**可解释性 / 信任 / 合规**闸门，不要求「改流量意图」。有价值的是可审计策略意图，不是开放配置密度。详见 ADR **0045**。  
+新 Settings 项（尤其 Connection 策略）默认须同时满足：① 改变**流量/连接策略意图**；② **半专业**会主动找来改；③ **小白**在失败/Help 时能一句话引进**同一**页；④ 可用**短闭集 + 意图文案**表达；⑤ 与 Home / Repair / Help **同源**、不造第二真相。不满足则不进正式 Settings（自动化、实现常数、或以后再议）。**例外：** **About**（及合规说明）走**信任 / 合规**闸门，不要求「改流量意图」。**History / Activity / Snapshots 不进 Settings 根页**（ADR 0051）。有价值的是可审计策略意图，不是开放配置密度。详见 ADR **0045** / **0051**。  
 _Avoid_: 竞品有则默认加；说不清就不进（误杀 Mode/DNS）；逐项无标准拍脑袋
 
 **Subscriptions Surface**：
@@ -134,8 +157,8 @@ Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时�
 _Avoid_: Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器
 
 **Activity Log**：
-本机时间序事件记录，用于解释「系统刚做了什么」（连接、Node Failover、诊断、Repair、回滚、Global/Direct 或 Override 等）。Beta **必须可查看**（能力 P0）；呈现精致度属 Craft P1。**入口：** Settings 二级（及 Agent 工具摘要），**非** Home 顶栏常驻。不上传原始订阅/Token。  
-_Avoid_: Beta 无任何事件可查；把 Activity 当成可后做的纯装饰；Home 顶栏常驻 Activity
+本机时间序事件记录，用于解释「系统刚做了什么」（连接、Node Failover、诊断、Repair、回滚、Global/Direct 或 Override 等）。Beta **必须记录**且在用户需要解释时**可触达**（能力 P0）；**不**以 Settings 根页/History 列表作主入口。用户触点优先：**Help / Agent 最近事件摘要**、诊断卡与 Repair 结果上下文。完整时间线 UI 属 Craft P1 / 可后补。不上传原始订阅/Token。  
+_Avoid_: Beta 完全不记事件；把 Activity 当成可后做的纯装饰；Home 顶栏或 Settings 根页常驻 Activity 浏览器
 
 **Proxy Client**：
 本产品是代理**客户端**：导入、解析、连接、诊断与配置；用户须自备订阅或节点来源。
@@ -209,8 +232,8 @@ _Avoid_: 备份（过于笼统）；把节点 Failover 每次都当完整快照
 - **必建：** 进入 Repair 流程前；用户/Agent 执行会改变连接策略或分流的显式动作前（如切换 Global/Direct、应用 User Override、手动切换预设 DNS 等）。  
 - **不强制完整快照：** Node Failover 自动换节点（避免高频刷爆存储）。  
 - **保留（Beta）：** 至少最近 **10** 份或 **7** 天内（实现取两者中更严的上限策略，须可配置常数）。  
-- **回滚：** Repair 失败/取消 → 自动回到「进入该次 Repair 前」快照；用户可从列表回滚到保留期内某份。  
-_Avoid_: 仅 1 份且无法看历史；无限时光机；Failover 每次全量快照
+- **回滚：** Repair 失败/取消 → 自动回到「进入该次 Repair 前」快照；用户主动回滚触点在 **Repair 流程结果 UI**（及同等确认），**不**要求 Settings 快照列表主入口（ADR 0051）。  
+_Avoid_: 无限时光机；Failover 每次全量快照；Settings 根页配置时光机
 
 **Agent（Thick）**：
 首发主交互面之一：支持**开放自然语言**输入与**分流类意图**；将意图编排为对 **Agent Tool Allowlist** 的调用，并用自然语言解释**结构化**结果。  
@@ -274,10 +297,10 @@ _Avoid_: 强制登录才能连接；自建账户体系当 MVP 依赖
 _Avoid_: 以自建庞大域名库当主分流；规则社区；完整策略组编辑器
 
 **User Override Rule**：
-用户或 Agent 发起的**结构化覆盖层**：每条为 `目标`（预设 **Service** 名 **或** 单个 **Domain**）→ `proxy | direct`。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。Beta 最多 **20** 条。Global / Direct 总开关不计入这 20 条。  
-**Settings 交互（Overrides › · O3 呈现，ADR 0045）：** 列表（每条可开/关/删）+ **Add exception** sheet（选 Service 或 Domain → Proxy/Direct → Save）；**无** 正则/通配/一行速记语法；满 20 禁用 Add。Service 预设表由产品维护（实现期定名单）；Domain 为单域名。Agent 写同一模型，非只读旁路。  
-**空态 English 源（闭集意图）：** 标题 *No exceptions yet*；主文强调 **a few exceptions, not a full rule set**；辅文 *Up to 20 · service presets or one domain each*。有列表时顶栏提示同样「非完整规则集」；根页计数写数字/None，**不**写 *rules*。  
-_Avoid_: 手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；无限条迷你规则编辑器；Overrides 仅 Agent 可写、Settings 不能 Add；空态/根页用 *rules* 暗示 Clash 式规则引擎
+用户或 Agent 发起的**结构化覆盖层**：每条为 **单个 Domain** → `proxy | direct`。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。**Beta 不设条数上限**（不做「满 N 禁用 Add」）；产品意图仍是 **少数例外**，靠文案与 O3 呈现约束，不靠配额 UI。Global / Direct 总开关不计入 Override 列表。  
+**Settings 交互（Overrides › · O3 呈现，ADR 0045 / 0049 / 0050）：** 列表（每条可开/关/删）+ **Add exception** sheet（输入 Domain → Proxy/Direct → Save）；**无** 预设 Service 名、**无** 正则/通配/一行速记语法；**无** 列表条数上限提示。Domain 为单主机名（如 `example.com`）。Agent 写同一模型，非只读旁路。  
+**空态 English 源（闭集意图 · 排版双行）：** 标题 *No exceptions yet*；主文（怎么用）*Pin a domain to proxy or direct when Auto isn’t enough.*；边界句 *A few exceptions, not a full rule set.*；约束 chip *One domain each*。有列表时顶栏提示同样「非完整规则集」；根页计数写数字/None，**不**写 *rules*。  
+_Avoid_: 产品维护的 Service/站点预设表；手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；用「N of M」或硬上限把 Overrides 做成规则引擎配额；Overrides 仅 Agent 可写、Settings 不能 Add；空态/根页用 *rules* 暗示 Clash 式规则引擎
 
 **Node Selection**：
 在可用节点集合内，按延迟、握手、实际访问成功率（含 Connectivity Probe）、近期失败与稳定性等加权评分，选出当前节点；不能只按 Ping 排序。属客户端主智能之一。

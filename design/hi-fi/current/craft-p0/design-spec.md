@@ -1,11 +1,11 @@
-# Pin Glass · Home（优先）
+# Pin Glass · Home（视觉 / 交互规格）
 
 ## 当前范围
 
-**只打磨 Home。** Diagnostic / Repair / Activity / Agent / Onboarding 高保真 **暂缓**，但**一旦开做**必须遵循 [visual-system.md](./visual-system.md)（从 Home 提取）。
+本文件 = **Home 像素与连接故事板**规格。全 craft-p0 屏索引见 [`_index.md`](./_index.md)；IA 见 [`00-ia.md`](../../wireframes/current/craft-p0/00-ia.md)。
 
 主文件：[`02-home.html`](./02-home.html)。  
-**全 app 风格源：** 本目录 `02-home.html` + `visual-system.md`。
+**全 app 风格源：** 本目录 `02-home.html` + [`visual-system.md`](./visual-system.md)（Setup / Subscriptions / Settings / Help / Diagnostic 已出稿，均须遵循）。
 
 ## 锚点
 
@@ -20,7 +20,8 @@
 | 规则 | 说明 |
 |---|---|
 | Root | **仅 Home** |
-| Help / Subscriptions / Settings | 顶栏：**Help** glass pill + Subscriptions/Settings orbs（Empty 无 Subscriptions；Activity 在 Settings 内 · ADR 0036） |
+| Help / Subscriptions / Settings | 顶栏：**Help** glass pill + Subscriptions/Settings orbs（Empty 无 Subscriptions · ADR 0036） |
+| Activity | **不**进顶栏、**不**进 Settings 根页（ADR **0051**）；Help / 诊断·Repair 上下文 |
 | Location | Not Connected 下 **图标 + Location ›** |
 | 禁止 | 底部 Tab；Go Premium |
 

@@ -111,6 +111,7 @@
 ### 2026-08-05 — Grill-with-docs 复审 Q8 Activity
 - **决议：A** — Activity 能力 P0（事件可查）、Craft P1；Beta 不可无事件流
 - **已写入：** CONTEXT（Activity Log / Craft Priority）；PRD IA 与 §6 / 验收；ADR 0013
+- **后续（2026-08-06）：** Settings 根页**去掉 History 整段**；Activity/Snapshots 入口下沉到 Help / 诊断·Repair（**ADR 0051**）
 
 ### 2026-08-05 — Grill-with-docs 复审 Q9 多订阅
 - **决议：A** — 单 Active Subscription；多份可存；不合并池、不并行隧道
@@ -127,6 +128,8 @@
 ### 2026-08-05 — Grill-with-docs 复审 Q12 User Override
 - **决议：A** — 服务名或单域名 → proxy|direct；上限 20；无正则/规则市场
 - **已写入：** CONTEXT（User Override Rule）；PRD §4.7；ADR 0017
+- **后续收窄（2026-08-06）：** 去掉 Service 预设，仅单 Domain → proxy|direct；见 **ADR 0049**
+- **后续（2026-08-06）：** Beta **不设**条数硬上限（废止「最多 20」配额）；见 **ADR 0050**
 
 ### 2026-08-05 — Grill-with-docs 复审收口
 - **决议：A** — 结束本轮（Q1–Q12）；共享理解足够进入设计/实现；开放问题实现期短 grill

@@ -9,9 +9,12 @@
 | slug | routeva |
 | repo | https://github.com/zyhang/Routeva |
 | primary_type | ios |
-| min_os | iOS 17+ |
-| updated | 2026-08-05 |
-| status | Grill 收口 v0.2（含 grill-with-docs 复审 Q1–Q12）；Beta 全免（ADR 0006） |
+| secondary_types | android |
+| types | ios, android |
+| code_layout | Dual-Native（ADR 0049） |
+| min_os | iOS 17+；Android minSdk 实现期锁定 |
+| updated | 2026-08-06 |
+| status | Grill 收口 v0.2 + Dual-Native；IA/Cloud 与 craft-p0 hi-fi 对齐；Beta 全免（ADR 0006） |
 
 ## 1. 背景与目标
 
@@ -56,12 +59,13 @@
 - VPN 连接、节点测试、Node Selection、首次自动选节点连接
 - Diagnostic Engine 四层检查 + Failure Bucket 展示
 - Repair 白名单 + Config Snapshot + 回滚
-- Thick Agent + Cloud AI Opt-in
+- Thick Agent + Cloud AI（Help 内默认开、可关 · ADR 0042；非全 app 静默大脑）
 - Auto / Global / Direct；Auto = 服务商规则 + 选节点
 - **Beta：全功能开放（无配额/无付费墙）**；目标 Free/Pro 与 $2.99 见 §4.8 草稿与 ADR 0001/0006
 - 无账号；本机数据；隐私边界（Token 不上云等）
 - Craft P0 路径英文化打磨
-- iPhone 主 + iPad 基础；iOS 17+
+- **iOS + Android 双端**（Dual-Native）：共享能力与 IA；平台 API 为 Realization
+- iPhone 主 + iPad 基础；iOS 17+；Android 手机主验收
 
 ### 3.2 Out of scope（MVP）
 
@@ -69,8 +73,9 @@
 - 完整 QX/Surge/Stash 高级语法；暂缓协议列表（SSH/ShadowTLS/MASQUE 等）
 - MITM / Rewrite / 根证书 / 远程脚本
 - 规则市场、完整规则编辑器、per-App 分流承诺
-- 强制账号、默认云端大脑、iCloud 多设备同步
+- 强制账号、默认云端大脑、iCloud / 跨端账号同步
 - Mac / Apple TV / 桌面；iOS 16−
+- 默认跨端 UI 壳或编译期共享业务内核（除非另 ADR）
 - 流媒体解锁 SLA
 
 ## 4. 需求详述
@@ -78,7 +83,7 @@
 ### 4.1 首次启动与导入
 
 - **First-Run（ADR 0019）：** Welcome（仅一次：headline + 一句副文，自备订阅 / 不卖节点）→ Home Empty → 用户主动 Add subscription。**无** 1·2·3 卡片墙；**无** 应用内 VPN 说明页。
-- **VPN 权限：** 首次真正连接手势时出 **iOS 系统 VPN 弹窗**；拒绝 → 回 Home Idle；同意 → 连接至 Connection Success。用途说明放商店/隐私文案，不单独做应用内说明屏。不要求注册/邮箱。
+- **VPN 权限（Platform Realization）：** 首次真正连接手势时出 **系统 VPN 授权**（iOS：系统 VPN 弹窗；Android：VpnService / 系统 VPN 权限流）；拒绝 → 回 Home Idle；同意 → 连接至 Connection Success。用途说明放商店/隐私文案，不单独做应用内说明屏。不要求注册/邮箱。
 - **Add Subscription：** Paste from Clipboard 为主，Scan QR / Import file 为辅；**无**手填主 UI、**无**「剪贴板已发现」独立页。解析为叠在 Add 上的 **Parsing 模态**。失败：页内短句 + Paste again；**不覆盖**已有配置。
 - **导入成功：** 直接回 **Home Idle（同壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s** 自动消失）；设 Active；**不**自动连；**不**强制命名（自动取名 + Subscriptions 内可选 Rename，见 ADR 0033）。详细字段（到期/流量/更新时间等）进订阅详情，不挡首次路径。
 - **多订阅模型（Active Subscription）：** 可保存多份 Subscription；同一时间仅 **1 个 Active** 用于连接 / 选节点 / Probe / 诊断 / Repair / Failover。切换 Active 须用户明确操作，记入 Activity；不默认合并多订阅节点池；不做多隧道并行。首次导入的订阅自动成为 Active。
@@ -167,7 +172,7 @@
 | 不强制 | Node Failover 自动换节点不建完整快照 |
 | Beta 保留 | 最近 **10** 份或 **7** 天（实现常数，取可执行的上限策略） |
 | 自动回滚 | Repair 失败或用户取消 → 回到进入该次 Repair 前的快照 |
-| 手动回滚 | 用户可从保留列表恢复某份快照（Allowlist #6） |
+| 手动回滚 | 用户经 **Repair 流程结果 UI**（及 Agent 工具）恢复保留期内快照（Allowlist #6）；**不**要求 Settings 快照列表主入口（ADR 0051） |
 | 存储 | 本机；不含把原始 Token 明文写入分析通道 |
 
 ### 4.6 Agent（Thick）与 Cloud AI
@@ -182,7 +187,7 @@
 - 变更类一律遵守 Snapshot Policy、Active Subscription、Repair Consent、Failover≠Repair 等既有规则。
 - **硬边界 / 禁止工具：** 网页内容、完整浏览历史、Token/原始订阅上传、MITM/证书、自由写配置、推荐机场、静默改系统。
 - 故障裁判仍是 Diagnostic Engine；Agent 只解释与编排。
-- **Cloud AI：** Opt-in；默认本地/规则/模板；仅脱敏结构化上下文；无云时核心连接/诊断/Repair 与 Agent 只读+本地编排不瘫。
+- **Cloud AI（Help · ADR 0042）：** 在 **Agent Surface / Help** 内 **默认开启**（opt-out，可一键关）；**无** 首次授权 modal sheet；披露靠常驻信任条 + *How we use data*。**不**在 Settings 根页预置开关。仅脱敏结构化上下文（Ephemeral）；**关云后**快捷问题 / 本地或规则编排 / 模板解释 + 同一套工具仍可用。无云时核心连接/诊断/Repair 与 Agent 只读+本地编排不瘫。
 
 ### 4.7 Auto Policy 与分流
 
@@ -190,10 +195,10 @@
 - 不承诺流媒体解锁。
 - Global / Direct 为显式总开关（**不计入** Override 条数）。
 - **User Override Rule（形态 A）：**
-  - 每条：`目标` = 预设服务名 **或** 单个域名 → `proxy | direct`。
+  - 每条：`目标` = **单个域名** → `proxy | direct`（**无** Service 预设；ADR 0049）。
   - 可预览、可关、可回滚；应用前按 Snapshot Policy 建快照（显式策略变更）。
   - 须提示可能与订阅/服务商规则**叠加**；不静默删除服务商规则。
-  - Beta 上限 **20** 条；超出须删旧或关闭后才能新增。
+  - **Beta 不设条数硬上限**（ADR 0050）；意图仍为少数例外，靠 O3 文案而非配额。
   - **不做：** 正则、Rule Set 市场、JS 规则、per-App 分流。
 
 ### 4.8 商业：Beta 全免 + 目标 Free / Pro 草稿
@@ -229,13 +234,18 @@
 
 ### 4.10 信息架构（MVP）
 
+> 权威 UI：`design/wireframes/current/craft-p0/00-ia.md` + `design/hi-fi/current/craft-p0/`。**无底部 Tab**；根画布仅 Home。
+
 | 面 | 内容 |
 |---|---|
-| Home | 大连接按钮、状态、节点、策略、健康、流量/到期（若有）、一条系统说明 |
-| Activity | **能力 P0 / Craft P1：** 连接、Failover、诊断、Repair、回滚、模式/Override 等时间序事件须可查；列表清晰即可，动效后打磨 |
-| Agent | NL 输入、快捷问题、工具过程、结果、撤销（能力须接通；过程展示 Craft P1） |
+| **Home** | 选节点（Cover Flow）+ **竖直滑动胶囊**（START 顶下滑连 / STOP 底上滑断）+ 连接真值（Not Connected / Connecting… / Connected）+ Location ›；黑/绿双皮肤（绿场 **仅** Connection Success）。顶栏出口：**Help** pill · **Subscriptions**（有订阅时）· **Settings**。**不**常驻策略切换、健康仪表、流量/到期、Active 订阅 chip、Auto 字样。权威 hi-fi：`02-home.html` |
+| **Help（Agent Surface）** | 用户可见 **Help**；信任条 + 空态 chips（随连/断双态）+ 聊天 + *What Help can do* + *How we use data*；Cloud 默认开可关。能力接通；过程展示 Craft P1。权威：`06-agent.html` |
+| **Subscriptions** | 一级面单列表：全部订阅 + Active 高亮（有则流量/带标签 Expires·Expired + Update）；Set active；底 Add；可选 Rename。权威：`04-subscriptions.html` |
+| **Settings** | 根页两段（ADR **0051**）：**Connection**（Routing mode · DNS · Overrides，各带释义副文）→ **App**（Subscriptions 深链 · About）。**无** History/Activity/Snapshots、Appearance、Advanced、Cloud 开关、根页 Privacy。隐私经 About → Privacy Policy 外链。权威：`05-settings.html` |
+| **Activity** | **能力 P0 / Craft P1：** 连接、Failover、诊断、Repair、回滚、模式/Override 等须**记录**且可解释；触点优先 Help / 诊断·Repair（**非** Settings 根页 · ADR 0051）；完整时间线 UI 可后打磨 |
+| **Diagnostic / Repair** | 失败底 sheet：四桶白话（App can fix / Provider / Your network / Not sure）+ Why/Impact/Next + 主 CTA；次要 *Ask Help*（ADR 0044）。Repair 仅 Client-Fixable + Consent + 快照/验证/回滚。权威：`07-diagnostic.html` |
 
-高级模式：隐藏入口；可查看节点/日志/基础 DNS/模式切换/导出脱敏报告/重载订阅等；无完整高级客户端能力。细项开放。
+**Beta 不暴露：** Settings Advanced / 高级模式坟场（ADR 0027）。日后若加深层调试入口另议；Mode / DNS / Override / Export 等已落正式面或次要动作，不依赖 Advanced。
 
 ## 5. 用户故事（摘要）
 
@@ -250,8 +260,8 @@
 | 优先级 | 路径 |
 |---|---|
 | **P0 Craft** | Welcome→Home Empty→Add（Parsing 模态）→Home Idle+toast；首次连接出系统 VPN 弹窗（无自建说明页）→连上；Home 连接态；诊断结果卡；Repair 确认/进度/成功或回滚（Beta 无付费墙） |
-| **P0 能力 / P1 Craft** | **Activity 可查**（事件全、文案清）；Agent 工具过程与撤销展示 |
-| **P2** | 高级模式与深层设置 |
+| **P0 能力 / P1 Craft** | **Activity 可解释**（事件记录全；Help/失败路径可触达；非 Settings History）；Agent 工具过程与撤销展示 |
+| **P2** | 深层设置 / 调试入口（若需要；Beta 正式 Settings 不露 Advanced） |
 
 原则：诊断/修复反馈质感 ≥ 装饰动效。用户可见文案 English 源。高保真见 `design/`。
 
@@ -261,19 +271,19 @@
 - Connection Success 定义落地：自动化/手工验收均以隧道 + Connectivity Probe 为准；探针失败不得标为成功。
 - Diagnostic Trigger：导入失败、未达 Connection Success（含 Probe 失败）、中断且恢复失败须**自动**诊断并展示四桶；成功路径不强制体检；Agent 不另设判定。
 - 无高频崩溃与 VPN 异常退出；配置修改可回滚。
-- 凭证不进分析/未授权 AI；Agent **仅** Tool Allowlist；变更类无用户明确意图/Consent 不得改网。
+- 凭证不进分析通道；Cloud 仅脱敏临时上下文且可关；Agent **仅** Tool Allowlist；变更类无用户明确意图/Consent 不得改网。
 - 错误提示均有下一步；删除 App 不遗留失控 VPN 配置。
 - （商业化后）IAP 购买与恢复购买正常；**Beta 不验收 IAP。**
 - 四桶诊断与 Repair 边界行为符合 CONTEXT；Repair **仅** Allowlist 6 类；自动化测试覆盖「非白名单动作不可作为 Repair」。
 - Repair Consent：无用户确认不得执行 Repair；一次确认可多候选；失败/取消须回滚。
 - Node Failover：自动选节点开启且未钉节点时可自动换节点且不经 Repair 确认；钉节点/关闭自动后不得静默切换；Failover 记 Activity，连续失败走自动诊断。
 - Snapshot Policy：Repair 前必有可回滚点；失败/取消自动回滚；Beta 至少 10 份或 7 天；Failover 不强制完整快照。
-- Activity：Beta 须能查看连接 / Failover / 诊断 / Repair / 回滚 / 模式变更等事件；允许列表级 UI，不要求 P0 动效。
+- Activity：Beta 须记录连接 / Failover / 诊断 / Repair / 回滚 / 模式变更等事件，并在 Help / 诊断·Repair 上下文可解释；**不**要求 Settings 根页 History（ADR 0051）。
 - Active Subscription：同时仅一份参与连接与自愈；切换显式；不合并节点池、不并行多隧道。
 - Subscription Refresh：仅冷启动/连接前按 T（默认 6h）刷 Active；无固定后台周期；失败不覆盖；成功少打扰。
 - Subscription Display Name：导入静默自动取名（配置名 → 元数据/文件名 → host 弱名 → 中性默认）；可选 Rename；不承诺服务商品牌名（ADR 0033）。
-- User Override：仅服务名或单域名 → proxy|direct；≤20 条；无正则/规则市场；Global/Direct 另计。
-- 无云端授权时核心连接/诊断/Repair 可用。
+- User Override：仅**单域名** → proxy|direct；Beta **无**条数硬上限；无 Service 预设、无正则/规则市场；Global/Direct 另计（ADR 0049 / 0050）。
+- Cloud 关闭或无网时核心连接/诊断/Repair 与 Help 本机路径仍可用（ADR 0042）。
 
 ## 8. 指标与成功定义
 
@@ -292,7 +302,7 @@
 | 后台不稳 | 稳定性优先于花活 |
 | 商业化时用户反弹 | 保留 0001 草稿；上线前单独 grill 价格与墙 |
 
-ADR：`0001`–`0005`（初轮）· `0006` Beta 全免 · `0007` Connection Success · `0008` 诊断触发 · `0009` Repair 闭集 · `0010` Repair 确认 · `0011` Failover · `0012` Snapshot · `0013` Activity · `0014` Active 订阅 · `0015` 订阅刷新 · `0016` Agent 工具 · `0017` Override 上限。
+ADR：`0001`–`0005`（初轮）· `0006` Beta 全免 · `0007` Connection Success · `0008` 诊断触发 · `0009` Repair 闭集 · `0010` Repair 确认 · `0011` Failover · `0012` Snapshot · `0013` Activity · `0014` Active 订阅 · `0015` 订阅刷新 · `0016` Agent 工具 · `0017` Override 结构化 · `0042` Help Cloud 默认开 · `0049` Domain only · `0050` Override Beta 无条数上限 · `0051` Settings 无 History 段。
 
 ## 10. 里程碑（建议）
 
@@ -303,7 +313,7 @@ ADR：`0001`–`0005`（初轮）· `0006` Beta 全免 · `0007` Connection Succ
 
 ## 11. 开放问题
 
-- 高级模式完整清单与入口曝光策略  
+- 深层调试入口是否在商业化后出现（Beta 无 Advanced）
 - 匿名分析事件字典与隐私营养标签终稿  
 - 网络内核与扩展架构选型  
 - **商业化触发条件**与是否沿用 0001 配额/$2.99（Beta 后另议）  

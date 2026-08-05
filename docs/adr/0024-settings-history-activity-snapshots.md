@@ -1,7 +1,7 @@
-# Settings · History：Activity + Snapshots
+# Settings · History：Activity + Snapshots（已废止根页呈现）
 
-Settings 根页 **History** 段固定两行：**Activity ›**、**Snapshots ›**。不在根页放 Export report 第三行，不内嵌「最近一条事件」摘要，不把 Snapshots 仅藏在 Repair 流程内。
+> **Status:** superseded by **ADR 0051**（Settings 根页无 History 段）。
 
-**为何：** Activity 满足可解释（能力 P0）；Snapshots 落实「用户可从列表回滚」的事后入口，与 Repair 路径对称。Export 低频，宜作次要动作以免冲淡 History。
+原定：Settings 根页 **History** 段固定两行 **Activity ›**、**Snapshots ›**。
 
-**后果：** 见 CONTEXT **Settings Surface** History 条；Export 落点与 Snapshots UI 细项另议。
+**0051 后：** 根页不再呈现 History。Activity 能力与 Snapshot 机制保留；入口分别为 Help/诊断·Repair 上下文，以及 Repair 流程回滚——不再要求 Settings 列表主入口。

@@ -74,22 +74,22 @@
   <div class="meta">
     <h1>Settings · Connection Policy first</h1>
     <p>
-      ADR 0021–0032 · <strong>0045</strong> (dual-reader C2 + admission gate).
-      Root: <strong>Connection → History → App</strong>.
-      Overrides <strong>O3</strong>: exceptions framing, not a rule-engine empty state.
-      No Appearance, Advanced, Cloud AI toggle, or subscription CRUD.
+      ADR 0021–0032 · <strong>0045</strong> · <strong>0051</strong> (no History on root).
+      Root: <strong>Connection → App</strong> only.
+      Overrides <strong>O3</strong>: domain exceptions, not a rule-engine empty state.
+      No History/Activity/Snapshots rows, Appearance, Advanced, or Cloud AI toggle.
     </p>
     <div class="tags">
       <span class="tag">SETTINGS SURFACE</span>
       <span class="tag">POLICY FIRST</span>
       <span class="tag">O3 OVERRIDES</span>
-      <span class="tag">ADR 0045</span>
+      <span class="tag">ADR 0051</span>
     </div>
   </div>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect, useRef, useId } = React;
     const { IconClose, IconBack, IconChevron, IconCheck, IconList } = window.RoutevaIcons;
 
     /* —— Tokens aligned to visual-system / Home —— */
@@ -138,39 +138,12 @@
       { id: 'compat', title: 'Compatibility', sub: 'Prefer widely reachable resolvers' },
     ];
     const OVERRIDE_DEMO = [
-      { id: 1, target: 'ChatGPT', kind: 'Service', action: 'Proxy', on: true },
-      { id: 2, target: 'intranet.corp', kind: 'Domain', action: 'Direct', on: true },
+      { id: 1, target: 'api.openai.com', action: 'Proxy', on: true },
+      { id: 2, target: 'intranet.corp', action: 'Direct', on: true },
     ];
-    const ACTIVITY_DEMO = [
-      { t: '9:14 AM', title: 'Connected', detail: 'HKG-01 · Probe OK' },
-      { t: '9:12 AM', title: 'Subscription updated', detail: 'Apex Transit · quiet refresh' },
-      { t: 'Yesterday', title: 'Node failover', detail: 'SJC-12 → HKG-01' },
-      { t: 'Yesterday', title: 'Repair completed', detail: 'DNS → Compatibility' },
-      { t: 'Mon', title: 'Mode changed', detail: 'Auto → Global' },
-    ];
-    const SNAP_DEMO = [
-      { id: 's1', title: 'Before Repair', when: 'Yesterday · 6:02 PM', note: 'DNS Compatibility attempt' },
-      { id: 's2', title: 'Before mode change', when: 'Mon · 11:20 AM', note: 'Auto → Global' },
-      { id: 's3', title: 'Before override', when: 'Sun · 8:44 PM', note: 'Added ChatGPT → Proxy' },
-    ];
-    const PRIVACY_BLOCKS = [
-      {
-        h: 'Data on this device',
-        b: 'Subscriptions, configuration, snapshots, and Activity stay on your iPhone. Routeva has no account.',
-      },
-      {
-        h: 'What we don’t collect by default',
-        b: 'Raw subscription tokens, full browsing history or domains, page content, and chat transcripts.',
-      },
-      {
-        h: 'Help & cloud assist',
-        b: 'In Help, cloud assist is on by default for low friction. Only temporary redacted analysis context is sent — never tokens or raw config — and it is not kept after help. Turn it off anytime in Help → How we use data.',
-      },
-      {
-        h: 'Diagnostics',
-        b: 'Core connection data stays local. Product analytics, if present, will be disclosed and optional.',
-      },
-    ];
+    /** About legal links open the public site (not in-app long pages). */
+    const PRIVACY_POLICY_URL = 'https://routeva.yilinglabs.com/privacy/';
+    const TERMS_OF_USE_URL = 'https://routeva.yilinglabs.com/terms/';
 
     function IosFrame({ children }) {
       const c = '#fff';
@@ -318,28 +291,39 @@
       );
     }
 
-    function Row({ label, value, onClick, last }) {
+    function Row({ label, subtitle, value, onClick, last }) {
       const clickable = typeof onClick === 'function';
       const style = {
-        width: '100%', minHeight: 52,
+        width: '100%', minHeight: subtitle ? 64 : 52,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: 12,
-        padding: `${L.rowPadY}px ${L.rowPadX}px`,
+        padding: `${subtitle ? 13 : L.rowPadY}px ${L.rowPadX}px`,
         border: 'none',
         cursor: clickable ? 'pointer' : 'default',
         background: 'transparent',
         borderBottom: last ? 'none' : `1px solid ${T.hairline}`,
         fontFamily: TYPE.font, textAlign: 'left', color: T.primary,
       };
+      const aria = subtitle ? `${label}. ${subtitle}` : label;
       const inner = (
         <>
-          <span style={{ fontSize: 16, fontWeight: 500, letterSpacing: '-0.01em' }}>
-            {label}
+          <span style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 16, fontWeight: 500, letterSpacing: '-0.01em' }}>
+              {label}
+            </span>
+            {subtitle && (
+              <span style={{
+                fontSize: 13, fontWeight: 500, color: T.muted, lineHeight: 1.3,
+                letterSpacing: '-0.01em',
+              }}>
+                {subtitle}
+              </span>
+            )}
           </span>
           <span style={{
             display: 'flex', alignItems: 'center', gap: 7,
             fontSize: 15, fontWeight: 500, color: T.secondary, flexShrink: 0,
-            maxWidth: '48%',
+            maxWidth: '36%',
           }}>
             {value != null && value !== '' && (
               <span style={{
@@ -358,12 +342,12 @@
       );
       if (clickable) {
         return (
-          <button type="button" onClick={onClick} style={style}>
+          <button type="button" onClick={onClick} style={style} aria-label={aria}>
             {inner}
           </button>
         );
       }
-      return <div style={style} role="group" aria-label={label}>{inner}</div>;
+      return <div style={style} role="group" aria-label={aria}>{inner}</div>;
     }
 
     function Primary({ children, wide, onClick, disabled }) {
@@ -399,39 +383,39 @@
       );
     }
 
-    function FootNote({ children }) {
-      return (
-        <p style={{
-          marginTop: 14, padding: '0 6px',
-          fontSize: 13, fontWeight: 500, lineHeight: 1.45,
-          color: T.muted, fontFamily: TYPE.font,
-        }}>
-          {children}
-        </p>
-      );
-    }
-
     /* —— Screens —— */
+
+    /** Connection row subtitles: explain the title (what it is), not options or when-to-change. */
+    const CONNECTION_ROW_SUB = {
+      mode: 'How traffic uses your proxy',
+      dns: 'How names resolve on your connection',
+      overrides: 'Exceptions for specific domains',
+    };
 
     function SettingsRoot({ onNav, modeLabel, dnsLabel, overrideCount }) {
       return (
         <Shell title="Settings" left={<GlassOrb label="Close"><IconClose /></GlassOrb>}>
           <SectionLabel first>Connection</SectionLabel>
           <Group>
-            <Row label="Routing mode" value={modeLabel} onClick={() => onNav('mode')} />
-            <Row label="DNS" value={dnsLabel} onClick={() => onNav('dns')} />
+            <Row
+              label="Routing mode"
+              subtitle={CONNECTION_ROW_SUB.mode}
+              value={modeLabel}
+              onClick={() => onNav('mode')}
+            />
+            <Row
+              label="DNS"
+              subtitle={CONNECTION_ROW_SUB.dns}
+              value={dnsLabel}
+              onClick={() => onNav('dns')}
+            />
             <Row
               label="Overrides"
+              subtitle={CONNECTION_ROW_SUB.overrides}
               value={overrideCount === 0 ? 'None' : `${overrideCount}`}
               onClick={() => onNav('overrides')}
               last
             />
-          </Group>
-
-          <SectionLabel>History</SectionLabel>
-          <Group>
-            <Row label="Activity" onClick={() => onNav('activity')} />
-            <Row label="Snapshots" onClick={() => onNav('snapshots')} last />
           </Group>
 
           <SectionLabel>App</SectionLabel>
@@ -505,115 +489,183 @@
           aria-label={label || 'Toggle'}
           onClick={() => onChange && onChange(!on)}
           style={{
-            width: 50, height: 30, borderRadius: 999, flexShrink: 0,
+            /* Visible track 50×30; padded hit target ≥44×44 for touch */
+            width: 44, height: 44, flexShrink: 0,
             border: 'none', padding: 0, cursor: 'pointer',
-            background: on
-              ? 'linear-gradient(160deg, #6fd4a8 0%, #3aa878 100%)'
-              : 'rgba(255,255,255,0.15)',
-            boxShadow: on
-              ? 'inset 0 1px 0 rgba(255,255,255,0.35), 0 0 0 0.5px rgba(127,217,176,0.25)'
-              : 'inset 0 1px 0 rgba(255,255,255,0.08)',
+            background: 'transparent',
             position: 'relative',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <span style={{
-            position: 'absolute', top: 2.5, left: on ? 22 : 2.5,
-            width: 25, height: 25, borderRadius: 999, background: '#fff',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.28)',
-            transition: 'left 0.15s ease',
-            pointerEvents: 'none',
-          }} />
+          <span
+            aria-hidden="true"
+            style={{
+              display: 'block', width: 50, height: 30, borderRadius: 999,
+              background: on
+                ? 'linear-gradient(160deg, #6fd4a8 0%, #3aa878 100%)'
+                : 'rgba(255,255,255,0.15)',
+              boxShadow: on
+                ? 'inset 0 1px 0 rgba(255,255,255,0.35), 0 0 0 0.5px rgba(127,217,176,0.25)'
+                : 'inset 0 1px 0 rgba(255,255,255,0.08)',
+              position: 'relative',
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 2.5, left: on ? 22 : 2.5,
+              width: 25, height: 25, borderRadius: 999, background: '#fff',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.28)',
+              transition: 'left 0.15s ease',
+              pointerEvents: 'none',
+            }} />
+          </span>
         </button>
       );
     }
 
-    function OverridesScreen({ items, onBack, onAdd, onToggle }) {
-      const full = items.length >= 20;
+    function OverridesScreen({ items, onBack, onAdd, onToggle, onRemove }) {
       return (
         <Shell
           title="Overrides"
           left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}
           footer={
-            <Primary wide onClick={onAdd} disabled={full}>
-              {full ? 'Limit reached (20)' : 'Add exception'}
+            <Primary wide onClick={onAdd}>
+              Add exception
             </Primary>
           }
         >
           {items.length === 0 ? (
-            <div style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', padding: '28px 22px', textAlign: 'center',
-            }}>
+            <div
+              role="status"
+              style={{
+                flex: 1, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                /* Footer steals bottom weight — bias stack slightly upward for optical center */
+                padding: '20px 28px 36px',
+                textAlign: 'center',
+              }}
+            >
               <div style={{
-                width: 52, height: 52, borderRadius: 16, marginBottom: 18,
-                background: 'rgba(255,255,255,0.06)',
-                border: `1px solid ${T.cardBorder}`,
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: T.muted,
-              }} aria-hidden="true">
-                <IconList size={24} stroke={1.75} />
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                width: '100%', maxWidth: 300,
+              }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 14, marginBottom: 20,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${T.cardBorder}`,
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.48)',
+                }} aria-hidden="true">
+                  <IconList size={22} stroke={1.6} />
+                </div>
+                <h2 style={{
+                  margin: 0, fontSize: 22, fontWeight: 700, color: T.primary,
+                  letterSpacing: '-0.025em', lineHeight: 1.2,
+                  textWrap: 'balance', fontFamily: TYPE.font,
+                }}>
+                  No exceptions yet
+                </h2>
+                {/* How-to: primary body — one clear action sentence */}
+                <p style={{
+                  margin: '12px 0 0', fontSize: 15, fontWeight: 500,
+                  color: T.secondary, lineHeight: 1.45,
+                  maxWidth: '28ch', textWrap: 'pretty',
+                }}>
+                  Pin a domain to proxy or direct when Auto isn’t enough.
+                </p>
+                {/* Boundary: quieter second beat — O3 “not a full rule set” */}
+                <p style={{
+                  margin: '8px 0 0', fontSize: 14, fontWeight: 500,
+                  color: T.muted, lineHeight: 1.4,
+                  maxWidth: '26ch', textWrap: 'pretty',
+                }}>
+                  A few exceptions, not a full rule set.
+                </p>
+                {/* Constraint chip — scannable, not a third paragraph */}
+                <div style={{
+                  marginTop: 18,
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${T.cardBorder}`,
+                  fontSize: 12, fontWeight: 600, letterSpacing: '0.02em',
+                  color: T.muted, lineHeight: 1.2,
+                }}>
+                  One domain each
+                </div>
               </div>
-              <div style={{
-                fontSize: 20, fontWeight: 700, color: T.primary, letterSpacing: '-0.02em',
-              }}>
-                No exceptions yet
-              </div>
-              <p style={{
-                marginTop: 10, fontSize: 14, fontWeight: 500, color: T.secondary,
-                lineHeight: 1.5, maxWidth: '30ch',
-              }}>
-                Pin a site to proxy or direct when Auto isn’t enough — a few exceptions, not a full rule set.
-              </p>
-              <p style={{
-                marginTop: 14, fontSize: 12, fontWeight: 500, color: T.quiet,
-                lineHeight: 1.4, maxWidth: '28ch',
-              }}>
-                Up to 20 · service presets or one domain each
-              </p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: L.sectionGapFirst }}>
               <p style={{
                 margin: '0 4px 2px', fontSize: 13, fontWeight: 500,
-                color: T.muted, lineHeight: 1.4, maxWidth: '42ch',
+                color: T.muted, lineHeight: 1.45, maxWidth: '42ch', textWrap: 'pretty',
               }}>
-                A few fixed paths for sites that need them — not a full rule set.
+                Domain exceptions for Auto — not a full rule set.
               </p>
-              {items.map((r) => (
-                <div key={r.id} style={{
-                  borderRadius: L.cardR,
-                  padding: '15px 16px',
-                  background: T.card,
-                  border: `1px solid ${T.cardBorder}`,
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14,
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 16, fontWeight: 600, color: T.primary, letterSpacing: '-0.01em',
-                    }}>
-                      {r.target}
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {items.map((r) => {
+                  const viaProxy = r.action === 'Proxy';
+                  const actionLabel = viaProxy ? 'Via proxy' : 'Direct';
+                  return (
+                  <li
+                    key={r.id}
+                    style={{
+                      borderRadius: L.cardR,
+                      padding: '14px 12px 14px 16px',
+                      background: T.card,
+                      border: `1px solid ${T.cardBorder}`,
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      opacity: r.on ? 1 : 0.55,
+                    }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{
+                        fontSize: 16, fontWeight: 600, color: T.primary, letterSpacing: '-0.01em',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {r.target}
+                      </div>
+                      <div style={{
+                        marginTop: 6, display: 'inline-flex', alignItems: 'center',
+                        padding: '3px 8px', borderRadius: 8,
+                        fontSize: 12, fontWeight: 600, letterSpacing: '0.01em',
+                        color: viaProxy ? T.mint : T.muted,
+                        background: viaProxy ? T.mintSoft : 'rgba(255,255,255,0.06)',
+                        border: `1px solid ${viaProxy ? T.mintBorder : T.cardBorder}`,
+                      }}>
+                        {actionLabel}
+                      </div>
                     </div>
-                    <div style={{
-                      marginTop: 5, fontSize: 12, fontWeight: 500, color: T.muted, letterSpacing: '0.01em',
-                    }}>
-                      {r.kind} · {r.action}
-                    </div>
-                  </div>
-                  <Toggle
-                    on={r.on}
-                    label={`${r.target} ${r.action}`}
-                    onChange={(next) => onToggle && onToggle(r.id, next)}
-                  />
-                </div>
-              ))}
-              <p style={{
-                margin: '4px 4px 0', fontSize: 12, fontWeight: 500,
-                color: T.quiet, lineHeight: 1.35,
-              }}>
-                {items.length} of 20
-              </p>
+                    <Toggle
+                      on={r.on}
+                      label={`${r.on ? 'On' : 'Off'}: ${r.target}, ${actionLabel}`}
+                      onChange={(next) => onToggle && onToggle(r.id, next)}
+                    />
+                    {typeof onRemove === 'function' && (
+                      <button
+                        type="button"
+                        aria-label={`Remove ${r.target}`}
+                        onClick={() => onRemove(r.id)}
+                        style={{
+                          width: 44, height: 44, flexShrink: 0, margin: '-4px -4px -4px 0',
+                          border: 'none', borderRadius: 12, cursor: 'pointer',
+                          background: 'transparent', color: T.muted,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: TYPE.font,
+                        }}
+                      >
+                        <span aria-hidden="true" style={{ display: 'flex' }}>
+                          <IconClose size={18} stroke={1.75} />
+                        </span>
+                      </button>
+                    )}
+                  </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
         </Shell>
@@ -637,7 +689,7 @@
                 aria-checked={on}
                 onClick={() => onChange(t)}
                 style={{
-                  flex: 1, padding: '12px 10px', borderRadius: 14, textAlign: 'center',
+                  flex: 1, minHeight: 44, padding: '12px 10px', borderRadius: 12, textAlign: 'center',
                   fontSize: 14, fontWeight: 600, fontFamily: TYPE.font, cursor: 'pointer',
                   border: on ? `1px solid ${T.mintBorder}` : `1px solid ${T.cardBorder}`,
                   background: on ? T.mintSoft : 'rgba(255,255,255,0.06)',
@@ -652,81 +704,373 @@
       );
     }
 
-    function AddOverrideSheet({ onClose }) {
-      const [targetKind, setTargetKind] = useState('Service');
-      const [action, setAction] = useState('Proxy');
+    function FieldLabel({ id, children, compact }) {
+      return (
+        <label
+          htmlFor={id}
+          style={{
+            display: 'block',
+            fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
+            textTransform: 'uppercase', color: T.quiet,
+            marginBottom: compact ? 6 : 8,
+            fontFamily: TYPE.font,
+          }}
+        >
+          {children}
+        </label>
+      );
+    }
+
+    /**
+     * Stylized iOS keyboard chrome for hi-fi (not a working keyboard).
+     * Height ~291pt — typical portrait soft-keyboard band on 393-wide phones.
+     */
+    function KeyboardMock({ suggestions }) {
+      const KeyCap = ({ label, flex = 1, dark, small, h }) => (
+        <div
+          style={{
+            flex,
+            height: h || 42,
+            borderRadius: 8,
+            background: dark
+              ? 'rgba(255,255,255,0.12)'
+              : 'rgba(255,255,255,0.22)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: small ? 13 : 17,
+            fontWeight: 400,
+            color: 'rgba(255,255,255,0.92)',
+            fontFamily: TYPE.font,
+            boxShadow: '0 1px 0 rgba(0,0,0,0.35)',
+          }}
+        >
+          {label}
+        </div>
+      );
+      const row = (children, gap = 6) => (
+        <div style={{ display: 'flex', gap, marginBottom: 8, padding: '0 3px' }}>
+          {children}
+        </div>
+      );
       return (
         <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-override-title"
+          aria-hidden="true"
           style={{
-            position: 'absolute', inset: 0, zIndex: 30,
-            background: 'rgba(0,0,0,0.48)',
-            display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+            flexShrink: 0,
+            height: 291,
+            background: 'linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 12%, #2c2c2e 100%)',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            padding: '6px 4px 10px',
+            boxSizing: 'border-box',
           }}
         >
           <div style={{
-            borderRadius: '24px 24px 0 0',
-            background: 'linear-gradient(168deg, #353b42 0%, #1a1f24 55%, #101418 100%)',
-            border: `1px solid ${T.cardBorder}`,
-            boxShadow: '0 -12px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
-            padding: '12px 20px 34px',
+            display: 'flex', gap: 0, height: 36, marginBottom: 6,
+            alignItems: 'center', justifyContent: 'space-evenly',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
           }}>
+            {(suggestions || ['.com', '.net', '.org']).map((s, i) => (
+              <div
+                key={s}
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  fontSize: 15,
+                  fontWeight: 400,
+                  color: 'rgba(255,255,255,0.88)',
+                  fontFamily: TYPE.font,
+                  borderRight: i < 2 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                }}
+              >
+                {s}
+              </div>
+            ))}
+          </div>
+          {row(['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'].map((c) => (
+            <KeyCap key={c} label={c} />
+          )))}
+          {row(['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'].map((c) => (
+            <KeyCap key={c} label={c} />
+          )))}
+          {row([
+            <KeyCap key="shift" label="⇧" flex={1.2} dark />,
+            ...['Z', 'X', 'C', 'V', 'B', 'N', 'M'].map((c) => (
+              <KeyCap key={c} label={c} />
+            )),
+            <KeyCap key="del" label="⌫" flex={1.2} dark />,
+          ])}
+          {row([
+            <KeyCap key="abc" label="ABC" flex={1.15} dark small h={44} />,
+            <KeyCap key="space" label="space" flex={4} h={44} />,
+            <KeyCap key="return" label="return" flex={1.35} dark small h={44} />,
+          ])}
+        </div>
+      );
+    }
+
+    function AddOverrideSheet({
+      onClose,
+      onSave,
+      initialAction = 'Proxy',
+      /** Empty for interactive add; storyboard 4c passes a filled demo domain. */
+      initialDomain = '',
+      /** Force keyboard-open chrome (storyboard 4c). */
+      forceKeyboard = false,
+      showKeyboardChrome = false,
+    }) {
+      const [action, setAction] = useState(initialAction);
+      const [domain, setDomain] = useState(initialDomain);
+      const [error, setError] = useState('');
+      const [domainFocused, setDomainFocused] = useState(!!forceKeyboard);
+      const titleId = useId();
+      const descId = useId();
+      const domainId = useId();
+      const errorId = useId();
+      const panelRef = useRef(null);
+      const domainRef = useRef(null);
+      const blurTimer = useRef(null);
+
+      const keyboardOpen = forceKeyboard || (showKeyboardChrome && domainFocused);
+      /** Compact form when keyboard claims the lower half of the phone. */
+      const compact = keyboardOpen;
+      const showFocusRing = domainFocused || forceKeyboard;
+
+      useEffect(() => {
+        const t = window.setTimeout(() => {
+          if (domainRef.current) {
+            domainRef.current.focus();
+            if (forceKeyboard && initialDomain) domainRef.current.select();
+          }
+        }, 30);
+        return () => window.clearTimeout(t);
+      }, [forceKeyboard, initialDomain]);
+
+      useEffect(() => {
+        const onKey = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            onClose && onClose();
+            return;
+          }
+          if (e.key !== 'Tab' || !panelRef.current) return;
+          const focusable = panelRef.current.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), [role="radio"], [tabindex]:not([tabindex="-1"])'
+          );
+          const list = Array.prototype.slice.call(focusable).filter((el) => el.offsetParent !== null);
+          if (list.length === 0) return;
+          const first = list[0];
+          const last = list[list.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [onClose]);
+
+      useEffect(() => () => {
+        if (blurTimer.current) window.clearTimeout(blurTimer.current);
+      }, []);
+
+      const handleSave = () => {
+        const d = domain.trim().toLowerCase();
+        if (!d) {
+          setError('Enter a single domain, like example.com.');
+          domainRef.current && domainRef.current.focus();
+          return;
+        }
+        if (/[*\s/]/.test(d) || d.includes('..') || d.startsWith('.')) {
+          setError('Use one domain only — no wildcards, paths, or spaces.');
+          domainRef.current && domainRef.current.focus();
+          return;
+        }
+        setError('');
+        if (onSave) {
+          onSave({ target: d, action, on: true });
+        } else {
+          onClose && onClose();
+        }
+      };
+
+      const fieldShell = {
+        width: '100%',
+        padding: compact ? '12px 14px' : '14px 16px',
+        borderRadius: 12,
+        background: 'rgba(255,255,255,0.06)',
+        border: `1px solid ${error ? 'rgba(255,140,120,0.55)' : (showFocusRing ? T.mintBorder : T.cardBorder)}`,
+        fontSize: 16,
+        fontWeight: 500,
+        color: T.primary,
+        fontFamily: TYPE.font,
+        boxSizing: 'border-box',
+        fontVariantNumeric: 'tabular-nums',
+      };
+
+      const sectionLabel = {
+        fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
+        textTransform: 'uppercase', color: T.quiet,
+        marginBottom: compact ? 6 : 8,
+      };
+
+      return (
+        <div
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !compact) onClose && onClose();
+          }}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 30,
+            background: 'rgba(0,0,0,0.48)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <div style={{ flex: 1, minHeight: 0 }} aria-hidden="true" />
+
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            aria-describedby={compact ? undefined : descId}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              flexShrink: 0,
+              borderRadius: compact ? '20px 20px 0 0' : '28px 28px 0 0',
+              background: 'linear-gradient(168deg, #353b42 0%, #1a1f24 55%, #101418 100%)',
+              border: `1px solid ${T.cardBorder}`,
+              borderBottom: keyboardOpen ? 'none' : undefined,
+              boxShadow: '0 -12px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
+              padding: compact ? '8px 16px 12px' : '12px 20px 34px',
+              maxHeight: keyboardOpen ? 'none' : '92%',
+              overflowY: compact ? 'visible' : 'auto',
+              overscrollBehavior: 'contain',
+            }}
+          >
             <div style={{
               width: 36, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.22)',
-              margin: '0 auto 18px',
+              margin: compact ? '0 auto 10px' : '0 auto 16px',
             }} aria-hidden="true" />
-            <div
-              id="add-override-title"
-              style={{
-                fontSize: 18, fontWeight: 700, color: T.primary,
-                letterSpacing: '-0.02em', marginBottom: 6,
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: compact ? 12 : 8,
+            }}>
+              <h2
+                id={titleId}
+                style={{
+                  margin: 0,
+                  fontSize: compact ? 17 : 18, fontWeight: 700, color: T.primary,
+                  letterSpacing: '-0.02em',
+                  fontFamily: TYPE.font, textWrap: 'balance',
+                  flex: 1, minWidth: 0,
+                }}
+              >
+                Add exception
+              </h2>
+              {compact && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    border: 'none', background: 'transparent', cursor: 'pointer',
+                    color: T.mint, fontFamily: TYPE.font, fontSize: 16, fontWeight: 600,
+                    padding: '8px 4px', minHeight: 44, flexShrink: 0,
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            {!compact && (
+              <p
+                id={descId}
+                style={{
+                  margin: '0 0 14px', fontSize: 13, fontWeight: 500,
+                  color: T.secondary, lineHeight: 1.45,
+                }}
+              >
+                One domain only — no wildcards or rule language.
+              </p>
+            )}
+
+            <FieldLabel id={domainId} compact={compact}>Domain</FieldLabel>
+            <input
+              ref={domainRef}
+              id={domainId}
+              type="text"
+              name="domain"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              autoComplete="off"
+              enterKeyHint="done"
+              placeholder="example.com"
+              value={domain}
+              aria-invalid={error ? 'true' : 'false'}
+              aria-describedby={error ? errorId : (compact ? undefined : `${domainId}-hint`)}
+              onFocus={() => {
+                if (blurTimer.current) window.clearTimeout(blurTimer.current);
+                setDomainFocused(true);
+                window.setTimeout(() => {
+                  domainRef.current && domainRef.current.scrollIntoView({
+                    block: 'nearest', behavior: 'smooth',
+                  });
+                }, 50);
               }}
-            >
-              Add exception
-            </div>
-            <p style={{
-              margin: '0 0 16px', fontSize: 13, fontWeight: 500,
-              color: T.secondary, lineHeight: 1.4,
-            }}>
-              One service or domain. No regex, wildcards, or rule language.
-            </p>
-            <div style={{
-              fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
-              textTransform: 'uppercase', color: T.quiet, marginBottom: 8,
-            }}>
-              Target
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <Segmented
-                label="Target type"
-                options={['Service', 'Domain']}
-                value={targetKind}
-                onChange={setTargetKind}
-              />
-            </div>
-            <div style={{
-              padding: '14px 16px', borderRadius: 14, marginBottom: 6,
-              background: 'rgba(255,255,255,0.06)', border: `1px solid ${T.cardBorder}`,
-              fontSize: 15, fontWeight: 500, color: T.secondary, fontFamily: TYPE.font,
-            }}>
-              {targetKind === 'Service' ? 'ChatGPT' : 'example.com'}
-            </div>
-            <p style={{
-              margin: '0 0 16px', fontSize: 12, fontWeight: 500, color: T.quiet, lineHeight: 1.35,
-            }}>
-              {targetKind === 'Service'
-                ? 'Pick from curated services — preferred path.'
-                : 'A single domain only (no *.example.com patterns).'}
-            </p>
-            <div style={{
-              fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
-              textTransform: 'uppercase', color: T.quiet, marginBottom: 8,
-            }}>
-              Action
-            </div>
-            <div style={{ marginBottom: 20 }}>
+              onBlur={() => {
+                blurTimer.current = window.setTimeout(() => setDomainFocused(false), 180);
+              }}
+              onChange={(e) => {
+                setDomain(e.target.value);
+                if (error) setError('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSave();
+                }
+              }}
+              style={{
+                ...fieldShell,
+                marginBottom: error || !compact ? 6 : 10,
+                outline: 'none',
+                caretColor: T.mint,
+                boxShadow: showFocusRing && !error
+                  ? `0 0 0 2px ${T.mintBorder}, inset 0 1px 0 rgba(255,255,255,0.06)`
+                  : error
+                    ? '0 0 0 2px rgba(255,140,120,0.35)'
+                    : 'inset 0 1px 0 rgba(255,255,255,0.06)',
+              }}
+            />
+            {(error || !compact) && (
+              <p
+                id={error ? errorId : `${domainId}-hint`}
+                role={error ? 'alert' : undefined}
+                style={{
+                  margin: compact ? '0 0 10px' : '0 0 14px',
+                  fontSize: 13, fontWeight: 500,
+                  color: error ? 'rgba(255,170,150,0.95)' : T.muted,
+                  lineHeight: 1.35,
+                }}
+              >
+                {error || 'Example: api.example.com'}
+              </p>
+            )}
+
+            <div style={sectionLabel}>Action</div>
+            <div style={{ marginBottom: compact ? 10 : 10 }}>
               <Segmented
                 label="Action"
                 options={['Proxy', 'Direct']}
@@ -734,166 +1078,45 @@
                 onChange={setAction}
               />
             </div>
-            <Primary wide onClick={onClose}>Save</Primary>
-            <div style={{ height: 10 }} />
-            <Ghost onClick={onClose}>Cancel</Ghost>
+            <p style={{
+              margin: compact ? '0 0 12px' : '0 0 18px',
+              fontSize: 13, fontWeight: 500, color: T.muted, lineHeight: 1.35,
+              /* Keep one-line consequence in compact so Proxy/Direct stay clear with keyboard up */
+              minHeight: compact ? '1.35em' : undefined,
+            }}>
+              {action === 'Proxy'
+                ? (compact ? 'Via proxy in Auto' : 'Send this domain through the proxy in Auto.')
+                : (compact ? 'Direct in Auto' : 'Bypass the proxy for this domain in Auto.')}
+            </p>
+
+            <Primary wide onClick={handleSave}>
+              Save exception
+            </Primary>
+            {!compact && (
+              <>
+                <div style={{ height: 10 }} />
+                <Ghost onClick={onClose}>Cancel</Ghost>
+              </>
+            )}
           </div>
+
+          {keyboardOpen && (
+            <KeyboardMock suggestions={['.com', '.net', '.org']} />
+          )}
         </div>
       );
     }
 
-    function ActivityScreen({ onBack }) {
-      return (
-        <Shell title="Activity" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>} scrollFade>
-          <div style={{ marginTop: L.sectionGapFirst }}>
-            <Group>
-              {ACTIVITY_DEMO.map((e, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex', gap: 12, alignItems: 'flex-start',
-                    padding: '14px 16px',
-                    borderBottom: i === ACTIVITY_DEMO.length - 1 ? 'none' : `1px solid ${T.hairline}`,
-                  }}
-                >
-                  <div style={{
-                    width: 8, height: 8, borderRadius: 999, flexShrink: 0, marginTop: 6,
-                    background: i === 0 ? T.mint : 'rgba(255,255,255,0.22)',
-                    boxShadow: i === 0 ? '0 0 8px rgba(127,217,176,0.45)' : 'none',
-                  }} aria-hidden="true" />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'baseline',
-                    }}>
-                      <div style={{
-                        fontSize: 15, fontWeight: 600, color: T.primary, letterSpacing: '-0.01em',
-                      }}>
-                        {e.title}
-                      </div>
-                      <div style={{
-                        fontSize: 12, fontWeight: 500, color: T.quiet, flexShrink: 0,
-                      }}>
-                        {e.t}
-                      </div>
-                    </div>
-                    <div style={{
-                      marginTop: 4, fontSize: 13, fontWeight: 500, color: T.secondary, lineHeight: 1.35,
-                    }}>
-                      {e.detail}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </Group>
-          </div>
-        </Shell>
-      );
+
+    function openExternal(url) {
+      try {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } catch (_) {
+        window.location.href = url;
+      }
     }
 
-    function SnapshotsScreen({ onBack }) {
-      return (
-        <Shell title="Snapshots" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>} scrollFade>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: L.sectionGapFirst }}>
-            {SNAP_DEMO.map((s, i) => (
-              <div key={s.id} style={{
-                borderRadius: L.cardR,
-                padding: '16px',
-                background: i === 0
-                  ? 'linear-gradient(155deg, rgba(40,56,52,0.88) 0%, rgba(18,24,22,0.96) 100%)'
-                  : T.card,
-                border: i === 0
-                  ? `1px solid ${T.mintBorder}`
-                  : `1px solid ${T.cardBorder}`,
-                boxShadow: i === 0
-                  ? '0 12px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(127,217,176,0.12)'
-                  : 'inset 0 1px 0 rgba(255,255,255,0.08)',
-              }}>
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10,
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 16, fontWeight: 600, color: T.primary, letterSpacing: '-0.01em',
-                    }}>
-                      {s.title}
-                    </div>
-                    <div style={{
-                      marginTop: 5, fontSize: 13, fontWeight: 500, color: T.secondary,
-                    }}>
-                      {s.when}
-                    </div>
-                    <div style={{
-                      marginTop: 6, fontSize: 12, fontWeight: 500, color: T.muted, lineHeight: 1.35,
-                    }}>
-                      {s.note}
-                    </div>
-                  </div>
-                  {i === 0 && (
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
-                      textTransform: 'uppercase', color: 'rgba(180,240,210,0.95)',
-                      padding: '4px 8px', borderRadius: 999,
-                      background: 'rgba(80,200,150,0.14)',
-                      border: '1px solid rgba(127,217,176,0.3)',
-                      flexShrink: 0,
-                    }}>
-                      Latest
-                    </span>
-                  )}
-                </div>
-                <button type="button" style={{
-                  marginTop: 14, border: '1px solid rgba(255,255,255,0.14)',
-                  background: 'rgba(255,255,255,0.07)', borderRadius: 13,
-                  padding: '11px 14px', fontSize: 14, fontWeight: 600,
-                  color: T.primary, fontFamily: TYPE.font, cursor: 'pointer', width: '100%',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
-                }}>
-                  Restore…
-                </button>
-              </div>
-            ))}
-          </div>
-          <FootNote>Kept for about 7 days or the last 10 snapshots.</FootNote>
-        </Shell>
-      );
-    }
-
-    function PrivacyScreen({ onBack }) {
-      return (
-        <Shell
-          title="Privacy Policy"
-          left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}
-          scrollFade
-          footer={<Ghost>Full policy</Ghost>}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: L.sectionGapFirst }}>
-            {PRIVACY_BLOCKS.map((x) => (
-              <div key={x.h} style={{
-                borderRadius: L.cardR,
-                padding: '15px 16px',
-                background: T.card,
-                border: `1px solid ${T.cardBorder}`,
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
-              }}>
-                <div style={{
-                  fontSize: 15, fontWeight: 700, color: T.primary,
-                  letterSpacing: '-0.01em', marginBottom: 7,
-                }}>
-                  {x.h}
-                </div>
-                <div style={{
-                  fontSize: 14, fontWeight: 500, color: T.secondary, lineHeight: 1.48,
-                }}>
-                  {x.b}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Shell>
-      );
-    }
-
-    function AboutScreen({ onBack, onPrivacy }) {
+    function AboutScreen({ onBack }) {
       return (
         <Shell title="About" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}>
           <div style={{
@@ -919,8 +1142,16 @@
 
           <SectionLabel>Links</SectionLabel>
           <Group>
-            <Row label="Privacy Policy" onClick={onPrivacy || (() => {})} />
-            <Row label="Terms of Use" onClick={() => {}} />
+            <Row
+              label="Privacy Policy"
+              subtitle="How we handle your data"
+              onClick={() => openExternal(PRIVACY_POLICY_URL)}
+            />
+            <Row
+              label="Terms of Use"
+              subtitle="Rules for using Routeva"
+              onClick={() => openExternal(TERMS_OF_USE_URL)}
+            />
             <Row label="Support" onClick={() => {}} last />
           </Group>
 
@@ -1001,22 +1232,28 @@
               onToggle={(id, next) => {
                 setOverrides((list) => list.map((r) => (r.id === id ? { ...r, on: next } : r)));
               }}
+              onRemove={(id) => {
+                setOverrides((list) => list.filter((r) => r.id !== id));
+              }}
             />
-            {showAdd && <AddOverrideSheet onClose={() => setShowAdd(false)} />}
+            {showAdd && (
+              <AddOverrideSheet
+                showKeyboardChrome
+                onClose={() => setShowAdd(false)}
+                onSave={(item) => {
+                  setOverrides((list) => {
+                    const id = (list.reduce((m, r) => Math.max(m, r.id), 0) || 0) + 1;
+                    return [...list, { id, ...item }];
+                  });
+                  setShowAdd(false);
+                }}
+              />
+            )}
           </div>
         );
-      } else if (screen === 'activity') {
-        body = <ActivityScreen onBack={() => setScreen('root')} />;
-      } else if (screen === 'snapshots') {
-        body = <SnapshotsScreen onBack={() => setScreen('root')} />;
-      } else if (screen === 'privacy') {
-        body = <PrivacyScreen onBack={() => setScreen('about')} />;
       } else if (screen === 'about') {
         body = (
-          <AboutScreen
-            onBack={() => setScreen('root')}
-            onPrivacy={() => setScreen('privacy')}
-          />
+          <AboutScreen onBack={() => setScreen('root')} />
         );
       } else if (screen === 'subs') {
         body = <SubsPlaceholder onBack={() => setScreen('root')} />;
@@ -1041,7 +1278,7 @@
           </div>
           <div className="row">
             <div className="phone-col">
-              <div className="lab">1 · Root<span>Connection · History · App</span></div>
+              <div className="lab">1 · Root<span>Connection · App · no History</span></div>
               {frame(
                 <SettingsRoot onNav={() => {}} modeLabel="Auto" dnsLabel="Automatic" overrideCount={2} />
               )}
@@ -1077,26 +1314,41 @@
               )}
             </div>
             <div className="phone-col">
-              <div className="lab">4b · Overrides list<span>Hint + toggles · Add exception</span></div>
+              <div className="lab">4b · Overrides list<span>Hint + toggle + remove · Add exception</span></div>
               {frame(
-                <OverridesScreen items={OVERRIDE_DEMO} onBack={() => {}} onAdd={() => {}} onToggle={() => {}} />
+                <OverridesScreen
+                  items={OVERRIDE_DEMO}
+                  onBack={() => {}}
+                  onAdd={() => {}}
+                  onToggle={() => {}}
+                  onRemove={() => {}}
+                />
               )}
             </div>
             <div className="phone-col">
-              <div className="lab">5 · Activity<span>Timeline in glass group</span></div>
-              {frame(<ActivityScreen onBack={() => {}} />)}
+              <div className="lab">4c · Add exception<span>Domain + keyboard · compact sheet</span></div>
+              {frame(
+                <div style={{ height: '100%', position: 'relative' }}>
+                  <OverridesScreen
+                    items={OVERRIDE_DEMO}
+                    onBack={() => {}}
+                    onAdd={() => {}}
+                    onToggle={() => {}}
+                    onRemove={() => {}}
+                  />
+                  <AddOverrideSheet
+                    onClose={() => {}}
+                    initialAction="Proxy"
+                    initialDomain="example.com"
+                    forceKeyboard
+                    showKeyboardChrome
+                  />
+                </div>
+              )}
             </div>
             <div className="phone-col">
-              <div className="lab">6 · Snapshots<span>Latest card + Restore</span></div>
-              {frame(<SnapshotsScreen onBack={() => {}} />)}
-            </div>
-            <div className="phone-col">
-              <div className="lab">7 · About<span>Privacy promise · links · export</span></div>
-              {frame(<AboutScreen onBack={() => {}} onPrivacy={() => {}} />)}
-            </div>
-            <div className="phone-col">
-              <div className="lab">8 · Privacy Policy<span>From About › not Settings root</span></div>
-              {frame(<PrivacyScreen onBack={() => {}} />)}
+              <div className="lab">5 · About<span>Privacy Policy → web · export</span></div>
+              {frame(<AboutScreen onBack={() => {}} />)}
             </div>
           </div>
         </>

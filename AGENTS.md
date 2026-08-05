@@ -6,14 +6,15 @@
 - **Slug：** routeva
 - **仓库：** https://github.com/zyhang/Routeva
 - **Primary Type：** ios
-- **Secondary Types：** 无
-- **Types：** ios
+- **Secondary Types：** android
+- **Types：** ios, android
+- **Code Layout：** Dual-Native（`app/ios/` + `app/android/`）
 
 ## 本仓库是什么
 
 **AI 快速开发用 Product Workspace**：文档、设计、GTM、官网占位、代码区的标准容器。  
 素材 / 代码 / 文档常由 AI 生成——**必须按域落盘**。  
-源码只在 `app/`；营销站只在 `website/`。
+源码在 `app/`（双端原生：`app/ios/` · `app/android/`）；营销站只在 `website/`。
 
 ## 内容分层
 
@@ -30,7 +31,7 @@
 
 | 产物 | 位置 |
 |---|---|
-| 可运行应用代码 | `app/` |
+| 可运行应用代码 | `app/ios/` · `app/android/`（Dual-Native） |
 | 营销站代码/内容 | `website/` |
 | 线框/高保真 | `design/**/current/`（探索在 `_explore/`） |
 | 商店与宣发素材、文案 | `gtm/` |

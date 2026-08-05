@@ -508,7 +508,7 @@
       );
     }
 
-    /** Placeholder only — full Settings IA lives in 05-settings.html */
+    /** Placeholder only — full Settings IA lives in 05-settings.html (ADR 0051: Connection → App, no History) */
     function SettingsDeepLink() {
       const sections = [
         {
@@ -517,13 +517,6 @@
             { label: 'Routing mode', value: 'Auto' },
             { label: 'DNS', value: 'Automatic' },
             { label: 'Overrides', value: '2' },
-          ],
-        },
-        {
-          title: 'History',
-          rows: [
-            { label: 'Activity', value: null, chevron: true },
-            { label: 'Snapshots', value: null, chevron: true },
           ],
         },
         {

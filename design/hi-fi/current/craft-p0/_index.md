@@ -29,9 +29,12 @@
 | 文档 | 内容 |
 |---|---|
 | [00-ia.md](../../wireframes/current/craft-p0/00-ia.md) | IA + 故事板 |
-| [CONTEXT.md](../../../CONTEXT.md) | Home Surface / **Home Chrome** / Subscriptions Surface |
+| [CONTEXT.md](../../../CONTEXT.md) | Home Surface / **Home Chrome** / Settings Surface / Subscriptions / Agent |
+| [PRD §4.10](../../../docs/prd/PRD.md) | 信息架构（与本目录对齐） |
 | [ADR 0018](../../../docs/adr/0018-home-surface-minimal.md) | Home 中部极简 |
-| [ADR 0020](../../../docs/adr/0020-home-chrome-agent-subscriptions-settings.md) | 顶栏 Agent · Subscriptions · Settings |
+| [ADR 0020](../../../docs/adr/0020-home-chrome-agent-subscriptions-settings.md) | 顶栏 Help · Subscriptions · Settings |
+| [ADR 0042](../../../docs/adr/0042-help-cloud-default-on.md) | Help Cloud 默认开 |
+| [ADR 0051](../../../docs/adr/0051-settings-no-history-section.md) | Settings 无 History 段 |
 
 ## Subscriptions 故事板
 
@@ -47,15 +50,13 @@
 | # | 状态 | 备注 |
 |---|---|---|
 | Interactive | 全导航 | 改 Mode/DNS；Overrides Add sheet |
-| 1 | Root | Connection · History · App 闭集 |
+| 1 | Root | **Connection · App**；Connection 三行各带**释义副文**（非场景/非选项）；**无** History（ADR **0051**） |
 | 2 | Routing mode | Auto / Global / Direct |
 | 3 | DNS | Automatic / Privacy / Compatibility |
 | 4 | Overrides empty | O3：*No exceptions yet* · not a full rule set |
-| 4b | Overrides list | 顶提示 + toggle + *Add exception* |
-| 5 | Activity | 时间序 glass 组（能力 P0） |
-| 6 | Snapshots | Latest 卡 + Restore… |
-| 7 | About | 隐私承诺 · links · Export（无根页 Privacy） |
-| 8 | Privacy Policy | About 下级说明页（非根行） |
+| 4b | Overrides list | 顶提示 + toggle + remove + *Add exception* |
+| 4c | Add exception | **键盘打开态**：单 Domain 输入 + 压缩 sheet；Domain only（ADR 0049） |
+| 5 | About | 隐私承诺 · Privacy / Terms 外链 · Export（`/privacy/` · `/terms/`） |
 
 ## Help / Agent 故事板
 
@@ -81,4 +82,4 @@
 | 4 | Not sure | 主 CTA 即为 *Ask Help* |
 | 5 | Repairing | 快照 · 步骤 · Cancel |
 
-更新：2026-08-05（Subscriptions expiry labeled · ADR 0046）
+更新：2026-08-06（docs sync · IA/Cloud/0051 · PRD §4.10）
