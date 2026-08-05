@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*~
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+credentials*
+secrets*
+
+# Dependencies & build (when app/website later gain code)
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+coverage/
+*.xcuserstate
+DerivedData/
+
+# Large local design exports (prefer Git LFS or external storage if needed)
+# design/**/*.psd
+# design/**/*.sketch
