@@ -6,6 +6,7 @@
   <title>Routeva · Home Craft</title>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="./icons.js"></script>
   <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,6 +61,9 @@
       mask-image: linear-gradient(180deg, transparent 0%, #000 48%, #000 100%);
       opacity: 0.2;
     }
+    @media (prefers-reduced-motion: reduce) {
+      .thumb-busy-pulse { animation: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -68,12 +72,14 @@
     <p>
       Sequence: <strong>Idle</strong> (no dots) → <strong>Swipe ⅓</strong> (1 ring) →
       <strong>Swipe ⅔</strong> (2 rings) → <strong>Connecting</strong> (3 rings) →
-      <strong>Connected</strong> (green field). Interactive plays the full flow.
+      <strong>Connected</strong> (green field).
+      <strong>Auto demo</strong> loops START↓ connect → STOP↑ disconnect;
+      <strong>Interactive</strong> is drag/tap.
     </p>
     <div class="tags">
       <span class="tag">HOME FIRST</span>
       <span class="tag">3-RING IGNITE</span>
-      <span class="tag">NO DOTS ON IDLE</span>
+      <span class="tag">AUTO DEMO LOOP</span>
       <span class="tag">BLACK → GREEN</span>
     </div>
   </div>
@@ -81,6 +87,11 @@
 
   <script type="text/babel">
     const { useState, useRef, useEffect, useCallback } = React;
+    const {
+      IconHelp, IconSubscriptions, IconGear, IconPower, IconChevronDir,
+      IconMapPin, IconChevron, IconArrowDown, IconArrowUp,
+      STROKE: ICON_STROKE,
+    } = window.RoutevaIcons;
 
     /* —— Tokens (pin-matched type + color) ——
      * Measured against Pinterest ref ~393pt width:
@@ -200,10 +211,16 @@
     };
 
     function IosFrame({ field = 'black', children }) {
-      // Full-bleed field (status bar included) — one continuous surface
-      const s = SKIN[field] || SKIN.black;
+      // Dual-layer field wash: CSS can't interpolate gradients, so crossfade opacity.
+      // ~0.45s — readable wash without feeling sluggish (visual-system black↔green).
+      const isGreen = field === 'green';
       const c = '#fff';
       const homeBar = 'rgba(255,255,255,0.35)';
+      const fieldEase = 'opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1)';
+      const reduce = typeof window !== 'undefined'
+        && window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const fade = reduce ? 'opacity 0.01s linear' : fieldEase;
       return (
         <div style={{
           display: 'inline-block', padding: 11, background: '#0a0a0a', borderRadius: 58,
@@ -212,9 +229,30 @@
           <div style={{
             position: 'relative', width: 393, height: 852, borderRadius: 48,
             overflow: 'hidden',
-            background: s.bg,
-            transition: 'background 0.55s cubic-bezier(0.22, 1, 0.36, 1)',
+            background: SKIN.black.bg,
           }}>
+            {/* Black base always present */}
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute', inset: 0,
+                background: SKIN.black.bg,
+                opacity: isGreen ? 0 : 1,
+                transition: fade,
+                pointerEvents: 'none',
+              }}
+            />
+            {/* Green wash fades in on Connection Success */}
+            <div
+              aria-hidden
+              style={{
+                position: 'absolute', inset: 0,
+                background: SKIN.green.bg,
+                opacity: isGreen ? 1 : 0,
+                transition: fade,
+                pointerEvents: 'none',
+              }}
+            />
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -247,98 +285,104 @@
               width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
               boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
             }} />
-            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20 }}>
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20, zIndex: 2 }}>
               {children}
             </div>
             <div style={{
               position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
               width: 128, height: 5, borderRadius: 999, zIndex: 40,
               background: homeBar,
-              transition: 'background 0.45s ease',
             }} />
           </div>
         </div>
       );
     }
 
-    function IconAgent({ color }) {
-      return (
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 4a6 6 0 0 0-6 6v1.1c0 .75-.3 1.45-.85 1.95L4 14.6V16h16v-1.4l-1.15-1.55c-.55-.5-.85-1.2-.85-1.95V10a6 6 0 0 0-6-6z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
-          <path d="M10 18.2a2 2 0 0 0 4 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      );
-    }
-    /* Subscriptions — stack / layers (not Activity list) */
-    function IconSubscriptions({ color }) {
-      return (
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect x="4" y="5" width="16" height="4" rx="1.2" stroke={color} strokeWidth="1.6" />
-          <rect x="4" y="11" width="16" height="4" rx="1.2" stroke={color} strokeWidth="1.6" />
-          <rect x="4" y="17" width="11" height="3" rx="1" stroke={color} strokeWidth="1.6" />
-        </svg>
-      );
-    }
-    function IconGear({ color }) {
-      return (
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.6" />
-          <path d="M12 3v2.1M12 18.9V21M3 12h2.1M18.9 12H21M5.7 5.7l1.5 1.5M16.8 16.8l1.5 1.5M5.7 18.3l1.5-1.5M16.8 7.2l1.5-1.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      );
-    }
-    function IconPower({ size = 22, color = '#fff' }) {
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-          <path d="M12 3v9" stroke={color} strokeWidth="2.25" strokeLinecap="round" />
-          <path d="M7.15 6.35a7.3 7.3 0 1 0 9.7 0" stroke={color} strokeWidth="2.25" strokeLinecap="round" />
-        </svg>
-      );
-    }
+    /* Icons: Lucide via ./icons.js (SF Symbols name map in icons.js header) */
+    const ICON_COLOR = 'rgba(255,255,255,0.88)';
     function Chevron({ dir = 'up', color, size = 16 }) {
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" style={{ transform: dir === 'down' ? 'rotate(180deg)' : 'none' }}>
-          <path d="M6 14l6-6 6 6" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
+      return <IconChevronDir dir={dir} color={color} size={size} stroke={ICON_STROKE.cta} />;
+    }
+
+    function glassSurface(light) {
+      return {
+        background: light
+          ? 'linear-gradient(155deg, rgba(255,255,255,0.17) 0%, rgba(255,255,255,0.055) 55%, rgba(255,255,255,0.04) 100%)'
+          : 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
+        boxShadow: light
+          ? 'inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -0.5px 0 rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.14), 0 0 0 0.5px rgba(255,255,255,0.16)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -0.5px 0 rgba(0,0,0,0.2), 0 8px 22px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(16px) saturate(1.2)',
+        WebkitBackdropFilter: 'blur(16px) saturate(1.2)',
+      };
     }
 
     function GlassOrb({ children, light }) {
-      // On green field: subtle glass, same family as field — not a bright white “header bar”
+      const g = glassSurface(light);
       return (
         <div style={{
           width: 40, height: 40, borderRadius: 999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: light
-            ? 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)'
-            : 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
-          boxShadow: light
-            ? 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 14px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.14)'
-            : 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
+          // Optical center — icons sit a hair high otherwise
+          paddingTop: 0.5,
+          ...g,
         }}>
           {children}
         </div>
       );
     }
 
+    function HelpPill({ light }) {
+      // ADR 0036: glass pill — refined type + icon spacing
+      const g = glassSurface(light);
+      const c = ICON_COLOR;
+      return (
+        <div
+          role="button"
+          aria-label="Help"
+          style={{
+            height: 40,
+            padding: '0 13px 0 10px',
+            borderRadius: 999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            ...g,
+            fontFamily: TYPE.font,
+          }}
+        >
+          <span style={{ display: 'flex', marginTop: 0.5 }}>
+            <IconHelp color={c} />
+          </span>
+          <span style={{
+            fontSize: 13.5,
+            fontWeight: 600,
+            letterSpacing: '-0.01em',
+            color: 'rgba(255,255,255,0.9)',
+            lineHeight: 1,
+            paddingBottom: 0.5,
+          }}>
+            Help
+          </span>
+        </div>
+      );
+    }
+
     function TopChrome({ light, empty }) {
-      // ADR 0020: [Agent][Subscriptions]…[Settings] when has sub; Empty hides Subscriptions
-      const c = 'rgba(255,255,255,0.82)';
+      // ADR 0020 + 0036: [Help][Subscriptions]…[Settings]; Empty hides Subscriptions
       return (
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '8px 22px 0', height: 48, position: 'relative', zIndex: 6,
           background: 'transparent',
         }}>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <GlassOrb light={light}><IconAgent color={c} /></GlassOrb>
+          <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+            <HelpPill light={light} />
             {!empty && (
-              <GlassOrb light={light}><IconSubscriptions color={c} /></GlassOrb>
+              <GlassOrb light={light}><IconSubscriptions color={ICON_COLOR} /></GlassOrb>
             )}
           </div>
-          <GlassOrb light={light}><IconGear color={c} /></GlassOrb>
+          <GlassOrb light={light}><IconGear color={ICON_COLOR} /></GlassOrb>
         </div>
       );
     }
@@ -684,12 +728,19 @@
 
       const thumbCx = STAGE_W / 2;
       const thumbCy = trackTop + y + THUMB_H / 2;
-      // While dragging toward connect, preview ignite with thumb progress
-      // Drag preview: thumb travel maps to ring ignite (1/3 · 2/3 · 1)
+      // Rings follow thumb travel: drag / story progress / forced ignite all map 0→1
+      // (must stay gradual — never snap all 3 rings on at once during swipe)
       const dragPreview = dragging && mode === 'idle' ? pDown : 0;
-      const igniteView = igniteForce != null
-        ? igniteForce
-        : Math.max(ignite, dragPreview);
+      // When progress is driven (demo / static frames), prefer progress for ignite so
+      // light-up stays locked to swipe, not a separate “full on” jump.
+      const progressIgnite = (progress != null && !isOn && !isBusy)
+        ? Math.max(0, Math.min(1, progress))
+        : null;
+      const igniteView = progressIgnite != null
+        ? Math.max(progressIgnite, igniteForce != null ? igniteForce : 0)
+        : (igniteForce != null
+          ? igniteForce
+          : Math.max(ignite, dragPreview));
       // Arcs always under STOP seat (fixed) so swipe frames match Connected
       const stopSeatCy = trackTop + Y_STOP + THUMB_H / 2;
       const fieldCx = STAGE_W / 2;
@@ -868,17 +919,13 @@
             fontVariantNumeric: 'tabular-nums',
           }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.85 }}>
-                <path d="M6 2v8M3.5 7.5L6 10l2.5-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <span style={{ opacity: 0.85, display: 'flex' }}><IconArrowDown size={10} stroke={1.5} /></span>
               <span>{downMbps.toFixed(1)}</span>
               <span style={{ opacity: 0.5, fontWeight: 400, fontSize: 11, marginLeft: 2 }}>Mb/s</span>
             </span>
             <span style={{ width: 1, height: 11, background: 'currentColor', opacity: 0.2 }} />
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.85 }}>
-                <path d="M6 10V2M3.5 4.5L6 2l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <span style={{ opacity: 0.85, display: 'flex' }}><IconArrowUp size={10} stroke={1.5} /></span>
               <span>{upMbps.toFixed(1)}</span>
               <span style={{ opacity: 0.5, fontWeight: 400, fontSize: 11, marginLeft: 2 }}>Mb/s</span>
             </span>
@@ -1074,10 +1121,11 @@
     /**
      * Story states:
      *  idle | swipe01 | swipe02 | connecting | connected | cant | setup
+     * demo: auto-loop START↓ → connect → STOP↑ (design board explanation)
      */
-    function HomeScreen({ state, modeHint = null, interactive = false }) {
+    function HomeScreen({ state, modeHint = null, interactive = false, demo = false }) {
       const [live, setLive] = useState(state === 'swipe01' || state === 'swipe02' ? 'idle' : state);
-      const s = interactive ? live : state;
+      const s = (interactive || demo) ? live : state;
       const defaultNodeIdx = NODES.findIndex((n) => n.id === DEFAULT_NODE_ID);
       const [nodeIdx, setNodeIdx] = useState(defaultNodeIdx >= 0 ? defaultNodeIdx : 2);
       const node = NODES[nodeIdx] || NODES[defaultNodeIdx >= 0 ? defaultNodeIdx : 2];
@@ -1085,21 +1133,114 @@
       const [secs, setSecs] = useState(state === 'connected' ? 45 * 60 + 29 : 0);
       const [down, setDown] = useState(12.4);
       const [up, setUp] = useState(23.6);
+      // Demo-driven capsule progress (0 top START → 1 bottom STOP)
+      const [demoProgress, setDemoProgress] = useState(0);
+      const [demoIgnite, setDemoIgnite] = useState(0);
 
       useEffect(() => {
-        if (!interactive || s !== 'connected') return;
+        if ((!interactive && !demo) || s !== 'connected') return;
         const t = setInterval(() => {
           setSecs((v) => v + 1);
           setDown((v) => Math.max(0.8, v + (Math.random() - 0.48) * 1.2));
           setUp((v) => Math.max(0.5, v + (Math.random() - 0.48) * 0.9));
         }, 1000);
         return () => clearInterval(t);
-      }, [interactive, s]);
+      }, [interactive, demo, s]);
 
       useEffect(() => {
         if (s === 'connected' && secs === 0) setSecs(45 * 60 + 29);
         if (s === 'idle') setSecs(0);
       }, [s]);
+
+      // —— Auto demo: swipe progress + ignite 1:1 so rings light gradually (⅓ · ⅔ · full) ——
+      useEffect(() => {
+        if (!demo) return;
+        let cancelled = false;
+        let raf = 0;
+        const reduce = typeof window !== 'undefined'
+          && window.matchMedia
+          && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        const wait = (ms) => new Promise((r) => {
+          const t = setTimeout(r, reduce ? Math.min(ms, 200) : ms);
+          // store not needed; cancelled checked after await
+        });
+
+        // Linear travel — ease-out was front-loading progress so all rings seemed to pop at once
+        const animateTravel = (from, to, ms) => new Promise((resolve) => {
+          if (reduce || ms <= 0) {
+            setDemoProgress(to);
+            setDemoIgnite(to);
+            resolve();
+            return;
+          }
+          const t0 = performance.now();
+          const tick = (now) => {
+            if (cancelled) return;
+            const u = Math.min(1, (now - t0) / ms);
+            // slight ease-in-out so motion isn’t robotic, but stays near-linear for ring timing
+            const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+            const p = from + (to - from) * e;
+            // Thumb progress and ring ignite stay locked (same as real drag preview)
+            setDemoProgress(p);
+            setDemoIgnite(p);
+            if (u < 1) raf = requestAnimationFrame(tick);
+            else {
+              setDemoProgress(to);
+              setDemoIgnite(to);
+              resolve();
+            }
+          };
+          raf = requestAnimationFrame(tick);
+        });
+
+        (async () => {
+          while (!cancelled) {
+            // Idle — no dots
+            setLive('idle');
+            setDemoProgress(0);
+            setDemoIgnite(0);
+            await wait(800);
+            if (cancelled) break;
+
+            // Swipe down: ignite grows with travel → ring1 @~⅓, ring2 @~⅔, ring3 @ full
+            // Longer than before so gradual light-up is readable
+            await animateTravel(0, 1, 1400);
+            if (cancelled) break;
+
+            // Hold full rings at bottom briefly before “connecting” label
+            await wait(200);
+            if (cancelled) break;
+
+            setLive('connecting');
+            setDemoProgress(1);
+            setDemoIgnite(1);
+            await wait(900);
+            if (cancelled) break;
+
+            setLive('connected');
+            setSecs(0);
+            setDemoProgress(1);
+            setDemoIgnite(1);
+            await wait(2200);
+            if (cancelled) break;
+
+            // Swipe up: rings extinguish gradually as thumb rises
+            await animateTravel(1, 0, 900);
+            if (cancelled) break;
+
+            setLive('idle');
+            setDemoProgress(0);
+            setDemoIgnite(0);
+            await wait(600);
+          }
+        })();
+
+        return () => {
+          cancelled = true;
+          cancelAnimationFrame(raf);
+        };
+      }, [demo]);
 
       const connect = () => {
         setLive('connecting');
@@ -1124,9 +1265,27 @@
         cant:       { progress: 0,    ignite: 0,    capMode: 'idle',       frozen: true },
         setup:      { progress: 0,    ignite: 0,    capMode: 'idle',       frozen: true },
       };
-      const board = interactive
-        ? { progress: null, ignite: null, capMode: (s === 'connected' ? 'connected' : s === 'connecting' ? 'connecting' : 'idle'), frozen: false }
-        : (story[s] || story.idle);
+
+      // During demo swipe, keep thumb dark (capMode idle) until connecting/connected
+      let demoCapMode = 'idle';
+      if (s === 'connecting') demoCapMode = 'connecting';
+      else if (s === 'connected') demoCapMode = 'connected';
+
+      const board = demo
+        ? {
+            progress: demoProgress,
+            ignite: demoIgnite,
+            capMode: demoCapMode,
+            frozen: true,
+          }
+        : interactive
+          ? {
+              progress: null,
+              ignite: null,
+              capMode: (s === 'connected' ? 'connected' : s === 'connecting' ? 'connecting' : 'idle'),
+              frozen: false,
+            }
+          : (story[s] || story.idle);
 
       // Mid-swipe: still Not Connected; full slide + busy: Connecting…; success: Connected
       const midTitle =
@@ -1265,20 +1424,13 @@
                     cursor: 'default',
                   }}
                 >
-                  {/* Location / pin icon */}
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.9, flexShrink: 0 }}>
-                    <path
-                      d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinejoin="round"
-                    />
-                    <circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.7" />
-                  </svg>
+                  <span style={{ opacity: 0.9, flexShrink: 0, display: 'flex' }}>
+                    <IconMapPin size={16} stroke={ICON_STROKE.chrome} />
+                  </span>
                   <span>Location</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.45, marginLeft: 2 }}>
-                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <span style={{ opacity: 0.45, marginLeft: 2, display: 'flex' }}>
+                    <IconChevron size={12} stroke={ICON_STROKE.cta} />
+                  </span>
                 </div>
               )}
 
@@ -1354,35 +1506,45 @@
     }
 
     function App() {
-      // Connect storyboard (left → right):
-      // Idle → Swipe 1/3 (1 ring) → Swipe 2/3 (2 rings) → Connecting (3 rings) → Connected
+      // Connect storyboard (left → right) + auto demo + interactive
       return (
-        <div className="row">
-          <div className="phone-col">
-            <div className="lab">1 · Idle<span>No dots · START top</span></div>
-            <HomeScreen state="idle" />
+        <>
+          <div className="row" style={{ marginBottom: 48 }}>
+            <div className="phone-col">
+              <div className="lab">
+                Auto demo · START / STOP
+                <span>Loop: swipe down → connect → swipe up · reduced-motion: step cuts</span>
+              </div>
+              <HomeScreen state="idle" demo />
+            </div>
+            <div className="phone-col">
+              <div className="lab">Interactive<span>Drag / tap yourself</span></div>
+              <HomeScreen state="idle" interactive />
+            </div>
           </div>
-          <div className="phone-col">
-            <div className="lab">2 · Swipe ~⅓<span>Thumb mid · ring 1 lit</span></div>
-            <HomeScreen state="swipe01" />
+          <div className="row">
+            <div className="phone-col">
+              <div className="lab">1 · Idle<span>No dots · START top</span></div>
+              <HomeScreen state="idle" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">2 · Swipe ~⅓<span>Thumb mid · ring 1 lit</span></div>
+              <HomeScreen state="swipe01" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">3 · Swipe ~⅔<span>Thumb lower · rings 1–2</span></div>
+              <HomeScreen state="swipe02" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">4 · Connecting<span>Thumb bottom · 3 rings · Connecting…</span></div>
+              <HomeScreen state="connecting" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">5 · Connected<span>Green field · session + speeds</span></div>
+              <HomeScreen state="connected" />
+            </div>
           </div>
-          <div className="phone-col">
-            <div className="lab">3 · Swipe ~⅔<span>Thumb lower · rings 1–2</span></div>
-            <HomeScreen state="swipe02" />
-          </div>
-          <div className="phone-col">
-            <div className="lab">4 · Connecting<span>Thumb bottom · 3 rings · Connecting…</span></div>
-            <HomeScreen state="connecting" />
-          </div>
-          <div className="phone-col">
-            <div className="lab">5 · Connected<span>Green field · session + speeds</span></div>
-            <HomeScreen state="connected" />
-          </div>
-          <div className="phone-col">
-            <div className="lab">Interactive<span>Drag/tap full sequence</span></div>
-            <HomeScreen state="idle" interactive />
-          </div>
-        </div>
+        </>
       );
     }
 

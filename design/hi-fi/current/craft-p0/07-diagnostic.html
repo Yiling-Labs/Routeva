@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Diagnostic Sheet</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="./icons.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      background: #c2c2c0;
+      background-image: radial-gradient(ellipse at 30% 15%, #d8d8d6 0%, #b6b6b4 50%, #a4a4a2 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px 24px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .meta { max-width: 920px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .meta p { font-size: 14px; color: #3a3a3a; margin-top: 8px; line-height: 1.55; max-width: 72ch; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      border: 1px solid #333; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.4);
+    }
+    .row {
+      display: flex; flex-wrap: wrap; gap: 36px; justify-content: center;
+      max-width: 1900px; margin: 0 auto;
+    }
+    .phone-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .lab {
+      font-size: 12px; font-weight: 600; color: #2a2a2a; text-align: center;
+      max-width: 280px; line-height: 1.35;
+    }
+    .lab span { display: block; font-weight: 400; color: #555; margin-top: 2px; font-size: 11px; }
+    .noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px; mix-blend-mode: overlay;
+    }
+    .halftone {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 42%;
+      pointer-events: none; opacity: 0.14;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0.85px, transparent 1.05px);
+      background-size: 4.5px 4.5px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+      mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+    }
+    button {
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.12s ease;
+    }
+    button:active:not(:disabled) { transform: scale(0.985); opacity: 0.92; }
+    button:focus-visible {
+      outline: 2px solid rgba(127,217,176,0.9);
+      outline-offset: 3px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+      button:active:not(:disabled) { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Diagnostic sheet · Failure path</h1>
+    <p>
+      Auto-runs on connection failure (ADR 0008). User-language buckets (ADR 0041).
+      Primary CTA for consent / next step; secondary <strong>Ask Help</strong> (ADR 0044).
+      Never fake green — Can’t connect stays on Field Black.
+    </p>
+    <div class="tags">
+      <span class="tag">SELF-HEALING</span>
+      <span class="tag">FOUR BUCKETS</span>
+      <span class="tag">REPAIR CONSENT</span>
+      <span class="tag">ASK HELP</span>
+    </div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+    const { IconHelp } = window.RoutevaIcons;
+    const ICON_COLOR = 'rgba(255,255,255,0.88)';
+
+    const TYPE = {
+      font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif',
+    };
+    const FIELD = 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)';
+    const CTA = 'linear-gradient(160deg, #8fe8c0 0%, #4bb98a 48%, #2f9a6c 100%)';
+    const CTA_SH = '0 12px 32px rgba(50,190,130,0.32), inset 0 1px 0 rgba(255,255,255,0.4)';
+    const T = {
+      primary: 'rgba(255,255,255,0.96)',
+      secondary: 'rgba(255,255,255,0.55)',
+      muted: 'rgba(255,255,255,0.58)',
+      quiet: 'rgba(255,255,255,0.38)',
+      icon: 'rgba(255,255,255,0.82)',
+      card: 'linear-gradient(155deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
+      cardBorder: 'rgba(255,255,255,0.12)',
+      hairline: 'rgba(255,255,255,0.07)',
+      mint: 'rgba(127,217,176,0.95)',
+      mintSoft: 'rgba(127,217,176,0.16)',
+      mintBorder: 'rgba(127,217,176,0.4)',
+    };
+
+    /** User-visible bucket copy — never internal Client-Fixable etc. in UI */
+    const CASES = {
+      fix: {
+        id: 'fix',
+        badge: 'App can fix',
+        badgeTone: 'mint',
+        confidence: 'High confidence',
+        why: 'The VPN tunnel came up, but the connectivity check failed — so we don’t call this Connected.',
+        impact: 'Apps that need the proxy may stall or time out until this is fixed.',
+        next: 'We can try a safe repair: switch DNS preset, then re-check. You’ll confirm first; we snapshot and can roll back.',
+        primary: 'Repair with my OK',
+        primaryKind: 'repair',
+        secondaryHint: null,
+      },
+      provider: {
+        id: 'provider',
+        badge: 'Provider',
+        badgeTone: 'amber',
+        confidence: 'High confidence',
+        why: 'Your subscription looks expired or rejected by the provider — this isn’t something the app can repair alone.',
+        impact: 'Connecting will keep failing until the subscription is renewed or replaced.',
+        next: 'Open your provider’s site or app to renew, then paste a fresh link in Subscriptions.',
+        primary: 'Got it',
+        primaryKind: 'dismiss',
+        secondaryHint: 'You can still export a redacted report for support.',
+      },
+      network: {
+        id: 'network',
+        badge: 'Your network',
+        badgeTone: 'blue',
+        confidence: 'Medium confidence',
+        why: 'This Wi‑Fi may require a sign-in page, or it blocks the connection type your nodes use.',
+        impact: 'Routeva can’t fix the network itself. Another network or node type may work.',
+        next: 'Try cellular or a different Wi‑Fi. If you stay here, we can still check for a safer DNS or node option.',
+        primary: 'Try again',
+        primaryKind: 'retry',
+        secondaryHint: null,
+      },
+      unsure: {
+        id: 'unsure',
+        badge: 'Not sure',
+        badgeTone: 'quiet',
+        confidence: 'Low confidence',
+        why: 'We ran our usual checks and still can’t pin this down with high confidence.',
+        impact: 'Guessing a fix would be dishonest — we won’t invent a reason or loop empty repairs.',
+        next: 'Ask Help to walk through what we saw, or export a redacted report.',
+        primary: 'Ask Help',
+        primaryKind: 'help',
+        secondaryHint: 'Primary is Ask Help when we’re unsure — still a clear next step.',
+      },
+    };
+
+    function IosFrame({ children }) {
+      const c = '#fff';
+      return (
+        <div style={{
+          display: 'inline-block', padding: 11, background: '#0a0a0a', borderRadius: 58,
+          boxShadow: '0 0 0 1px #2a2a2a, 0 32px 80px rgba(0,0,0,0.36), inset 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          <div style={{
+            position: 'relative', width: 393, height: 852, borderRadius: 48,
+            overflow: 'hidden', background: FIELD,
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 28px 0', fontSize: 15, fontWeight: 600, color: c, pointerEvents: 'none',
+            }} aria-hidden="true">
+              <span>9:41</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 11 }}>
+                  {[4, 6, 8, 11].map((h, i) => (
+                    <div key={i} style={{ width: 3, height: h, background: c, borderRadius: 1 }} />
+                  ))}
+                </div>
+                <div style={{
+                  width: 25, height: 12, border: `1.5px solid ${c}`, borderRadius: 3, padding: 1,
+                }}>
+                  <div style={{ width: '78%', height: '100%', background: c, borderRadius: 1 }} />
+                </div>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+              width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
+            }} aria-hidden="true" />
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20 }}>{children}</div>
+            <div style={{
+              position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+              width: 128, height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.35)', zIndex: 40,
+            }} aria-hidden="true" />
+          </div>
+        </div>
+      );
+    }
+
+    function MapWash() {
+      return (
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, opacity: 0.08, pointerEvents: 'none',
+          backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><g fill='none' stroke='#fff' stroke-width='1' opacity='0.4'>
+              <ellipse cx='200' cy='148' rx='158' ry='88'/><path d='M42 148 Q100 78 200 98 T358 138'/>
+            </g></svg>`)}")`,
+          backgroundSize: '130% auto', backgroundPosition: 'center 38%', backgroundRepeat: 'no-repeat',
+        }} />
+      );
+    }
+
+    function HelpPillMini() {
+      return (
+        <div style={{
+          height: 36, padding: '0 12px 0 10px', borderRadius: 999,
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'linear-gradient(155deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(12px)',
+          fontSize: 13, fontWeight: 650, color: 'rgba(255,255,255,0.85)', fontFamily: TYPE.font,
+        }}>
+          <IconHelp size={14} color={ICON_COLOR} />
+          Help
+        </div>
+      );
+    }
+
+    function GearMini() {
+      return (
+        <div style={{
+          width: 36, height: 36, borderRadius: 999,
+          background: 'linear-gradient(155deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 6px 16px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.08)',
+        }} />
+      );
+    }
+
+    function badgeStyle(tone) {
+      if (tone === 'mint') {
+        return {
+          background: 'rgba(80,200,150,0.16)',
+          border: '1px solid rgba(127,217,176,0.4)',
+          color: 'rgba(180,240,210,0.98)',
+        };
+      }
+      if (tone === 'amber') {
+        return {
+          background: 'rgba(220,170,80,0.14)',
+          border: '1px solid rgba(230,190,100,0.35)',
+          color: 'rgba(255,220,150,0.95)',
+        };
+      }
+      if (tone === 'blue') {
+        return {
+          background: 'rgba(100,160,220,0.14)',
+          border: '1px solid rgba(140,190,240,0.35)',
+          color: 'rgba(180,215,255,0.95)',
+        };
+      }
+      return {
+        background: 'rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.14)',
+        color: 'rgba(255,255,255,0.72)',
+      };
+    }
+
+    /** Dimmed Home “Can’t connect” under the sheet */
+    function HomeUnderlay() {
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div className="halftone" aria-hidden="true" />
+          <div style={{
+            position: 'relative', zIndex: 2,
+            padding: '8px 20px 0',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 48,
+          }}>
+            <HelpPillMini />
+            <GearMini />
+          </div>
+          <div style={{
+            position: 'relative', zIndex: 2, marginTop: 48, textAlign: 'center', padding: '0 24px',
+          }}>
+            <div style={{
+              fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em',
+              color: T.primary, fontFamily: TYPE.font,
+            }}>
+              Can’t connect
+            </div>
+            <div style={{
+              marginTop: 10, fontSize: 15, fontWeight: 500, color: T.secondary,
+            }}>
+              HKG-01 <span style={{ color: T.quiet }}>· VMess</span>
+            </div>
+            <div style={{
+              marginTop: 18, display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '10px 16px', borderRadius: 999,
+              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
+              fontSize: 14, fontWeight: 600, color: T.icon,
+            }}>
+              Location
+              <span style={{ color: T.quiet }}>›</span>
+            </div>
+          </div>
+          {/* dim scrim for sheet */}
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 5,
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.72) 100%)',
+            pointerEvents: 'none',
+          }} />
+        </div>
+      );
+    }
+
+    function Section({ label, children }) {
+      return (
+        <div style={{ marginTop: 14 }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+            textTransform: 'uppercase', color: T.quiet, marginBottom: 6,
+          }}>
+            {label}
+          </div>
+          <div style={{
+            fontSize: 15, fontWeight: 500, color: T.secondary, lineHeight: 1.45,
+          }}>
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    function DiagnosticSheet({ caseId, onPrimary, onAskHelp, showToast }) {
+      const c = CASES[caseId] || CASES.fix;
+      const bs = badgeStyle(c.badgeTone);
+      const primaryIsMint = c.primaryKind === 'repair' || c.primaryKind === 'help';
+
+      return (
+        <div style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10,
+          padding: '0 12px 28px',
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            pointerEvents: 'auto',
+            borderRadius: 24,
+            background: 'linear-gradient(168deg, #3a4048 0%, #1c2228 48%, #12161b 100%)',
+            border: `1px solid ${T.cardBorder}`,
+            boxShadow: '0 -16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)',
+            padding: '12px 18px 18px',
+            fontFamily: TYPE.font,
+          }}>
+            <div style={{
+              width: 36, height: 4, borderRadius: 999,
+              background: 'rgba(255,255,255,0.2)', margin: '0 auto 14px',
+            }} />
+
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+            }}>
+              <div>
+                <div style={{
+                  fontSize: 13, fontWeight: 600, color: T.muted, marginBottom: 4,
+                }}>
+                  What we found
+                </div>
+                <div style={{
+                  fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: T.primary,
+                }}>
+                  Can’t connect
+                </div>
+              </div>
+              <span style={{
+                flexShrink: 0, marginTop: 4,
+                padding: '6px 10px', borderRadius: 999,
+                fontSize: 12, fontWeight: 700, letterSpacing: '0.02em',
+                ...bs,
+              }}>
+                {c.badge}
+              </span>
+            </div>
+
+            <div style={{
+              marginTop: 8, fontSize: 12, fontWeight: 500, color: T.quiet,
+            }}>
+              {c.confidence} · Same checks as the rest of the app
+            </div>
+
+            <Section label="Why">{c.why}</Section>
+            <Section label="Impact">{c.impact}</Section>
+            <Section label="Next">{c.next}</Section>
+
+            {c.secondaryHint && (
+              <p style={{
+                marginTop: 12, fontSize: 12, fontWeight: 500, color: T.quiet, lineHeight: 1.4,
+              }}>
+                {c.secondaryHint}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => onPrimary && onPrimary(c)}
+              style={{
+                marginTop: 18, width: '100%', border: 'none', cursor: 'pointer',
+                padding: '16px 18px', borderRadius: 16,
+                background: primaryIsMint ? CTA : 'rgba(255,255,255,0.1)',
+                boxShadow: primaryIsMint ? CTA_SH : 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                color: primaryIsMint ? '#0a1f18' : T.primary,
+                fontFamily: TYPE.font, fontSize: 16, fontWeight: 800,
+              }}
+            >
+              {c.primary}
+            </button>
+
+            {/* ADR 0044 — secondary Ask Help (skip if primary is already Ask Help) */}
+            {c.primaryKind !== 'help' && (
+              <button
+                type="button"
+                onClick={onAskHelp}
+                style={{
+                  marginTop: 12, width: '100%', border: 'none',
+                  background: 'transparent', cursor: 'pointer',
+                  padding: '10px 8px 4px',
+                  fontFamily: TYPE.font, fontSize: 15, fontWeight: 650,
+                  color: T.mint, textAlign: 'center',
+                }}
+              >
+                Ask Help
+              </button>
+            )}
+
+            {showToast && (
+              <div style={{
+                marginTop: 12, textAlign: 'center',
+                fontSize: 12, fontWeight: 600, color: T.muted,
+              }}>
+                {showToast}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function PhoneScene({ caseId, toast, onPrimary, onAskHelp }) {
+      return (
+        <div style={{ height: '100%', position: 'relative' }}>
+          <HomeUnderlay />
+          <DiagnosticSheet
+            caseId={caseId}
+            onPrimary={onPrimary}
+            onAskHelp={onAskHelp}
+            showToast={toast}
+          />
+        </div>
+      );
+    }
+
+    function RepairProgress() {
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div className="halftone" aria-hidden="true" />
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 5,
+            background: 'rgba(0,0,0,0.55)',
+          }} />
+          <div style={{
+            position: 'absolute', left: 16, right: 16, top: '32%', zIndex: 10,
+            borderRadius: 22, padding: '28px 22px 24px', textAlign: 'center',
+            background: 'linear-gradient(168deg, #3a4048 0%, #1c2228 55%, #12161b 100%)',
+            border: `1px solid ${T.cardBorder}`,
+            boxShadow: '0 20px 50px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
+            fontFamily: TYPE.font,
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 999, margin: '0 auto 16px',
+              border: '3px solid rgba(127,217,176,0.25)',
+              borderTopColor: T.mint,
+            }} className="spin" />
+            <div style={{ fontSize: 18, fontWeight: 700, color: T.primary }}>
+              Repairing…
+            </div>
+            <p style={{
+              marginTop: 10, fontSize: 14, fontWeight: 500, color: T.secondary, lineHeight: 1.45,
+            }}>
+              Snapshot saved · trying DNS Compatibility · then re-check
+            </p>
+            <button type="button" style={{
+              marginTop: 20, border: '1px solid rgba(255,255,255,0.14)',
+              background: 'rgba(255,255,255,0.06)', borderRadius: 14,
+              padding: '12px 18px', width: '100%',
+              fontSize: 15, fontWeight: 650, color: T.primary, fontFamily: TYPE.font,
+              cursor: 'pointer',
+            }}>
+              Cancel
+            </button>
+          </div>
+          <style>{`
+            .spin { animation: sp 0.85s linear infinite; }
+            @keyframes sp { to { transform: rotate(360deg); } }
+            @media (prefers-reduced-motion: reduce) {
+              .spin { animation: none; border-top-color: rgba(127,217,176,0.55); }
+            }
+          `}</style>
+        </div>
+      );
+    }
+
+    function Interactive() {
+      const [bucket, setBucket] = useState('fix');
+      const [toast, setToast] = useState('');
+      const [phase, setPhase] = useState('sheet'); // sheet | repairing
+
+      const onPrimary = (c) => {
+        if (c.primaryKind === 'repair') {
+          setPhase('repairing');
+          setTimeout(() => {
+            setPhase('sheet');
+            setToast('Demo: would verify Connection Success or roll back');
+            setTimeout(() => setToast(''), 2800);
+          }, 1600);
+        } else if (c.primaryKind === 'help') {
+          setToast('→ Help with this diagnosis attached');
+          setTimeout(() => setToast(''), 2200);
+        } else {
+          setToast(`Primary: ${c.primary}`);
+          setTimeout(() => setToast(''), 1800);
+        }
+      };
+
+      return (
+        <div style={{ position: 'relative' }}>
+          <IosFrame>
+            {phase === 'repairing' ? (
+              <RepairProgress />
+            ) : (
+              <PhoneScene
+                caseId={bucket}
+                toast={toast}
+                onPrimary={onPrimary}
+                onAskHelp={() => {
+                  setToast('→ Help · diagnosis summary attached');
+                  setTimeout(() => setToast(''), 2200);
+                }}
+              />
+            )}
+          </IosFrame>
+          <div style={{
+            marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 393,
+          }}>
+            {Object.keys(CASES).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => { setBucket(k); setPhase('sheet'); setToast(''); }}
+                style={{
+                  border: bucket === k ? '1px solid #1a1a1a' : '1px solid #888',
+                  background: bucket === k ? '#1a1a1a' : 'rgba(255,255,255,0.55)',
+                  color: bucket === k ? '#fff' : '#222',
+                  borderRadius: 999, padding: '8px 12px',
+                  fontSize: 12, fontWeight: 650, cursor: 'pointer', fontFamily: TYPE.font,
+                }}
+              >
+                {CASES[k].badge}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function frame(node) {
+      return <IosFrame>{node}</IosFrame>;
+    }
+
+    function App() {
+      return (
+        <>
+          <div className="row" style={{ marginBottom: 48 }}>
+            <div className="phone-col">
+              <div className="lab">Interactive<span>Four buckets · Repair · Ask Help</span></div>
+              <Interactive />
+            </div>
+          </div>
+          <div className="row">
+            <div className="phone-col">
+              <div className="lab">1 · App can fix<span>Primary Repair · secondary Ask Help</span></div>
+              {frame(<PhoneScene caseId="fix" />)}
+            </div>
+            <div className="phone-col">
+              <div className="lab">2 · Provider<span>No fake repair · Got it + Ask Help</span></div>
+              {frame(<PhoneScene caseId="provider" />)}
+            </div>
+            <div className="phone-col">
+              <div className="lab">3 · Your network<span>Environment · Try again + Ask Help</span></div>
+              {frame(<PhoneScene caseId="network" />)}
+            </div>
+            <div className="phone-col">
+              <div className="lab">4 · Not sure<span>Primary Ask Help · no invented fix</span></div>
+              {frame(<PhoneScene caseId="unsure" />)}
+            </div>
+            <div className="phone-col">
+              <div className="lab">5 · Repairing<span>Snapshot · allowlist step · cancel</span></div>
+              {frame(<RepairProgress />)}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

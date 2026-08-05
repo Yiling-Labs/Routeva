@@ -71,8 +71,9 @@
 
 - **无底部 Tab**  
 - 顶栏：左右 **glass orb**（与 Home 同款）  
-- **有订阅：** `[ Agent ] [ Subscriptions ] …… [ Settings ]`（ADR 0020）  
-- **Empty：** `[ Agent ] …… [ Settings ]`（无 Subscriptions）  
+- **有订阅：** `[ Help ] [ Subscriptions ] …… [ Settings ]`（ADR 0020 / **0036**）  
+- **Empty：** `[ Help ] …… [ Settings ]`（无 Subscriptions）  
+- **Help** = soft glass **pill**（助手图标 + *Help* 字样），非抽象 Agent 圆标  
 - **Activity** 不进顶栏 → Settings 二级  
 - 二级：push 或 sheet；关闭用 Close / 系统 back  
 - 诊断 / 修复：优先 **底 sheet 玻璃卡**（与早期 probe 诊断语言一致）  
@@ -83,12 +84,12 @@
 |---|---|
 | **Onboarding / Import** | Field Black；大标题 28–30；主 CTA 薄荷绿实心；少步骤。**Parsing** = 叠在 Add 上的玻璃 status 模态（非全屏）。成功 = Home Idle 同壳 + 短 toast（2–3s），不另起结果页 |
 | **Location / 节点列表** | Field Black；顶栏同款；列表行 glass 分割或轻卡；协议弱标注 |
-| **Diagnostic** | 叠在 dimmed Home 或 Black 场；玻璃大卡；四桶 badge 可略用色但不抢主 CTA |
-| **Repair** | 同 Diagnostic 材质；Confirm = 绿实心；Cancel = ghost |
-| **Subscriptions** | Field Black；**单列表**（Active 行加强 + Update）；流量/到期有则显示、无则隐藏；**少文案**；无 All 第二层 |
+| **Diagnostic** | 叠在 dimmed Home（Can’t connect 黑场）；底 glass sheet；四桶白话；Why/Impact/Next；主 CTA；**次要 Ask Help**（Not sure 时可作主 CTA）。权威：`07-diagnostic.html` |
+| **Repair** | 同场材质进度卡；Snapshot 文案；Cancel = ghost；验证后回绿场或失败 sheet |
+| **Subscriptions** | Field Black；**单列表**（Active 行加强 + Update）；流量/到期有则显示、无则隐藏；**到期必带 Expires/Expired 标签**（已过期暖警示色，非连接绿）；禁止裸日期贴 nodes；**少文案**；无 All 第二层 |
 | **Activity** | Settings 内二级；Black 场；时间线轻分割；图标线框、低饱和 |
-| **Agent** | Black 场；输入条 glass 胶囊形；气泡勿厚重拟物 |
-| **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → History → App** 三段；Activity/Snapshots 二级；Subscriptions 深链；**无** Appearance / Advanced / Cloud AI 开关。权威：`05-settings.html` |
+| **Help / Agent** | Black 场；顶 **信任条**；空态求助文案 + chips；气泡轻量；输入条 glass 胶囊；边界页 Can/Can’t。权威：`06-agent.html`（ADR 0035–0039） |
+| **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → History → App** 三段；App 仅 Subscriptions + About；隐私经 About → Privacy Policy；**无** 根页 Privacy / Appearance / Advanced / Cloud AI 开关。**Overrides O3：** 空态/列表提示 *exceptions, not a full rule set*；CTA *Add exception*；根计数数字/None 不写 *rules*（ADR 0045）。权威：`05-settings.html` |
 
 ## 9. 自检清单（新屏交付前）
 
@@ -99,6 +100,13 @@
 - [ ] 圆是正圆；动效克制、语义清楚  
 - [ ] 与 `02-home.html` 并排截图时 **不违和**  
 
-## 10. 实现对照
+## 10. 图标（Lucide · 单一来源）
+
+- **Hi-fi 共享：** [`icons.js`](./icons.js)（Lucide Static v0.469.0 · ISC · `currentColor` · stroke **1.6** chrome / **2** CTA）
+- **禁止**各页手绘 path 或混用 Heroicons / 多套库
+- **SwiftUI：** 用 `icons.js` 头注释中的 **SF Symbols** 名称映射；勿把 SF 资源嵌进 HTML
+- 主 Help 一律 `circle-help` / `questionmark.circle`（非 chat bubble）
+
+## 11. 实现对照
 
 改 UI 时优先读：`02-home.html` 内 `SKIN` / `TYPE` / `GlassOrb` / `ConnectStage` / `FlagOrb` 模式，再映射到 SwiftUI。

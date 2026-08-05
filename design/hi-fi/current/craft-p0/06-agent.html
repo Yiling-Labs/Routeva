@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Help (Agent)</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="./icons.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      background: #c2c2c0;
+      background-image: radial-gradient(ellipse at 30% 15%, #d8d8d6 0%, #b6b6b4 50%, #a4a4a2 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px 24px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .meta { max-width: 920px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .meta p { font-size: 14px; color: #3a3a3a; margin-top: 8px; line-height: 1.55; max-width: 72ch; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      border: 1px solid #333; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.4);
+    }
+    .row {
+      display: flex; flex-wrap: wrap; gap: 36px; justify-content: center;
+      max-width: 1900px; margin: 0 auto;
+    }
+    .phone-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .lab {
+      font-size: 12px; font-weight: 600; color: #2a2a2a; text-align: center;
+      max-width: 280px; line-height: 1.35;
+    }
+    .lab span { display: block; font-weight: 400; color: #555; margin-top: 2px; font-size: 11px; }
+    .noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px; mix-blend-mode: overlay;
+    }
+    .halftone {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 40%;
+      pointer-events: none; opacity: 0.14;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0.85px, transparent 1.05px);
+      background-size: 4.5px 4.5px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+      mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+    }
+    button {
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.12s ease;
+    }
+    button:active:not(:disabled) { transform: scale(0.985); opacity: 0.92; }
+    button:focus-visible {
+      outline: 2px solid rgba(127,217,176,0.9);
+      outline-offset: 3px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+      button:active:not(:disabled) { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Help · Connection Help (Agent Surface)</h1>
+    <p>
+      ADR 0035–0039. Home entry is a <strong>Help</strong> glass pill.
+      Page: trust strip · chat · <em>What Help can do</em> · input.
+      Cloud assist <strong>on by default</strong> (ADR 0042) · trust strip disclosure · opt-out in How we use data.
+      Ephemeral structured context only — not arbitrary files; not stored after help.
+    </p>
+    <div class="tags">
+      <span class="tag">CONNECTION HELP</span>
+      <span class="tag">HELP PILL</span>
+      <span class="tag">EPHEMERAL CONTEXT</span>
+      <span class="tag">CAN / CAN’T</span>
+    </div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+    const {
+      IconClose, IconBack, IconHelpMark, IconShield, IconSend, IconChevron,
+    } = window.RoutevaIcons;
+
+    const TYPE = {
+      font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif',
+    };
+    const FIELD = 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)';
+    const CTA = 'linear-gradient(160deg, #8fe8c0 0%, #4bb98a 48%, #2f9a6c 100%)';
+    const CTA_SH = '0 12px 32px rgba(50,190,130,0.32), inset 0 1px 0 rgba(255,255,255,0.4)';
+    const T = {
+      primary: 'rgba(255,255,255,0.96)',
+      secondary: 'rgba(255,255,255,0.55)',
+      muted: 'rgba(255,255,255,0.58)',
+      quiet: 'rgba(255,255,255,0.38)',
+      icon: 'rgba(255,255,255,0.82)',
+      card: 'linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)',
+      cardBorder: 'rgba(255,255,255,0.11)',
+      hairline: 'rgba(255,255,255,0.065)',
+      mint: 'rgba(127,217,176,0.95)',
+      mintSoft: 'rgba(127,217,176,0.16)',
+      mintBorder: 'rgba(127,217,176,0.38)',
+    };
+
+    /* ADR 0040 — chips follow connection truth */
+    const CHIPS_DOWN = [
+      'Why can’t I connect?',
+      'Is this my provider or the app?',
+      'Switch DNS preset',
+    ];
+    const CHIPS_UP = [
+      'Why is this slow?',
+      'Use Global for a bit?',
+      'Switch DNS preset',
+      'What can Help do?',
+    ];
+
+    const CAN = [
+      'Explain connection problems in plain language',
+      'Run checks and suggest a fix when it’s client-fixable',
+      'Apply a repair after you confirm — with snapshot and rollback',
+      'Adjust safe settings you allow (mode, DNS, a few overrides)',
+    ];
+    const CANT = [
+      'Sell or recommend a provider or nodes',
+      'See your browsing or full traffic history',
+      'Upload your subscription link, tokens, or raw config — or keep analysis data after help',
+      'Change VPN or system settings silently, invent free-form configs, or use MITM',
+    ];
+
+    function IosFrame({ children }) {
+      const c = '#fff';
+      return (
+        <div style={{
+          display: 'inline-block', padding: 11, background: '#0a0a0a', borderRadius: 58,
+          boxShadow: '0 0 0 1px #2a2a2a, 0 32px 80px rgba(0,0,0,0.36), inset 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          <div style={{
+            position: 'relative', width: 393, height: 852, borderRadius: 48,
+            overflow: 'hidden', background: FIELD,
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 28px 0', fontSize: 15, fontWeight: 600, color: c, pointerEvents: 'none',
+            }} aria-hidden="true">
+              <span>9:41</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 11 }}>
+                  {[4, 6, 8, 11].map((h, i) => (
+                    <div key={i} style={{ width: 3, height: h, background: c, borderRadius: 1 }} />
+                  ))}
+                </div>
+                <div style={{
+                  width: 25, height: 12, border: `1.5px solid ${c}`, borderRadius: 3, padding: 1,
+                }}>
+                  <div style={{ width: '78%', height: '100%', background: c, borderRadius: 1 }} />
+                </div>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+              width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
+            }} aria-hidden="true" />
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20 }}>{children}</div>
+            <div style={{
+              position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+              width: 128, height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.35)', zIndex: 40,
+            }} aria-hidden="true" />
+          </div>
+        </div>
+      );
+    }
+
+    function MapWash() {
+      return (
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, opacity: 0.065, pointerEvents: 'none',
+          backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><g fill='none' stroke='#fff' stroke-width='1' opacity='0.4'>
+              <ellipse cx='200' cy='148' rx='158' ry='88'/><path d='M42 148 Q100 78 200 98 T358 138'/>
+            </g></svg>`)}")`,
+          backgroundSize: '130% auto', backgroundPosition: 'center 38%', backgroundRepeat: 'no-repeat',
+        }} />
+      );
+    }
+
+    function GlassOrb({ children, label, onClick }) {
+      return (
+        <button type="button" aria-label={label} onClick={onClick} style={{
+          width: 40, height: 40, borderRadius: 999, border: 'none', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(14px)', cursor: onClick ? 'pointer' : 'default', color: T.icon,
+        }}>{children}</button>
+      );
+    }
+
+    function TrustStrip({ cloudOn, onOpen }) {
+      const line = cloudOn
+        ? 'Temporary analysis only · not stored after help'
+        : 'On-device help · nothing sent to our servers';
+      return (
+        <button
+          type="button"
+          onClick={onOpen}
+          style={{
+            width: '100%', border: `1px solid ${cloudOn ? T.mintBorder : T.cardBorder}`,
+            borderRadius: 14, padding: '11px 12px',
+            background: cloudOn
+              ? 'linear-gradient(155deg, rgba(40,56,52,0.75) 0%, rgba(18,24,22,0.9) 100%)'
+              : T.card,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+            display: 'flex', alignItems: 'center', gap: 10,
+            cursor: 'pointer', textAlign: 'left', fontFamily: TYPE.font, color: T.primary,
+          }}
+        >
+          <span style={{
+            width: 28, height: 28, borderRadius: 999, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: cloudOn ? T.mintSoft : 'rgba(255,255,255,0.08)',
+            color: cloudOn ? T.mint : T.icon,
+          }}>
+            <IconShield />
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{
+              display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
+              textTransform: 'uppercase', color: cloudOn ? 'rgba(180,240,210,0.9)' : T.quiet,
+              marginBottom: 3,
+            }}>
+              {cloudOn ? 'Cloud assist on' : 'Private by default'}
+            </span>
+            <span style={{
+              display: 'block', fontSize: 13, fontWeight: 500, color: T.secondary, lineHeight: 1.3,
+            }}>
+              {line}
+            </span>
+          </span>
+          <span style={{ color: T.quiet, display: 'flex', flexShrink: 0 }}><IconChevron /></span>
+        </button>
+      );
+    }
+
+    function Chip({ children, onClick }) {
+      return (
+        <button type="button" onClick={onClick} style={{
+          border: `1px solid ${T.cardBorder}`,
+          background: 'rgba(255,255,255,0.06)',
+          borderRadius: 999, padding: '10px 14px',
+          fontSize: 13, fontWeight: 600, color: T.primary,
+          fontFamily: TYPE.font, cursor: 'pointer',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+          whiteSpace: 'nowrap',
+        }}>{children}</button>
+      );
+    }
+
+    function Bubble({ role, children }) {
+      const me = role === 'user';
+      return (
+        <div style={{
+          display: 'flex', justifyContent: me ? 'flex-end' : 'flex-start', marginBottom: 12,
+        }}>
+          <div style={{
+            maxWidth: '86%',
+            padding: me ? '12px 14px' : '13px 15px',
+            borderRadius: me ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
+            background: me
+              ? 'linear-gradient(160deg, rgba(127,217,176,0.28) 0%, rgba(79,185,138,0.22) 100%)'
+              : T.card,
+            border: me
+              ? `1px solid ${T.mintBorder}`
+              : `1px solid ${T.cardBorder}`,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07)',
+            fontSize: 15, fontWeight: 500, lineHeight: 1.45,
+            color: T.primary, fontFamily: TYPE.font,
+          }}>
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    function ToolCard({ title, detail }) {
+      return (
+        <div style={{
+          marginTop: 8, borderRadius: 14, padding: '12px 13px',
+          background: 'rgba(0,0,0,0.22)',
+          border: `1px solid ${T.hairline}`,
+        }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
+            textTransform: 'uppercase', color: T.quiet, marginBottom: 5,
+          }}>
+            Check
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 650, color: T.primary }}>{title}</div>
+          <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: T.secondary, lineHeight: 1.35 }}>
+            {detail}
+          </div>
+        </div>
+      );
+    }
+
+    function Composer({ placeholder }) {
+      return (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '8px 8px 8px 16px',
+          borderRadius: 999,
+          background: 'linear-gradient(155deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
+          border: `1px solid ${T.cardBorder}`,
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 22px rgba(0,0,0,0.2)',
+          backdropFilter: 'blur(14px)',
+        }}>
+          <div style={{
+            flex: 1, fontSize: 15, fontWeight: 500, color: T.quiet, fontFamily: TYPE.font,
+          }}>
+            {placeholder || 'Ask about your connection…'}
+          </div>
+          <div style={{
+            width: 36, height: 36, borderRadius: 999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: CTA, boxShadow: CTA_SH, color: '#0a1f18',
+          }}>
+            <IconSend />
+          </div>
+        </div>
+      );
+    }
+
+    /* —— Main Help screen —— */
+    function HelpScreen({
+      cloudOn, mode, connection = 'down', onTrust, onBounds, onChip,
+    }) {
+      // mode: 'empty' | 'chat'
+      // connection: 'down' (not connected / can’t connect) | 'up' (Connected) — ADR 0040
+      const up = connection === 'up';
+      const chips = up ? CHIPS_UP : CHIPS_DOWN;
+      const headline = up ? 'Need a hand with your connection?' : 'Trouble connecting?';
+      const sub = up
+        ? 'Ask about speed, routing mode, DNS, or overrides — changes still need your OK.'
+        : 'Ask here. Help explains failures and can run safe fixes — with your OK.';
+
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div className="halftone" aria-hidden="true" />
+          <div style={{
+            position: 'relative', zIndex: 2, height: '100%',
+            display: 'flex', flexDirection: 'column',
+            padding: '8px 18px 22px',
+          }}>
+            {/* Nav */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: 48, flexShrink: 0, marginBottom: 6,
+            }}>
+              <GlassOrb label="Close"><IconClose /></GlassOrb>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                fontSize: 17, fontWeight: 650, letterSpacing: '-0.022em',
+                color: T.primary, fontFamily: TYPE.font,
+              }}>
+                <span style={{ color: T.icon, display: 'flex' }}><IconHelpMark /></span>
+                Help
+              </div>
+              <div style={{ width: 40 }} aria-hidden="true" />
+            </div>
+
+            <TrustStrip cloudOn={cloudOn} onOpen={onTrust} />
+
+            {/* Body */}
+            <div style={{
+              flex: 1, minHeight: 0, overflowY: 'auto',
+              marginTop: 14, marginBottom: 12,
+              display: 'flex', flexDirection: 'column',
+            }}>
+              {mode === 'empty' ? (
+                <div style={{
+                  flex: 1, display: 'flex', flexDirection: 'column',
+                  justifyContent: 'center', padding: '8px 4px 12px',
+                }}>
+                  <div style={{
+                    fontSize: up ? 24 : 26, fontWeight: 700, letterSpacing: '-0.03em',
+                    color: T.primary, lineHeight: 1.15, marginBottom: 10,
+                  }}>
+                    {headline}
+                  </div>
+                  <p style={{
+                    fontSize: 15, fontWeight: 500, color: T.secondary,
+                    lineHeight: 1.45, maxWidth: '32ch', marginBottom: 20,
+                  }}>
+                    {sub}
+                  </p>
+                  <div style={{
+                    display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18,
+                  }}>
+                    {chips.map((c) => (
+                      <Chip key={c} onClick={() => onChip && onChip(c)}>{c}</Chip>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onBounds}
+                    style={{
+                      alignSelf: 'flex-start',
+                      border: 'none', background: 'transparent',
+                      padding: '6px 0', cursor: 'pointer',
+                      fontSize: 14, fontWeight: 650, color: T.mint,
+                      fontFamily: TYPE.font,
+                      display: 'flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    What Help can do
+                    <IconChevron />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ paddingTop: 4 }}>
+                  <Bubble role="user">Why can’t I connect?</Bubble>
+                  <Bubble role="assistant">
+                    The VPN tunnel is up, but the connectivity check failed — so we don’t call this Connected yet.
+                    <ToolCard
+                      title="What we found"
+                      detail="App can fix · High confidence · Same checks as the rest of the app"
+                    />
+                    <div style={{ marginTop: 10, fontSize: 15, fontWeight: 500, lineHeight: 1.45 }}>
+                      Next: try a DNS preset change, then re-check. I’ll need your OK before any repair.
+                    </div>
+                    <button type="button" style={{
+                      marginTop: 12, border: 'none', cursor: 'pointer',
+                      width: '100%', padding: '13px 16px', borderRadius: 14,
+                      background: CTA, boxShadow: CTA_SH,
+                      color: '#0a1f18', fontFamily: TYPE.font, fontSize: 15, fontWeight: 800,
+                    }}>
+                      Repair with my OK
+                    </button>
+                  </Bubble>
+                  <button
+                    type="button"
+                    onClick={onBounds}
+                    style={{
+                      border: 'none', background: 'transparent',
+                      padding: '4px 2px 8px', cursor: 'pointer',
+                      fontSize: 13, fontWeight: 600, color: T.quiet,
+                      fontFamily: TYPE.font,
+                    }}
+                  >
+                    What Help can do ›
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <Composer />
+          </div>
+        </div>
+      );
+    }
+
+    function BoundsScreen({ onBack }) {
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div className="halftone" aria-hidden="true" />
+          <div style={{
+            position: 'relative', zIndex: 2, height: '100%',
+            display: 'flex', flexDirection: 'column',
+            padding: '8px 20px 26px',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: 48, marginBottom: 8, flexShrink: 0,
+            }}>
+              <GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>
+              <div style={{
+                fontSize: 17, fontWeight: 650, letterSpacing: '-0.02em',
+                color: T.primary, fontFamily: TYPE.font,
+              }}>
+                What Help can do
+              </div>
+              <div style={{ width: 40 }} />
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+              <div style={{
+                fontSize: 12, fontWeight: 650, letterSpacing: '0.07em',
+                textTransform: 'uppercase', color: T.quiet, margin: '6px 4px 8px',
+              }}>
+                Help can
+              </div>
+              <div style={{
+                borderRadius: 18, overflow: 'hidden',
+                background: T.card, border: `1px solid ${T.cardBorder}`,
+                marginBottom: 18,
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+              }}>
+                {CAN.map((t, i) => (
+                  <div key={t} style={{
+                    display: 'flex', gap: 12, padding: '14px 15px',
+                    borderBottom: i === CAN.length - 1 ? 'none' : `1px solid ${T.hairline}`,
+                  }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: 999, flexShrink: 0, marginTop: 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: T.mintSoft, color: T.mint,
+                      fontSize: 13, fontWeight: 800,
+                    }}>✓</span>
+                    <span style={{
+                      fontSize: 14, fontWeight: 500, color: T.primary, lineHeight: 1.4,
+                    }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{
+                fontSize: 12, fontWeight: 650, letterSpacing: '0.07em',
+                textTransform: 'uppercase', color: T.quiet, margin: '0 4px 8px',
+              }}>
+                Help can’t
+              </div>
+              <div style={{
+                borderRadius: 18, overflow: 'hidden',
+                background: T.card, border: `1px solid ${T.cardBorder}`,
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+              }}>
+                {CANT.map((t, i) => (
+                  <div key={t} style={{
+                    display: 'flex', gap: 12, padding: '14px 15px',
+                    borderBottom: i === CANT.length - 1 ? 'none' : `1px solid ${T.hairline}`,
+                  }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: 999, flexShrink: 0, marginTop: 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'rgba(255,255,255,0.08)', color: T.muted,
+                      fontSize: 12, fontWeight: 800,
+                    }}>✕</span>
+                    <span style={{
+                      fontSize: 14, fontWeight: 500, color: T.secondary, lineHeight: 1.4,
+                    }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function HowDataScreen({ cloudOn, onBack, onToggleCloud }) {
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div className="halftone" aria-hidden="true" />
+          <div style={{
+            position: 'relative', zIndex: 2, height: '100%',
+            display: 'flex', flexDirection: 'column',
+            padding: '8px 20px 26px',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: 48, marginBottom: 8, flexShrink: 0,
+            }}>
+              <GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>
+              <div style={{
+                fontSize: 17, fontWeight: 650, letterSpacing: '-0.02em',
+                color: T.primary, fontFamily: TYPE.font,
+              }}>
+                How we use data
+              </div>
+              <div style={{ width: 40 }} />
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+              {[
+                {
+                  h: 'Cloud assist is on by default',
+                  b: 'In Help, cloud is on so you can get unstuck quickly. You can turn it off anytime below. Connection, diagnostics, and allowlisted repair still work if cloud is off.',
+                },
+                {
+                  h: 'What we may send',
+                  b: 'Temporary analysis context only — structured, redacted summaries (like what we found), never your subscription link, tokens, raw config, or browsing history.',
+                },
+                {
+                  h: 'Not kept after help',
+                  b: 'That context is for the current help session. We don’t store it on our servers after analysis completes.',
+                },
+                {
+                  h: 'No arbitrary files',
+                  b: 'Help doesn’t ask you to upload config dumps or log packs. Analysis context is structured — not free-form file upload.',
+                },
+              ].map((x) => (
+                <div key={x.h} style={{
+                  borderRadius: 18, padding: '15px 16px', marginBottom: 10,
+                  background: T.card, border: `1px solid ${T.cardBorder}`,
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                }}>
+                  <div style={{
+                    fontSize: 15, fontWeight: 700, color: T.primary,
+                    letterSpacing: '-0.01em', marginBottom: 7,
+                  }}>{x.h}</div>
+                  <div style={{
+                    fontSize: 14, fontWeight: 500, color: T.secondary, lineHeight: 1.48,
+                  }}>{x.b}</div>
+                </div>
+              ))}
+
+              <div style={{
+                marginTop: 8, borderRadius: 18, padding: '14px 16px',
+                background: T.card, border: `1px solid ${T.cardBorder}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 650, color: T.primary }}>Cloud assist</div>
+                  <div style={{ marginTop: 4, fontSize: 12, fontWeight: 500, color: T.muted }}>
+                    On by default · turn off anytime
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onToggleCloud}
+                  role="switch"
+                  aria-checked={cloudOn}
+                  style={{
+                    width: 50, height: 30, borderRadius: 999, border: 'none', flexShrink: 0,
+                    background: cloudOn
+                      ? 'linear-gradient(160deg, #6fd4a8 0%, #3aa878 100%)'
+                      : 'rgba(255,255,255,0.15)',
+                    position: 'relative', cursor: 'pointer',
+                  }}
+                >
+                  <span style={{
+                    position: 'absolute', top: 2.5, left: cloudOn ? 22 : 2.5,
+                    width: 25, height: 25, borderRadius: 999, background: '#fff',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.28)',
+                  }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* —— Home Help pill reference strip —— */
+    function HomeHelpRef({ empty }) {
+      return (
+        <div style={{
+          height: '100%', position: 'relative', color: '#fff',
+          background: FIELD,
+        }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div style={{
+            position: 'relative', zIndex: 2, padding: '8px 22px 0', height: 48,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+              <div style={{
+                height: 40, padding: '0 13px 0 10px', borderRadius: 999,
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -0.5px 0 rgba(0,0,0,0.2), 0 8px 22px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(16px) saturate(1.2)',
+              }}>
+                <span style={{ color: 'rgba(255,255,255,0.86)', display: 'flex', marginTop: 0.5 }}><IconHelpMark /></span>
+                <span style={{
+                  fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.01em',
+                  color: 'rgba(255,255,255,0.9)', fontFamily: TYPE.font, lineHeight: 1, paddingBottom: 0.5,
+                }}>Help</span>
+              </div>
+              {!empty && (
+                <div style={{
+                  width: 40, height: 40, borderRadius: 999,
+                  background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 0.5px rgba(255,255,255,0.1)',
+                }} />
+              )}
+            </div>
+            <div style={{
+              width: 40, height: 40, borderRadius: 999,
+              background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 0.5px rgba(255,255,255,0.1)',
+            }} />
+          </div>
+          <div style={{
+            position: 'relative', zIndex: 2, padding: '40px 28px',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.quiet, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Home chrome
+            </div>
+            <div style={{
+              marginTop: 12, fontSize: 20, fontWeight: 700, color: T.primary, letterSpacing: '-0.02em',
+            }}>
+              Help pill · ADR 0036
+            </div>
+            <p style={{
+              marginTop: 10, fontSize: 14, fontWeight: 500, color: T.secondary, lineHeight: 1.45,
+            }}>
+              {empty ? 'Empty: Help + Settings only' : 'With sub: Help · Subscriptions · Settings'}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    function InteractiveInner() {
+      const [view, setView] = useState('empty');
+      const [cloudOn, setCloudOn] = useState(true); // ADR 0042 default on
+      const [connUp, setConnUp] = useState(false);
+      const [returnTo, setReturnTo] = useState('empty');
+
+      const openData = (from) => {
+        setReturnTo(from);
+        setView('data');
+      };
+      const openBounds = (from) => {
+        setReturnTo(from);
+        setView('bounds');
+      };
+
+      let body;
+      if (view === 'bounds') {
+        body = <BoundsScreen onBack={() => setView(returnTo)} />;
+      } else if (view === 'data') {
+        body = (
+          <HowDataScreen
+            cloudOn={cloudOn}
+            onBack={() => setView(returnTo)}
+            onToggleCloud={() => setCloudOn((v) => !v)}
+          />
+        );
+      } else {
+        body = (
+          <div style={{ height: '100%', position: 'relative' }}>
+            <HelpScreen
+              cloudOn={cloudOn}
+              connection={connUp ? 'up' : 'down'}
+              mode={view === 'chat' ? 'chat' : 'empty'}
+              onTrust={() => openData(view === 'chat' ? 'chat' : 'empty')}
+              onBounds={() => openBounds(view === 'chat' ? 'chat' : 'empty')}
+              onChip={() => setView('chat')}
+            />
+            {view === 'empty' && (
+              <button
+                type="button"
+                onClick={() => setConnUp((v) => !v)}
+                style={{
+                  position: 'absolute', right: 14, bottom: 78, zIndex: 20,
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  background: 'rgba(0,0,0,0.55)', color: 'rgba(255,255,255,0.75)',
+                  fontSize: 11, fontWeight: 650, fontFamily: TYPE.font,
+                  borderRadius: 999, padding: '6px 10px', cursor: 'pointer',
+                }}
+              >
+                Demo: {connUp ? 'Connected' : 'Not connected'}
+              </button>
+            )}
+          </div>
+        );
+      }
+
+      return <IosFrame>{body}</IosFrame>;
+    }
+
+    function frame(node) {
+      return <IosFrame>{node}</IosFrame>;
+    }
+
+    function App() {
+      return (
+        <>
+          <div className="row" style={{ marginBottom: 48 }}>
+            <div className="phone-col">
+              <div className="lab">Interactive<span>Toggle connection · chips · trust · bounds</span></div>
+              <InteractiveInner />
+            </div>
+          </div>
+          <div className="row">
+            <div className="phone-col">
+              <div className="lab">0a · Home Help pill<span>With subscription</span></div>
+              {frame(<HomeHelpRef empty={false} />)}
+            </div>
+            <div className="phone-col">
+              <div className="lab">0b · Home Help pill<span>Empty · no Subscriptions</span></div>
+              {frame(<HomeHelpRef empty />)}
+            </div>
+            <div className="phone-col">
+              <div className="lab">1a · Empty · down<span>Default cloud on · fault chips · ADR 0042</span></div>
+              {frame(
+                <HelpScreen
+                  cloudOn
+                  connection="down"
+                  mode="empty"
+                  onTrust={() => {}}
+                  onBounds={() => {}}
+                />
+              )}
+            </div>
+            <div className="phone-col">
+              <div className="lab">1b · Empty · up<span>Need a hand? · strategy chips · ADR 0040</span></div>
+              {frame(
+                <HelpScreen
+                  cloudOn
+                  connection="up"
+                  mode="empty"
+                  onTrust={() => {}}
+                  onBounds={() => {}}
+                />
+              )}
+            </div>
+            <div className="phone-col">
+              <div className="lab">2 · Chat + tool<span>What we found · Repair consent · ADR 0041</span></div>
+              {frame(
+                <HelpScreen
+                  cloudOn
+                  mode="chat"
+                  onTrust={() => {}}
+                  onBounds={() => {}}
+                />
+              )}
+            </div>
+            <div className="phone-col">
+              <div className="lab">3 · Cloud off strip<span>On-device · after user opts out</span></div>
+              {frame(
+                <HelpScreen
+                  cloudOn={false}
+                  connection="down"
+                  mode="empty"
+                  onTrust={() => {}}
+                  onBounds={() => {}}
+                />
+              )}
+            </div>
+            <div className="phone-col">
+              <div className="lab">4 · What Help can do<span>4+4 Can / Can’t</span></div>
+              {frame(<BoundsScreen onBack={() => {}} />)}
+            </div>
+            <div className="phone-col">
+              <div className="lab">5 · How we use data<span>Ephemeral context · no files</span></div>
+              {frame(
+                <HowDataScreen cloudOn onBack={() => {}} onToggleCloud={() => {}} />
+              )}
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

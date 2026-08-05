@@ -20,7 +20,7 @@
 | 规则 | 说明 |
 |---|---|
 | Root | **仅 Home** |
-| Agent / Subscriptions / Settings | 顶栏 glass orbs（Empty 无 Subscriptions；Activity 在 Settings 内） |
+| Help / Subscriptions / Settings | 顶栏：**Help** glass pill + Subscriptions/Settings orbs（Empty 无 Subscriptions；Activity 在 Settings 内 · ADR 0036） |
 | Location | Not Connected 下 **图标 + Location ›** |
 | 禁止 | 底部 Tab；Go Premium |
 
