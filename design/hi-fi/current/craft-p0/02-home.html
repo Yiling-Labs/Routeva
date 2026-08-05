@@ -98,7 +98,7 @@
      *  Primary status ≈ 30pt / 700 / white on both skins
      *  Secondary (Canada / node) ≈ 15pt / 500 / ~55% white
      *  Foot hint ≈ 12pt / 400 / ~38% white
-     *  START/STOP ≈ 11pt / 800 / tracking 0.14em
+     *  START/STOP ≈ 12pt / 800 / tracking 0.12em · thumb ~51% track
      */
     const TYPE = {
       font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif',
@@ -112,7 +112,8 @@
       secondary: { size: 15, weight: 500, tracking: '0.01em', lineHeight: 1.25 },
       // Bottom swipe hint
       hint: { size: 12, weight: 400, tracking: '0.01em' },
-      capsule: { size: 11, weight: 800, tracking: '0.14em' },
+      // Capsule thumb — pin-length block; slightly larger type on taller face
+      capsule: { size: 12, weight: 800, tracking: '0.12em' },
       meta: { size: 13, weight: 500, tracking: '0.02em' },
     };
 
@@ -432,20 +433,23 @@
     }
 
     /**
-     * Pin dot field driven by ignite ∈ [0,1]:
-     *  0   = idle white ring (dim)
-     *  0→1 = green arcs light up gradually (inner→outer, center→sides)  ← START→STOP story
-     *  1   = full live state + soft looping pulse
+     * Pin dot field driven by ignite ∈ [0,1].
+     * Geometry: three concentric **circles**, same center as the capsule’s
+     * bottom end-cap circle (pill radius = thumbW/2). Different r only.
+     * Animation (ring-by-ring + pulse) matches origin/main timing.
      */
-    function PinDotField({ ignite = 0 }) {
+    function PinDotField({ ignite = 0, capR = 35 }) {
       const phase = usePhase(2000, ignite > 0.92);
       const dots = [];
 
-      // 3-arc geometry — only appears once user starts swipe/connect (no dots on pure Idle)
+      // Concentric with bottom pill cap: first ring keeps clear air from chrome
+      const GUTTER = 18; // distance from capsule edge to ring 1
+      const STEP = 20;
+      // Dot count for 2/3 arc (~240°) so spacing stays even; sizes +20% vs prior
       const ARCS = [
-        { r: 56,  n: 28, size: 3.2 },
-        { r: 78,  n: 34, size: 2.85 },
-        { r: 100, n: 40, size: 2.5 },
+        { r: capR + GUTTER, n: 32, size: 3.84 },
+        { r: capR + GUTTER + STEP, n: 40, size: 3.42 },
+        { r: capR + GUTTER + STEP * 2, n: 48, size: 3.0 },
       ];
 
       // Green arcs light ring-by-ring as ignite 0→1
@@ -469,11 +473,14 @@
 
           for (let i = 0; i < arc.n; i++) {
             const u = i / (arc.n - 1);
-            const ang = -0.12 * Math.PI + 1.24 * Math.PI * u;
-            const south = Math.max(0, Math.sin(ang));
-            const sideFall = Math.pow(south, 0.35);
+            // 2/3 circle (240°): open at top, wrap bottom + both flanks
+            // -30° → 210° (y-down: 0 right, π/2 bottom, π left)
+            const ang = -1 / 6 * Math.PI + (2 / 3) * 2 * Math.PI * u;
+            // Soft falloff toward the open top — do not hard-kill upper flanks
+            const elev = Math.sin(ang); // 1 bottom · 0 sides · negative near open top
+            const sideFall = 0.38 + 0.62 * Math.pow(Math.max(0, elev + 0.42), 0.4);
 
-            const fromCenter = Math.abs(u - 0.5) * 2;
+            const fromCenter = Math.abs(u - 0.5) * 2; // 0 at bottom mid → 1 at both ends
             const dotStart = ringStart + fromCenter * ringSpan * 0.85;
             const dotLit = Math.max(0, Math.min(1, (ignite - dotStart) / 0.1));
 
@@ -482,11 +489,14 @@
 
             const brightness = on * (0.55 + 0.45 * sideFall) + ringPulse * 0.7 * sideFall * on;
             const opacity = Math.min(1, brightness);
-            const size = arc.size * (0.65 + 0.5 * on + 0.35 * ringPulse + 0.2 * sideFall);
+            // Size: largest at bottom midpoint, arithmetic taper to 50% at both ends
+            // scale = 1 − 0.5·fromCenter  →  1.0 (mid) … 0.5 (ends)
+            const sizeScale = 1 - 0.5 * fromCenter;
+            const size = arc.size * sizeScale;
             const hot = on > 0.75 || ringPulse > 0.45;
             const atFront = dotLit > 0.2 && dotLit < 0.95 && ignite < 0.98;
 
-            const px = Math.max(2, Math.round(size * (atFront ? 1.12 : 1)));
+            const px = Math.max(1.5, size);
             dots.push({
               x: Math.cos(ang) * arc.r,
               y: Math.sin(ang) * arc.r,
@@ -525,7 +535,6 @@
                 boxShadow: d.kind === 'live' && d.blur
                   ? `0 0 ${Math.round(4 + d.size)}px rgba(80,255,180,0.75)`
                   : 'none',
-                // prevent font/layout from stretching
                 flexShrink: 0,
                 boxSizing: 'border-box',
               }}
@@ -551,16 +560,20 @@
       igniteForce = null,
       frozen = false,
     }) {
-      const TRACK_W = 82;
-      const TRACK_H = 186;
-      const THUMB_H = 78;
-      const PAD = 8;
+      /* Pin-proportion thumb: ~51% track height, travel still ≥70px for swipe feel */
+      const TRACK_W = 80;
+      const TRACK_H = 204;
+      const THUMB_H = 104;
+      const PAD = 7;
+      const THUMB_INSET = 5;
+      const THUMB_W = TRACK_W - THUMB_INSET * 2;
       const Y_START = PAD;
       const Y_STOP = TRACK_H - THUMB_H - PAD;
-      const STAGE_W = 252;
-      const STAGE_H = 300;
+      const STAGE_W = 260;
+      // Room for outer arc (~ halfH+37) under STOP seat center
+      const STAGE_H = 340;
       const trackLeft = (STAGE_W - TRACK_W) / 2;
-      const trackTop = (STAGE_H - TRACK_H) / 2;
+      const trackTop = Math.round((STAGE_H - TRACK_H) * 0.38);
       const SLIDE_MS = 480;
       const ease = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
@@ -707,17 +720,30 @@
       // Thumb body: dark while START / swipe; mint only when Connected
       // (mid-swipe must NOT turn the whole button green — only the top LED)
       const trackBg = isOn
-        ? 'linear-gradient(180deg, rgba(10,32,26,0.45) 0%, rgba(6,22,18,0.72) 100%)'
-        : 'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(0,0,0,0.4) 100%)';
+        ? 'linear-gradient(180deg, rgba(12,36,28,0.5) 0%, rgba(6,20,16,0.78) 100%)'
+        : 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(8,10,12,0.42) 55%, rgba(0,0,0,0.48) 100%)';
       const thumbBg = isOn
-        ? 'linear-gradient(160deg, #9aefc8 0%, #52c292 40%, #2fa06e 100%)'
+        ? 'linear-gradient(165deg, #b6f5d6 0%, #6ed4a6 38%, #3fb887 72%, #2a9a6c 100%)'
         : isBusy
-          ? 'linear-gradient(160deg, #3a4844 0%, #1c2624 55%, #141a1a 100%)'
-          : 'linear-gradient(160deg, #424a52 0%, #1c2228 50%, #12161a 100%)';
-      const thumbFg = isOn ? 'rgba(6,28,20,0.92)' : 'rgba(255,255,255,0.92)';
+          ? 'linear-gradient(165deg, #3e4c48 0%, #222c2a 48%, #161c1c 100%)'
+          : 'linear-gradient(165deg, #4a525a 0%, #2a3138 42%, #1a1f24 100%)';
+      const thumbFg = isOn ? 'rgba(6,28,20,0.92)' : 'rgba(255,255,255,0.94)';
+      // Layered depth: ambient + contact + top rim highlight + bottom well
       const thumbShadow = isOn
-        ? '0 12px 32px rgba(40,210,140,0.48), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 8px rgba(0,0,0,0.12)'
-        : '0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -3px 10px rgba(0,0,0,0.42)';
+        ? [
+            '0 14px 36px rgba(30,190,120,0.42)',
+            '0 4px 12px rgba(20,120,80,0.28)',
+            '0 0 0 1px rgba(255,255,255,0.22)',
+            'inset 0 1.5px 0 rgba(255,255,255,0.62)',
+            'inset 0 -3px 10px rgba(0,60,30,0.18)',
+          ].join(', ')
+        : [
+            '0 14px 34px rgba(0,0,0,0.48)',
+            '0 3px 8px rgba(0,0,0,0.28)',
+            '0 0 0 1px rgba(255,255,255,0.1)',
+            'inset 0 1.5px 0 rgba(255,255,255,0.28)',
+            'inset 0 -4px 12px rgba(0,0,0,0.45)',
+          ].join(', ');
 
       const label = isBusy ? '…' : isOn ? 'STOP' : 'START';
       const hint = isBusy
@@ -741,17 +767,21 @@
         : (igniteForce != null
           ? igniteForce
           : Math.max(ignite, dragPreview));
-      // Arcs always under STOP seat (fixed) so swipe frames match Connected
-      const stopSeatCy = trackTop + Y_STOP + THUMB_H / 2;
+      // STOP seat: concentric with bottom end-cap of the pill thumb
+      // (full-round capsule → bottom circle center is R above the tip, R = THUMB_W/2)
+      const CAP_R = THUMB_W / 2;
+      const stopCapCy = trackTop + Y_STOP + THUMB_H - CAP_R;
+      // Nudge rings down slightly so the nest sits under the capsule, not tight on it
+      const RING_Y_NUDGE = 10;
       const fieldCx = STAGE_W / 2;
-      const fieldCy = stopSeatCy;
+      const fieldCy = stopCapCy + RING_Y_NUDGE;
 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ position: 'relative', width: STAGE_W, height: STAGE_H }}>
-            {/* Dots: ignite 0→1 = gradual light-up (START→STOP story) */}
+            {/* Dots: bottom-cap center + nudge; r = CAP_R+18 / +38 / +58 */}
             <div className="probe-anchor" style={{ left: fieldCx, top: fieldCy }} aria-hidden>
-              <PinDotField ignite={igniteView} />
+              <PinDotField ignite={igniteView} capR={CAP_R} />
             </div>
 
             <div style={{
@@ -760,38 +790,38 @@
               background: trackBg,
               transition: dragging ? 'none' : `background ${SLIDE_MS}ms ${ease}`,
               boxShadow: isOn
-                ? 'inset 0 2px 16px rgba(0,0,0,0.38), 0 0 0 1px rgba(120,255,190,0.14), 0 18px 44px rgba(0,0,0,0.16)'
-                : 'inset 0 2px 18px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.09), 0 18px 44px rgba(0,0,0,0.32)',
-              backdropFilter: 'blur(14px)',
-              WebkitBackdropFilter: 'blur(14px)',
+                ? 'inset 0 2px 18px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(120,255,190,0.16), 0 20px 48px rgba(0,0,0,0.18)'
+                : 'inset 0 2px 20px rgba(0,0,0,0.58), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(255,255,255,0.1), 0 20px 48px rgba(0,0,0,0.34)',
+              backdropFilter: 'blur(16px) saturate(1.15)',
+              WebkitBackdropFilter: 'blur(16px) saturate(1.15)',
               touchAction: 'none', userSelect: 'none', zIndex: 2,
             }}>
-              {/* Idle: chevron DOWN below START (pin) */}
+              {/* Idle: chevron DOWN below START — tucked to rail end */}
               {(mode === 'idle' || (mode === 'connecting' && onAmt < 0.9)) && onAmt < 0.75 && (
                 <div style={{
-                  position: 'absolute', bottom: 16, left: 0, right: 0,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                  opacity: 0.5 * (1 - onAmt), pointerEvents: 'none',
+                  position: 'absolute', bottom: 11, left: 0, right: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                  opacity: 0.42 * (1 - onAmt), pointerEvents: 'none',
                   transition: `opacity ${SLIDE_MS}ms ${ease}`,
                 }}>
                   <span style={{
-                    fontFamily: TYPE.font, fontSize: 8, fontWeight: 700,
-                    letterSpacing: '0.18em', color: 'rgba(255,255,255,0.40)',
+                    fontFamily: TYPE.font, fontSize: 7, fontWeight: 700,
+                    letterSpacing: '0.16em', color: 'rgba(255,255,255,0.38)',
                   }}>SWIPE</span>
-                  <Chevron dir="down" color="rgba(255,255,255,0.55)" />
+                  <Chevron dir="down" color="rgba(255,255,255,0.5)" size={14} />
                 </div>
               )}
               {/* Connected: chevron UP above STOP */}
               {isOn && (
                 <div style={{
-                  position: 'absolute', top: 16, left: 0, right: 0,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                  opacity: 0.48, pointerEvents: 'none',
+                  position: 'absolute', top: 11, left: 0, right: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                  opacity: 0.4, pointerEvents: 'none',
                 }}>
-                  <Chevron dir="up" color="rgba(180,255,220,0.6)" />
+                  <Chevron dir="up" color="rgba(180,255,220,0.55)" size={14} />
                   <span style={{
-                    fontFamily: TYPE.font, fontSize: 8, fontWeight: 700,
-                    letterSpacing: '0.18em', color: 'rgba(200,255,230,0.55)',
+                    fontFamily: TYPE.font, fontSize: 7, fontWeight: 700,
+                    letterSpacing: '0.16em', color: 'rgba(200,255,230,0.5)',
                   }}>SWIPE</span>
                 </div>
               )}
@@ -803,10 +833,11 @@
                 onPointerCancel={onPointerUp}
                 onClick={onTap}
                 style={{
-                  position: 'absolute', left: 7, width: 68, height: THUMB_H, top: y,
+                  position: 'absolute', left: THUMB_INSET, width: THUMB_W, height: THUMB_H, top: y,
                   borderRadius: 999, background: thumbBg, boxShadow: thumbShadow,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 5, cursor: isBusy || sliding ? 'wait' : 'grab',
+                  gap: 8, paddingTop: 10, paddingBottom: 8,
+                  cursor: isBusy || sliding ? 'wait' : 'grab',
                   transition: dragging
                     ? 'background 0.15s, box-shadow 0.15s'
                     : `top ${SLIDE_MS}ms ${ease}, background ${SLIDE_MS}ms ${ease}, box-shadow ${SLIDE_MS}ms ${ease}`,
@@ -821,11 +852,12 @@
                   letterSpacing: TYPE.capsule.tracking,
                   color: thumbFg,
                   lineHeight: 1,
+                  marginTop: 6,
                   transition: `color ${SLIDE_MS}ms ${ease}`,
                 }}>
                   {label}
                 </span>
-                <IconPower size={22} color={thumbFg} />
+                <IconPower size={24} stroke={2.15} color={thumbFg} />
                 {/* Top LED only — not the whole thumb */}
                 {(() => {
                   const led = isOn || isBusy ? 1 : Math.max(0, Math.min(1, onAmt));
@@ -837,18 +869,18 @@
                       aria-hidden
                       style={{
                         position: 'absolute',
-                        top: 11,
+                        top: 14,
                         left: '50%',
-                        width: 6,
-                        height: 6,
-                        marginLeft: -3,
+                        width: 7,
+                        height: 7,
+                        marginLeft: -3.5,
                         borderRadius: '50%',
                         background: led < 0.06
                           ? 'rgba(28, 36, 32, 0.95)'
                           : `rgba(30, ${g}, 70, ${a})`,
                         boxShadow: led < 0.08
                           ? 'inset 0 1px 1px rgba(0,0,0,0.5)'
-                          : `0 0 ${3 + 9 * led}px rgba(50, 255, 130, ${0.2 + 0.65 * led}), inset 0 0 2px rgba(180,255,200,${0.3 * led})`,
+                          : `0 0 ${4 + 12 * led}px rgba(50, 255, 130, ${0.25 + 0.7 * led}), inset 0 0 2px rgba(180,255,200,${0.35 * led})`,
                         transition: dragging
                           ? 'background 0.06s linear, box-shadow 0.06s linear'
                           : `background ${SLIDE_MS}ms ${ease}, box-shadow ${SLIDE_MS}ms ${ease}`,

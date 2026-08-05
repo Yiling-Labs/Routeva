@@ -57,6 +57,8 @@ Interactive 列可拖/点完整流程。
 - 手势中：点阵锚在 **STOP 座位**（胶囊底）；内→外 3 圈逐亮  
 - Connected：STOP 在 **底**；**上滑断开**  
 - 点为正圆；Connected/Connecting 仅 **3 圈**  
+- **拇指比例：** 约轨高 **50–55%**、贴轨 inset ~5；勿做成短钮；分层阴影 + 顶 LED 进度（中途整钮不变绿）  
+- **三圈点阵：** 与胶囊底部端圆近似同心（圆心 = 底圆圆心 + 下移 ~10）；第一圈与胶囊 **gutter ≈18**，三圈 r = r₀+18 / +38 / +58；每圈扫 **2/3 圆（240°，顶部开口）**；点大小：底中点最大、两端 50%、沿弧**等差**递减；`ignite` 0→1 内→外点亮 + 满亮脉冲；Idle 无点  
 
 ## 字阶（约 393pt 宽）
 
@@ -68,7 +70,7 @@ Interactive 列可拖/点完整流程。
 | Protocol | 11 | 500 | · VMess（~38% 白） |
 | Location pill | 14 | 600 | Location |
 | Hint | 13 | 500 | Swipe down to connect（≥ muted 对比） |
-| Capsule | 11 | 800 | START / STOP |
+| Capsule | 12 | 800 | START / STOP（拇指约轨高 50%+） |
 
 ## 明确不做（Home）
 
