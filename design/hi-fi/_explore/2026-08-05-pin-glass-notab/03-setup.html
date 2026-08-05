@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · First-Run Setup (minimal)</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      background: #c2c2c0;
+      background-image: radial-gradient(ellipse at 30% 15%, #d8d8d6 0%, #b6b6b4 50%, #a4a4a2 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px 24px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .meta { max-width: 720px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .meta p { font-size: 14px; color: #3a3a3a; margin-top: 8px; line-height: 1.55; max-width: 68ch; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      border: 1px solid #333; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.4);
+    }
+    .row {
+      display: flex; flex-wrap: wrap; gap: 36px; justify-content: center;
+      max-width: 1700px; margin: 0 auto;
+    }
+    .phone-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .lab { font-size: 12px; font-weight: 650; color: #2a2a2a; text-align: center; max-width: 260px; line-height: 1.35; }
+    .lab span { display: block; font-weight: 400; color: #555; margin-top: 2px; font-size: 11px; }
+    .noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px; mix-blend-mode: overlay;
+    }
+    .halftone {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 40%;
+      pointer-events: none; opacity: 0.15;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0.85px, transparent 1.05px);
+      background-size: 4.5px 4.5px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+      mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>First-run · Minimal setup</h1>
+    <p>
+      ADR 0019: <strong>Welcome (once) → Home Empty → Add Subscription</strong>.
+      No numbered cards. Paste-first import. VPN deferred until first connect.
+    </p>
+    <div class="tags">
+      <span class="tag">ADR 0019</span>
+      <span class="tag">LOW BURDEN</span>
+      <span class="tag">PASTE FIRST</span>
+      <span class="tag">VISUAL SYSTEM</span>
+    </div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const TYPE = { font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif' };
+    const FIELD = 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)';
+    const CTA = 'linear-gradient(160deg, #8fe8c0 0%, #4bb98a 48%, #2f9a6c 100%)';
+    const CTA_SH = '0 12px 32px rgba(50,190,130,0.32), inset 0 1px 0 rgba(255,255,255,0.4)';
+
+    function IosFrame({ children }) {
+      const c = '#fff';
+      return (
+        <div style={{
+          display: 'inline-block', padding: 11, background: '#0a0a0a', borderRadius: 58,
+          boxShadow: '0 0 0 1px #2a2a2a, 0 32px 80px rgba(0,0,0,0.36), inset 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          <div style={{
+            position: 'relative', width: 393, height: 852, borderRadius: 48,
+            overflow: 'hidden', background: FIELD,
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 28px 0', fontSize: 15, fontWeight: 600, color: c, pointerEvents: 'none',
+            }}>
+              <span>9:41</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 11 }}>
+                  {[4, 6, 8, 11].map((h, i) => (
+                    <div key={i} style={{ width: 3, height: h, background: c, borderRadius: 1 }} />
+                  ))}
+                </div>
+                <div style={{
+                  width: 25, height: 12, border: `1.5px solid ${c}`, borderRadius: 3, padding: 1, position: 'relative',
+                }}>
+                  <div style={{ width: '78%', height: '100%', background: c, borderRadius: 1 }} />
+                </div>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+              width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
+            }} />
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20 }}>{children}</div>
+            <div style={{
+              position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+              width: 128, height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.35)', zIndex: 40,
+            }} />
+          </div>
+        </div>
+      );
+    }
+
+    function GlassOrb({ children, onClick }) {
+      return (
+        <div onClick={onClick} style={{
+          width: 40, height: 40, borderRadius: 999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(14px)', cursor: onClick ? 'pointer' : 'default',
+        }}>{children}</div>
+      );
+    }
+
+    function Primary({ children, wide }) {
+      return (
+        <button style={{
+          border: 'none', cursor: 'pointer', width: wide ? '100%' : undefined,
+          padding: '17px 28px', borderRadius: 18, background: CTA, boxShadow: CTA_SH,
+          color: '#0a1f18', fontFamily: TYPE.font, fontSize: 16, fontWeight: 800,
+        }}>{children}</button>
+      );
+    }
+
+    function Ghost({ children }) {
+      return (
+        <button style={{
+          border: '1px solid rgba(255,255,255,0.14)', cursor: 'pointer', width: '100%',
+          padding: '15px 18px', borderRadius: 16, background: 'rgba(255,255,255,0.06)',
+          color: 'rgba(255,255,255,0.78)', fontFamily: TYPE.font, fontSize: 15, fontWeight: 600,
+        }}>{children}</button>
+      );
+    }
+
+    function MapWash() {
+      return (
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0, opacity: 0.07, pointerEvents: 'none',
+          backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><g fill='none' stroke='#fff' stroke-width='1' opacity='0.4'>
+              <ellipse cx='200' cy='148' rx='158' ry='88'/><path d='M42 148 Q100 78 200 98 T358 138'/>
+            </g></svg>`)}")`,
+          backgroundSize: '130% auto', backgroundPosition: 'center 42%', backgroundRepeat: 'no-repeat',
+        }} />
+      );
+    }
+
+    function Shell({ children, topRight }) {
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" />
+          <MapWash />
+          <div className="halftone" />
+          <div style={{
+            position: 'relative', zIndex: 2, height: '100%',
+            display: 'flex', flexDirection: 'column', padding: '10px 24px 28px',
+          }}>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 44,
+            }}>
+              <div style={{ width: 40 }} />
+              {topRight || <div style={{ width: 40 }} />}
+            </div>
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    /* —— 1 Welcome (once) · low burden: headline + one sub only —— */
+    function Welcome() {
+      return (
+        <IosFrame>
+          <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+            <div className="noise" />
+            <MapWash />
+            <div className="halftone" />
+
+            <div style={{
+              position: 'relative', zIndex: 2, height: '100%',
+              display: 'flex', flexDirection: 'column',
+              padding: '12px 28px 36px',
+            }}>
+              {/* Quiet brand — secondary to the promise */}
+              <div style={{
+                marginTop: 8, height: 44,
+                display: 'flex', alignItems: 'center',
+              }}>
+                <span style={{
+                  fontSize: 12, fontWeight: 700, letterSpacing: '0.16em',
+                  color: 'rgba(255,255,255,0.32)',
+                }}>
+                  ROUTEVA
+                </span>
+              </div>
+
+              {/* Optical center: content sits upper-mid, not dead center */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                paddingBottom: '18%',
+                maxWidth: 320,
+              }}>
+                <h1 style={{
+                  margin: 0,
+                  fontFamily: TYPE.font,
+                  fontSize: 34,
+                  fontWeight: 700,
+                  letterSpacing: '-0.04em',
+                  lineHeight: 1.12,
+                  color: 'rgba(255,255,255,0.96)',
+                  textWrap: 'balance',
+                }}>
+                  Paste your subscription.
+                  <span style={{
+                    display: 'block',
+                    marginTop: 6,
+                    color: 'rgba(255,255,255,0.96)',
+                  }}>
+                    We handle the rest.
+                  </span>
+                </h1>
+                <p style={{
+                  margin: '20px 0 0',
+                  fontFamily: TYPE.font,
+                  fontSize: 16,
+                  fontWeight: 500,
+                  letterSpacing: '-0.01em',
+                  lineHeight: 1.45,
+                  color: 'rgba(255,255,255,0.48)',
+                  maxWidth: 280,
+                }}>
+                  Use a link from your provider. We don’t sell nodes.
+                </p>
+              </div>
+
+              {/* Primary action: verb-first, full-width, safe inset */}
+              <Primary wide>Get started</Primary>
+            </div>
+          </div>
+        </IosFrame>
+      );
+    }
+
+    /* —— 2 Home Empty = same Home chrome, empty state only —— */
+    function HomeEmpty() {
+      // Same shell as Home Idle: [Activity][Agent] …… [Settings]
+      // Add path: primary CTA only (not a different top-right control)
+      return (
+        <IosFrame>
+          <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+            <div className="noise" />
+            <MapWash />
+            <div className="halftone" />
+            <div style={{
+              position: 'relative', zIndex: 6, height: 48,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '8px 22px 0',
+            }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <GlassOrb>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h16M4 12h12M4 17h14" stroke="rgba(255,255,255,0.8)" strokeWidth="1.85" strokeLinecap="round" />
+                  </svg>
+                </GlassOrb>
+                <GlassOrb>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 4a6 6 0 0 0-6 6v1.2L4.5 14V16h15v-2L18 11.2V10a6 6 0 0 0-6-6z" stroke="rgba(255,255,255,0.8)" strokeWidth="1.6" />
+                  </svg>
+                </GlassOrb>
+              </div>
+              <GlassOrb>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="3" stroke="rgba(255,255,255,0.8)" strokeWidth="1.6" />
+                  <path d="M12 3v2.1M12 18.9V21M3 12h2.1M18.9 12H21M5.7 5.7l1.5 1.5M16.8 16.8l1.5 1.5M5.7 18.3l1.5-1.5M16.8 7.2l1.5-1.5" stroke="rgba(255,255,255,0.8)" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </GlassOrb>
+            </div>
+
+            <div style={{
+              position: 'absolute', top: '30%', left: 0, right: 0, zIndex: 2,
+              textAlign: 'center', padding: '0 36px', transform: 'translateY(-50%)',
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 999, margin: '0 auto 20px',
+                background: 'linear-gradient(155deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)',
+                border: '1px solid rgba(255,255,255,0.14)',
+                boxShadow: '0 12px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5v14M5 12h14" stroke="rgba(127,217,176,0.95)" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em', color: 'rgba(255,255,255,0.96)' }}>
+                Add a subscription
+              </div>
+              <div style={{ marginTop: 12, fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.42)' }}>
+                Paste a link you already have
+              </div>
+            </div>
+
+            {/* Same capsule seat as Home — dimmed until a subscription exists */}
+            <div style={{
+              position: 'absolute', left: 0, right: 0, bottom: 118, zIndex: 2,
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              opacity: 0.32, pointerEvents: 'none',
+            }}>
+              <div style={{
+                width: 78, height: 160, borderRadius: 999,
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.35) 100%)',
+                boxShadow: 'inset 0 2px 14px rgba(0,0,0,0.45)',
+                position: 'relative',
+              }}>
+                <div style={{
+                  position: 'absolute', left: 7, top: 8, width: 64, height: 70, borderRadius: 999,
+                  background: 'linear-gradient(160deg, #3a4248 0%, #1a2026 100%)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.45)' }}>START</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3v9" stroke="rgba(255,255,255,0.45)" strokeWidth="2.2" strokeLinecap="round" />
+                    <path d="M7.2 6.4a7.2 7.2 0 1 0 9.6 0" stroke="rgba(255,255,255,0.45)" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                  {/* LED off — no subscription / not started */}
+                  <div style={{
+                    position: 'absolute', top: 11, width: 6, height: 6, borderRadius: '50%',
+                    background: 'rgba(40, 70, 50, 0.55)',
+                    boxShadow: 'none',
+                    opacity: 0.45,
+                  }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ position: 'absolute', left: 28, right: 28, bottom: 36, zIndex: 5 }}>
+              <Primary wide>Add subscription</Primary>
+            </div>
+          </div>
+        </IosFrame>
+      );
+    }
+
+    /* —— 3 Add Subscription (paste-first; no separate “found” screen) —— */
+    function AddSub({ fail }) {
+      return (
+        <IosFrame>
+          <Shell topRight={
+            <GlassOrb>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M6 6l12 12M18 6L6 18" stroke="rgba(255,255,255,0.75)" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </GlassOrb>
+          }>
+            <div style={{ marginTop: 8 }}>
+              <div style={{
+                fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em',
+                color: 'rgba(255,255,255,0.96)',
+              }}>
+                Add subscription
+              </div>
+              <div style={{
+                marginTop: 12, fontSize: 15, fontWeight: 500, lineHeight: 1.5,
+                color: 'rgba(255,255,255,0.48)', maxWidth: 320,
+              }}>
+                Get a subscription link or QR from your provider, then paste or scan it here.
+              </div>
+            </div>
+
+            {fail && (
+              <div style={{
+                marginTop: 32,
+                textAlign: 'center',
+                padding: '8px 8px 0',
+              }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 999, margin: '0 auto 16px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="rgba(255,200,180,0.75)" strokeWidth="1.6" />
+                    <path d="M12 8v5M12 16.5v.5" stroke="rgba(255,200,180,0.85)" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: 'rgba(255,255,255,0.94)' }}>
+                  Couldn’t add this
+                </div>
+                <div style={{
+                  marginTop: 10, fontSize: 15, fontWeight: 500, lineHeight: 1.45,
+                  color: 'rgba(255,255,255,0.42)', maxWidth: 280, marginLeft: 'auto', marginRight: 'auto',
+                }}>
+                  Copy a fresh link or QR from your provider, then try again.
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop: fail ? 28 : 48 }}>
+              <Primary wide>{fail ? 'Paste again' : 'Paste from Clipboard'}</Primary>
+            </div>
+
+            <div style={{
+              marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
+            }}>
+              <Ghost>
+                <span style={{ display: 'block', fontSize: 16, marginBottom: 6, opacity: 0.65 }}>▣</span>
+                Scan QR
+              </Ghost>
+              <Ghost>
+                <span style={{ display: 'block', fontSize: 16, marginBottom: 6, opacity: 0.65 }}>▢</span>
+                Import file
+              </Ghost>
+            </div>
+
+            <div style={{ flex: 1 }} />
+            <div style={{
+              textAlign: 'center', fontSize: 12, fontWeight: 500,
+              color: 'rgba(255,255,255,0.3)', lineHeight: 1.4,
+            }}>
+              {fail ? 'Nothing on this device was changed.' : 'We don’t sell or recommend providers.'}
+            </div>
+          </Shell>
+        </IosFrame>
+      );
+    }
+
+    /* —— 3b Parsing (clipboard or QR — same essence) —— */
+    function Parsing({ source }) {
+      // source: 'clipboard' | 'qr'
+      const label = source === 'qr' ? 'Reading QR code…' : 'Reading clipboard…';
+      const sub = 'Checking your subscription';
+      return (
+        <IosFrame>
+          <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+            <div className="noise" />
+            <MapWash />
+            <div className="halftone" />
+            <div style={{
+              position: 'relative', zIndex: 2, height: '100%',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              padding: '0 40px 40px',
+            }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: 999,
+                background: 'linear-gradient(155deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)',
+                border: '1px solid rgba(255,255,255,0.14)',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.18)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
+              }}>
+                <div style={{
+                  position: 'absolute', inset: -3, borderRadius: 999,
+                  border: '2px solid transparent',
+                  borderTopColor: 'rgba(127,217,176,0.85)',
+                  borderRightColor: 'rgba(127,217,176,0.25)',
+                  animation: 'spin 0.9s linear infinite',
+                }} />
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                  {source === 'qr' ? (
+                    <path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 2h2v2h-2v-2zm4 0h2v4h-4v-2h2v-2zm-4 4h2v2h-2v-2z" stroke="rgba(255,255,255,0.85)" strokeWidth="1.4" />
+                  ) : (
+                    <path d="M8 6h11a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 3V8a2 2 0 0 1 2-2z" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5" strokeLinejoin="round" />
+                  )}
+                </svg>
+              </div>
+              <div style={{
+                marginTop: 28, fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em',
+                color: 'rgba(255,255,255,0.94)', textAlign: 'center',
+              }}>
+                {label}
+              </div>
+              <div style={{
+                marginTop: 10, fontSize: 15, fontWeight: 500,
+                color: 'rgba(255,255,255,0.4)', textAlign: 'center',
+              }}>
+                {sub}
+              </div>
+            </div>
+          </div>
+        </IosFrame>
+      );
+    }
+
+    /* —— 4 Success = real Home Idle shell + toast —— */
+    function HomeIdleToast() {
+      const flags = [
+        { cc: 'za', s: 0.66 }, { cc: 'us', s: 0.86 }, { cc: 'hk', s: 1.24, on: true },
+        { cc: 'de', s: 0.86 }, { cc: 'gb', s: 0.66 },
+      ];
+      return (
+        <IosFrame>
+          <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+            <div className="noise" />
+            <MapWash />
+            <div className="halftone" />
+
+            {/* Home chrome — same as Home Idle */}
+            <div style={{
+              position: 'relative', zIndex: 6, height: 48,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '8px 22px 0',
+            }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <GlassOrb>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h16M4 12h12M4 17h14" stroke="rgba(255,255,255,0.8)" strokeWidth="1.85" strokeLinecap="round" />
+                  </svg>
+                </GlassOrb>
+                <GlassOrb>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 4a6 6 0 0 0-6 6v1.2L4.5 14V16h15v-2L18 11.2V10a6 6 0 0 0-6-6z" stroke="rgba(255,255,255,0.8)" strokeWidth="1.6" />
+                  </svg>
+                </GlassOrb>
+              </div>
+              <GlassOrb>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="3" stroke="rgba(255,255,255,0.8)" strokeWidth="1.6" />
+                  <path d="M12 3v2.1M12 18.9V21M3 12h2.1M18.9 12H21M5.7 5.7l1.5 1.5M16.8 16.8l1.5 1.5M5.7 18.3l1.5-1.5M16.8 7.2l1.5-1.5" stroke="rgba(255,255,255,0.8)" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </GlassOrb>
+            </div>
+
+            {/* toast over real Home */}
+            <div style={{
+              position: 'absolute', top: 62, left: 20, right: 20, zIndex: 40,
+              padding: '14px 16px', borderRadius: 18,
+              background: 'linear-gradient(155deg, rgba(40,48,52,0.96) 0%, rgba(18,22,26,0.98) 100%)',
+              border: '1px solid rgba(127,217,176,0.35)',
+              boxShadow: '0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 999, flexShrink: 0,
+                background: 'rgba(80,200,150,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 12l5 5L20 7" stroke="#7fd9b0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.92)' }}>Subscription added</div>
+                <div style={{ marginTop: 2, fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.42)' }}>
+                  Apex Transit · 42 nodes
+                </div>
+              </div>
+            </div>
+
+            {/* Cover flow row (static snapshot matching Home) */}
+            <div style={{
+              position: 'absolute', top: 118, left: 0, right: 0, zIndex: 2,
+              display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14,
+              height: 72,
+            }}>
+              {flags.map((f, i) => (
+                <div key={i} style={{
+                  width: 48, height: 48, borderRadius: 999, overflow: 'hidden', flexShrink: 0,
+                  transform: `scale(${f.s})`,
+                  opacity: f.on ? 1 : 0.55,
+                  boxShadow: f.on
+                    ? '0 0 0 2px rgba(255,255,255,0.45), 0 0 0 5px rgba(255,255,255,0.1), 0 12px 28px rgba(0,0,0,0.4)'
+                    : '0 0 0 1px rgba(255,255,255,0.12)',
+                  background: '#1a2228',
+                }}>
+                  <img
+                    src={`https://flagcdn.com/w160/${f.cc}.png`}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transform: 'scale(1.08)' }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{
+              position: 'absolute', top: 198, left: 0, right: 0, textAlign: 'center', zIndex: 2,
+              fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.88)',
+            }}>
+              HKG-01 <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 500 }}>· VMess</span>
+            </div>
+
+            <div style={{
+              position: 'absolute', top: '48%', left: 0, right: 0, textAlign: 'center', zIndex: 2,
+              transform: 'translateY(-50%)',
+            }}>
+              <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em' }}>Not Connected</div>
+              <div style={{
+                marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '10px 16px', borderRadius: 999,
+                background: 'linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
+                border: '1px solid rgba(255,255,255,0.14)',
+                fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.86)',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z" stroke="currentColor" strokeWidth="1.7" />
+                  <circle cx="12" cy="10" r="2.2" stroke="currentColor" strokeWidth="1.7" />
+                </svg>
+                Location
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.45 }}>
+                  <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            <div style={{
+              position: 'absolute', bottom: 48, left: 0, right: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2,
+            }}>
+              <div style={{
+                width: 80, height: 176, borderRadius: 999,
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.38) 100%)',
+                boxShadow: 'inset 0 2px 14px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)',
+                position: 'relative',
+              }}>
+                <div style={{
+                  position: 'absolute', left: 7, top: 8, width: 66, height: 74, borderRadius: 999,
+                  background: 'linear-gradient(160deg, #3e464e 0%, #1a2026 100%)',
+                  boxShadow: '0 10px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', color: '#fff' }}>START</span>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3v9" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
+                    <path d="M7.2 6.4a7.2 7.2 0 1 0 9.6 0" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                  {/* Idle: LED dim (not started) */}
+                  <div style={{
+                    position: 'absolute', top: 11, width: 6, height: 6, borderRadius: '50%',
+                    background: 'rgba(40, 70, 50, 0.65)',
+                    boxShadow: 'none',
+                    opacity: 0.5,
+                  }} />
+                </div>
+              </div>
+              <div style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.36)' }}>
+                Swipe Down To Connect
+              </div>
+            </div>
+          </div>
+        </IosFrame>
+      );
+    }
+
+    /* —— 5 VPN before first connect —— */
+    function VpnLight() {
+      return (
+        <IosFrame>
+          <Shell>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: 20, marginBottom: 24,
+                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3l8 4v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V7l8-4z" stroke="rgba(127,217,176,0.95)" strokeWidth="1.6" />
+                </svg>
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: 'rgba(255,255,255,0.96)' }}>
+                Allow VPN on this device
+              </div>
+              <div style={{
+                marginTop: 12, fontSize: 15, fontWeight: 500, lineHeight: 1.5,
+                color: 'rgba(255,255,255,0.48)', maxWidth: 300,
+              }}>
+                iOS will ask once. Traffic uses your subscription only — nothing is sold by us.
+              </div>
+            </div>
+            <Primary wide>Continue</Primary>
+            <div style={{ marginTop: 10 }}><Ghost>Cancel</Ghost></div>
+          </Shell>
+        </IosFrame>
+      );
+    }
+
+    function App() {
+      return (
+        <div className="row">
+          <div className="phone-col">
+            <div className="lab">1 · Welcome<span>Once · headline + sub only</span></div>
+            <Welcome />
+          </div>
+          <div className="phone-col">
+            <div className="lab">2 · Home Empty<span>Same chrome as Home · Add CTA</span></div>
+            <HomeEmpty />
+          </div>
+          <div className="phone-col">
+            <div className="lab">3 · Add Subscription<span>Paste / Scan / File</span></div>
+            <AddSub />
+          </div>
+          <div className="phone-col">
+            <div className="lab">4 · Parsing<span>Clipboard or QR · same screen</span></div>
+            <Parsing source="clipboard" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">4b · Parsing (QR)<span>Same essence as clipboard</span></div>
+            <Parsing source="qr" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">5 · Couldn’t add<span>Soft copy · try paste / QR again</span></div>
+            <AddSub fail />
+          </div>
+          <div className="phone-col">
+            <div className="lab">6 · Home Idle + toast<span>Real Home shell · not auto-connect</span></div>
+            <HomeIdleToast />
+          </div>
+          <div className="phone-col">
+            <div className="lab">7 · VPN (first connect)<span>Deferred · not after import</span></div>
+            <VpnLight />
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

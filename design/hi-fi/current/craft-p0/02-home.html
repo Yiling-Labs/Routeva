@@ -649,34 +649,33 @@
       };
 
       const isOn = mode === 'connected';
-      const isBusy = mode === 'connecting' || (progress != null && progress > 0.2 && progress < 0.99 && mode !== 'connected');
-      // visual “on” strength follows thumb position while dragging/sliding
+      const isBusy = mode === 'connecting';
+      // Travel 0→1 for LED only (not whole thumb chrome)
       const onAmt = (progress != null)
         ? progress
         : (dragging || sliding || isBusy ? pDown : (isOn ? 1 : 0));
 
-      const trackBg = onAmt > 0.5
+      // Thumb body: dark while START / swipe; mint only when Connected
+      // (mid-swipe must NOT turn the whole button green — only the top LED)
+      const trackBg = isOn
         ? 'linear-gradient(180deg, rgba(10,32,26,0.45) 0%, rgba(6,22,18,0.72) 100%)'
         : 'linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(0,0,0,0.4) 100%)';
-      const thumbBg = onAmt > 0.55
+      const thumbBg = isOn
         ? 'linear-gradient(160deg, #9aefc8 0%, #52c292 40%, #2fa06e 100%)'
         : isBusy
-          ? 'linear-gradient(160deg, #5a8a7a 0%, #345a50 100%)'
+          ? 'linear-gradient(160deg, #3a4844 0%, #1c2624 55%, #141a1a 100%)'
           : 'linear-gradient(160deg, #424a52 0%, #1c2228 50%, #12161a 100%)';
-      const thumbFg = onAmt > 0.55 ? 'rgba(6,28,20,0.92)' : 'rgba(255,255,255,0.92)';
-      const thumbShadow = onAmt > 0.55
+      const thumbFg = isOn ? 'rgba(6,28,20,0.92)' : 'rgba(255,255,255,0.92)';
+      const thumbShadow = isOn
         ? '0 12px 32px rgba(40,210,140,0.48), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -2px 8px rgba(0,0,0,0.12)'
         : '0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -3px 10px rgba(0,0,0,0.42)';
 
-      // Mid-swipe: keep START until fully home as connecting/connected
-      const label = mode === 'connecting' ? '…'
-        : mode === 'connected' || (onAmt > 0.92 && mode !== 'idle') ? 'STOP'
-        : 'START';
-      const hint = mode === 'connecting'
+      const label = isBusy ? '…' : isOn ? 'STOP' : 'START';
+      const hint = isBusy
         ? 'Connecting…'
-        : mode === 'connected'
-          ? 'Swipe Up To Stop'
-          : 'Swipe Down To Connect';
+        : isOn
+          ? 'Swipe up to stop'
+          : 'Swipe down to connect';
 
       const thumbCx = STAGE_W / 2;
       const thumbCy = trackTop + y + THUMB_H / 2;
@@ -704,7 +703,7 @@
               width: TRACK_W, height: TRACK_H, borderRadius: 999,
               background: trackBg,
               transition: dragging ? 'none' : `background ${SLIDE_MS}ms ${ease}`,
-              boxShadow: onAmt > 0.5
+              boxShadow: isOn
                 ? 'inset 0 2px 16px rgba(0,0,0,0.38), 0 0 0 1px rgba(120,255,190,0.14), 0 18px 44px rgba(0,0,0,0.16)'
                 : 'inset 0 2px 18px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.09), 0 18px 44px rgba(0,0,0,0.32)',
               backdropFilter: 'blur(14px)',
@@ -726,13 +725,12 @@
                   <Chevron dir="down" color="rgba(255,255,255,0.55)" />
                 </div>
               )}
-              {/* Connected: chevron UP above STOP (pin) */}
-              {(mode === 'connected' || onAmt > 0.55) && onAmt > 0.4 && (
+              {/* Connected: chevron UP above STOP */}
+              {isOn && (
                 <div style={{
                   position: 'absolute', top: 16, left: 0, right: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                  opacity: 0.48 * onAmt, pointerEvents: 'none',
-                  transition: `opacity ${SLIDE_MS}ms ${ease}`,
+                  opacity: 0.48, pointerEvents: 'none',
                 }}>
                   <Chevron dir="up" color="rgba(180,255,220,0.6)" />
                   <span style={{
@@ -772,12 +770,36 @@
                   {label}
                 </span>
                 <IconPower size={22} color={thumbFg} />
-                <div style={{
-                  position: 'absolute', top: 12, width: 6, height: 6, borderRadius: '50%',
-                  background: onAmt > 0.55 ? '#0f3' : '#3d7',
-                  boxShadow: onAmt > 0.55 ? '0 0 10px #5f5' : '0 0 7px rgba(60,220,140,0.55)',
-                  transition: `background ${SLIDE_MS}ms ${ease}`,
-                }} />
+                {/* Top LED only — not the whole thumb */}
+                {(() => {
+                  const led = isOn || isBusy ? 1 : Math.max(0, Math.min(1, onAmt));
+                  // 0 = dead charcoal, 1 = bright green
+                  const g = Math.round(55 + 200 * led);
+                  const a = 0.22 + 0.78 * led;
+                  return (
+                    <div
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        top: 11,
+                        left: '50%',
+                        width: 6,
+                        height: 6,
+                        marginLeft: -3,
+                        borderRadius: '50%',
+                        background: led < 0.06
+                          ? 'rgba(28, 36, 32, 0.95)'
+                          : `rgba(30, ${g}, 70, ${a})`,
+                        boxShadow: led < 0.08
+                          ? 'inset 0 1px 1px rgba(0,0,0,0.5)'
+                          : `0 0 ${3 + 9 * led}px rgba(50, 255, 130, ${0.2 + 0.65 * led}), inset 0 0 2px rgba(180,255,200,${0.3 * led})`,
+                        transition: dragging
+                          ? 'background 0.06s linear, box-shadow 0.06s linear'
+                          : `background ${SLIDE_MS}ms ${ease}, box-shadow ${SLIDE_MS}ms ${ease}`,
+                      }}
+                    />
+                  );
+                })()}
               </div>
 
               {/* Travel wash while dragging toward connect */}
@@ -1105,7 +1127,7 @@
       const midTitle =
         s === 'connecting' ? 'Connecting…'
         : s === 'connected' ? 'Connected'
-        : s === 'setup' ? 'Add a subscription'
+        : s === 'setup' ? 'Add subscription'
         : s === 'cant' ? 'Can’t connect'
         : 'Not Connected';
 

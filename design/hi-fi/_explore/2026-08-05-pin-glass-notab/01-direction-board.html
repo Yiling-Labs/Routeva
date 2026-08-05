@@ -494,9 +494,9 @@
                 <PowerIcon size={20} color={isOn ? 'rgba(6,28,20,0.92)' : '#fff'} />
                 <div style={{
                   position: 'absolute', top: 11, width: 6, height: 6, borderRadius: '50%',
-                  background: isOn ? '#0f3' : '#3d7',
-                  boxShadow: isOn ? '0 0 10px #5f5' : '0 0 6px rgba(60,220,140,0.55)',
-                  opacity: 0.9,
+                  background: isOn ? '#0f3' : 'rgba(40, 70, 50, 0.65)',
+                  boxShadow: isOn ? '0 0 10px #5f5' : 'none',
+                  opacity: isOn ? 1 : 0.45,
                 }} />
               </div>
 

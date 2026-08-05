@@ -2,9 +2,10 @@
 
 ## 当前范围
 
-**只打磨 Home。** Diagnostic / Repair / Activity / Agent / Onboarding 高保真 **暂缓**。
+**只打磨 Home。** Diagnostic / Repair / Activity / Agent / Onboarding 高保真 **暂缓**，但**一旦开做**必须遵循 [visual-system.md](./visual-system.md)（从 Home 提取）。
 
-主文件：[`02-home.html`](./02-home.html)（`01-direction-board.html` 仅历史参考）。
+主文件：[`02-home.html`](./02-home.html)。  
+**全 app 风格源：** 本目录 `02-home.html` + `visual-system.md`。
 
 ## 锚点
 
@@ -66,7 +67,7 @@ Interactive 列可拖/点完整流程。
 | Node caption | 16 | 600 | HKG-01 |
 | Protocol | 11 | 500 | · VMess（~38% 白） |
 | Location pill | 14 | 600 | Location |
-| Hint | 12 | 400 | Swipe Down To Connect |
+| Hint | 13 | 500 | Swipe down to connect（≥ muted 对比） |
 | Capsule | 11 | 800 | START / STOP |
 
 ## 明确不做（Home）

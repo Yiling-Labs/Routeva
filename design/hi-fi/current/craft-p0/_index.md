@@ -5,8 +5,9 @@
 | 文件 | 说明 |
 |---|---|
 | **[02-home.html](./02-home.html)** | **权威** Home 故事板 + Interactive |
-| [design-spec.md](./design-spec.md) | 视觉 / 交互规格 |
-| [01-direction-board.html](./01-direction-board.html) | 早期稿；勿作实现对照 |
+| **[03-setup.html](./03-setup.html)** | **首次安装（ADR 0019）** Welcome → Home Empty → Add Sub（paste-first） |
+| **[visual-system.md](./visual-system.md)** | **全 app 风格约束**（从 Home 提取；后续屏必读） |
+| [design-spec.md](./design-spec.md) | Home 视觉 / 交互规格 |
 
 ## 连接故事板（左→右）
 

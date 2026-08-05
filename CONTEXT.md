@@ -45,24 +45,32 @@ _Avoid_: 解锁检测、流媒体测试（当默认成功标准时）
 _Avoid_: 视觉花活、用动效掩盖诊断不准
 
 **Craft Priority（MVP）**：
-- **P0 Craft：** Onboarding→导入→VPN 说明→首次连上；Home 连接态；诊断结果卡（四桶）；Repair 确认/进度/成功或回滚；（商业化后）付费墙  
+- **P0 Craft：** Onboarding→导入→首次连上（系统 VPN 弹窗，无自建说明页）；Home 连接态；诊断结果卡（四桶）；Repair 确认/进度/成功或回滚；（商业化后）付费墙  
 - **P0 能力 / P1 Craft：** **Activity** 事件可查（连接、Failover、诊断、Repair、回滚、模式切换等）——Beta 须有清晰列表，动效与视觉可后打磨；Agent 工具过程与可撤销  
 - **P2：** 高级模式与深层设置  
 用户可见文案以 English 源打磨（见 Product Language）。
 
 **Home Surface**：
-完成前置配置后，Home 根画布服务「选节点 → 连接手势 → 连接真值」；**无底部 Tab**；顶栏 glass 进 Activity / Agent / Settings。中部闭集见 **Home Mid Copy**；连接动效见 **Connect Gesture**。权威 hi-fi：`design/hi-fi/current/craft-p0/02-home.html`。详见 ADR 0018。  
-_Avoid_: 三栏底 Tab；在 Home 常驻规则实现说明、定位口号、默认展示 Auto
+完成前置配置后，Home 根画布服务「选节点 → 连接手势 → 连接真值」；**无底部 Tab**；顶栏 glass 进 Activity / Agent / Settings。中部闭集见 **Home Mid Copy**；连接动效见 **Connect Gesture**。权威 hi-fi：`design/hi-fi/current/craft-p0/02-home.html`。全 app 视觉从 Home 提取：`design/hi-fi/current/craft-p0/visual-system.md`（后续屏必须协调统一）。详见 ADR 0018。  
+_Avoid_: 三栏底 Tab；在 Home 常驻规则实现说明、定位口号、默认展示 Auto；二级页另起无关视觉风格
 
 **Home Mid Copy（闭集）**：
-- 无订阅：**Add a subscription**（可选 *Paste a link you already have*）  
-- **Idle / 手势中（黑场）：** 上部 **国旗 Cover Flow**（选中项下为 **节点名**，非地区名）+ **弱协议标注**（如 `· VMess`）；中部 **Not Connected** + **Location ›** 入口；**Idle 无点阵**  
-- **Connecting（黑场）：** Cover Flow 可保留；**Connecting…**；胶囊在底；**三圈点全亮**（未染绿场）  
-- **Connection Success（绿场）：** 上部 **会话时长** + **↓/↑ Mb/s**；中部 地区名 + **Connected** + 节点名与弱协议；三圈绿点  
-- 失败/弱连接（黑场）：**Can’t connect** + Location；原因在诊断 sheet  
-- **仅当** 模式 ≠ Auto：弱提示 **Global** / **Direct**  
-**明确不出现：** provider rules、*we don’t sell nodes*、VERIFIED / probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章。  
-_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名导致同区多节点撞名
+- **无订阅（Home Empty）：** 与 Home **同一壳**（顶栏 Activity · Agent · Settings 不变）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；**不**用右上角 + 替换 Settings
+- **Idle / 手势中（黑场）：** 上部 **国旗 Cover Flow**（选中项下为 **节点名** + 弱协议）；中部 **Not Connected** + **Location ›**；**Idle 无点阵**  
+- **Connecting（黑场）：** Cover Flow 可保留；**Connecting…**；三圈点全亮（未染绿场）  
+- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；地区 · Connected · 节点+弱协议；三圈绿点  
+- 失败/弱连接：**Can’t connect** + Location；原因在诊断 sheet  
+- **仅当** 模式 ≠ Auto：弱提示 Global / Direct  
+**明确不出现：** provider rules、编号步骤墙、VERIFIED/probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章。  
+_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名
+
+**First-Run Setup（闭集）**：
+首次安装：**Welcome（仅一次）→ Home Empty →（用户点 + / Add subscription）→ Add Subscription**。欢迎仅 **headline + 一句副文**（自备订阅 / 不卖节点）；**无** 1·2·3 列表，**无** 诊断/修复说教句。**无** 应用内 VPN 说明页：首次连接手势时出 **iOS 系统弹窗**；拒绝 → Home 回 Idle（*Swipe down to connect*）；同意 → 连接至 Connection Success。权威 hi-fi：`design/hi-fi/current/craft-p0/03-setup.html`。详见 ADR 0019。  
+_Avoid_: Welcome→Import→VPN 三连轰炸；自建「Allow VPN」页；欢迎页编号卡片；欢迎页堆叠第三段能力说明
+
+**Add Subscription（交互）**：
+主路径 **Paste from Clipboard**；次要 **Scan QR**、**Import file**（剪贴板与扫码本质相同：取内容 → 解析）。顶部 **一句** 引导去服务商取链接/二维码。**无** 手填大输入框；**无** 独立「剪贴板已发现」确认页。点 Paste/扫码后在 **Add Subscription 上弹出 Parsing 模态**（*Reading clipboard…* / *Reading QR code…*；**非**独立全屏）。成功：直接回 **Home Idle（同一壳）** + 短 toast（**2–3s 自动消失**）；设 Active；**不**自动连。失败：回 Add 页失败态——短句 *Couldn’t add this* + *Copy a fresh link or QR…*；主 CTA Paste again；次要 Scan/File；**不**列协议/格式清单；**不覆盖**已有配置。  
+_Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳不一致；失败文案堆 Clash/YAML 等格式科普
 
 **Connect Gesture**：
 竖直滑动胶囊：Idle 拇指在 **顶（START）**，**下滑连接**；成功后在 **底（STOP）**，**上滑断开**。三圈点阵仅在手势开始后出现，按行程 **内→外逐圈点亮**（约 ⅓ / ⅔ / 满）；**绿场仅 Connection Success**。点阵 = 连接/Probe 过程反馈，非 Idle 装饰。  

@@ -75,6 +75,9 @@ design/
 
 1. 设计探索在本域；**上架终稿**在 `gtm/`。  
 2. 不在此写业务需求正文（→ `PRODUCT.md` / `docs/prd`）。  
-3. 本文件不规定具体品牌色或 UI 风格（那是 L3 / 选定后的设计决策）。  
+3. **L3 视觉真相（已选定）：** 以 Home 高保真为全 app 风格源。  
+   - 权威屏：[`hi-fi/current/craft-p0/02-home.html`](./hi-fi/current/craft-p0/02-home.html)  
+   - 系统提取：[`hi-fi/current/craft-p0/visual-system.md`](./hi-fi/current/craft-p0/visual-system.md)  
+   - **后续任何屏幕**必须从该系统取色、材质、字阶、圆角与动效气质；可按场景裁剪，但必须**协调统一、不违和**。禁止另起无关风格族。  
 
 实践摘要：[docs/guides/design-versions.md](../docs/guides/design-versions.md)
