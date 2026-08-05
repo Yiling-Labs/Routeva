@@ -87,7 +87,7 @@
 
 | 状态 | 说明 |
 |---|---|
-| 已完成 | 工作区 init；GitHub；CONTEXT + ADR（含 0018–0020、0033 等）；Craft P0 hi-fi（Home / Setup / Subscriptions）；**`app/` SwiftUI 壳**（导航 + 导入 stub + 订阅列表） |
-| 下一步 | VPN / Network Extension + Probe；真订阅解析；胶囊手势对齐 `02-home`；Settings 二级落地；封闭测试样本；商店隐私文案 |
+| 已完成 | 工作区 init；GitHub；CONTEXT + ADR；Craft P0 hi-fi（Home / Setup / Subscriptions 等） |
+| 下一步 | **先收敛设计定稿**（hi-fi / IA）；**定稿前 `app/` 不写代码**；之后再搭 iOS 工程与 VPN/Probe 等 |
 
 开放项（实现期可短 grill）：内核选型、Probe 目标、分析事件表、隐私营养标签终稿、TestFlight 样本、**商业化时机与是否沿用 0001** 等。
