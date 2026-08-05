@@ -198,9 +198,9 @@
           style={{
             width: 40, height: 40, borderRadius: 999, border: 'none', padding: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
-            backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+            background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -0.5px 0 rgba(0,0,0,0.2), 0 8px 22px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)',
             cursor: onClick ? 'pointer' : 'default', color: T.icon,
           }}
         >
@@ -392,9 +392,9 @@
       overrides: 'Exceptions for specific domains',
     };
 
-    function SettingsRoot({ onNav, modeLabel, dnsLabel, overrideCount }) {
+    function SettingsRoot({ onNav, onClose, modeLabel, dnsLabel, overrideCount }) {
       return (
-        <Shell title="Settings" left={<GlassOrb label="Close"><IconClose /></GlassOrb>}>
+        <Shell title="Settings" left={<GlassOrb label="Close" onClick={onClose}><IconClose /></GlassOrb>}>
           <SectionLabel first>Connection</SectionLabel>
           <Group>
             <Row
@@ -511,10 +511,11 @@
             }}
           >
             <span style={{
-              position: 'absolute', top: 2.5, left: on ? 22 : 2.5,
+              position: 'absolute', top: 2.5, left: 2.5,
+              transform: on ? 'translateX(19.5px)' : 'translateX(0)',
               width: 25, height: 25, borderRadius: 999, background: '#fff',
               boxShadow: '0 2px 6px rgba(0,0,0,0.28)',
-              transition: 'left 0.15s ease',
+              transition: 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
               pointerEvents: 'none',
             }} />
           </span>
@@ -658,7 +659,7 @@
                         }}
                       >
                         <span aria-hidden="true" style={{ display: 'flex' }}>
-                          <IconClose size={18} stroke={1.75} />
+                          <IconClose size={18} stroke={1.6} />
                         </span>
                       </button>
                     )}
@@ -711,7 +712,7 @@
           style={{
             display: 'block',
             fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
-            textTransform: 'uppercase', color: T.quiet,
+            textTransform: 'uppercase', color: T.muted,
             marginBottom: compact ? 6 : 8,
             fontFamily: TYPE.font,
           }}
@@ -913,7 +914,7 @@
 
       const sectionLabel = {
         fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
-        textTransform: 'uppercase', color: T.quiet,
+        textTransform: 'uppercase', color: T.muted,
         marginBottom: compact ? 6 : 8,
       };
 
@@ -1151,8 +1152,8 @@
               label="Terms of Use"
               subtitle="Rules for using Routeva"
               onClick={() => openExternal(TERMS_OF_USE_URL)}
+              last
             />
-            <Row label="Support" onClick={() => {}} last />
           </Group>
 
           <div style={{ marginTop: 18 }}>
@@ -1193,10 +1194,31 @@
       const dnsLabel = DNS_OPTS.find((d) => d.id === dns)?.title || 'Automatic';
 
       let body = null;
-      if (screen === 'root') {
+      if (screen === 'closed') {
+        /* Demo placeholder for Home — Close orb lands somewhere visible */
+        body = (
+          <div style={{
+            height: '100%', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 14,
+            padding: 28, textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 600, color: T.primary }}>Settings closed</div>
+            <p style={{
+              margin: 0, fontSize: 14, fontWeight: 500, color: T.secondary,
+              lineHeight: 1.45, maxWidth: '26ch',
+            }}>
+              In the app this returns to Home.
+            </p>
+            <div style={{ width: '100%', maxWidth: 240, marginTop: 6 }}>
+              <Primary wide onClick={() => setScreen('root')}>Reopen Settings</Primary>
+            </div>
+          </div>
+        );
+      } else if (screen === 'root') {
         body = (
           <SettingsRoot
             onNav={setScreen}
+            onClose={() => setScreen('closed')}
             modeLabel={modeLabel}
             dnsLabel={dnsLabel}
             overrideCount={overrides.length}

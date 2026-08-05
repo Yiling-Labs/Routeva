@@ -51,6 +51,11 @@
       -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
       mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
     }
+    .composer-input {
+      background: transparent; border: none; outline: none; padding: 0;
+      color: rgba(255,255,255,0.96);
+    }
+    .composer-input::placeholder { color: rgba(255,255,255,0.58); opacity: 1; }
     button {
       -webkit-tap-highlight-color: transparent;
       transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.12s ease;
@@ -88,6 +93,7 @@
     const { useState } = React;
     const {
       IconClose, IconBack, IconHelpMark, IconShield, IconSend, IconChevron,
+      IconCheck, IconSubscriptions, IconSettings,
     } = window.RoutevaIcons;
 
     const TYPE = {
@@ -198,9 +204,9 @@
         <button type="button" aria-label={label} onClick={onClick} style={{
           width: 40, height: 40, borderRadius: 999, border: 'none', padding: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
-          backdropFilter: 'blur(14px)', cursor: onClick ? 'pointer' : 'default', color: T.icon,
+          background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.1)',
+          backdropFilter: 'blur(16px) saturate(1.2)', cursor: onClick ? 'pointer' : 'default', color: T.icon,
         }}>{children}</button>
       );
     }
@@ -235,7 +241,7 @@
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{
               display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
-              textTransform: 'uppercase', color: cloudOn ? 'rgba(180,240,210,0.9)' : T.quiet,
+              textTransform: 'uppercase', color: cloudOn ? 'rgba(180,240,210,0.9)' : T.muted,
               marginBottom: 3,
             }}>
               {cloudOn ? 'Cloud assist on' : 'Private by default'}
@@ -323,18 +329,27 @@
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 22px rgba(0,0,0,0.2)',
           backdropFilter: 'blur(14px)',
         }}>
-          <div style={{
-            flex: 1, fontSize: 15, fontWeight: 500, color: T.quiet, fontFamily: TYPE.font,
-          }}>
-            {placeholder || 'Ask about your connection…'}
-          </div>
-          <div style={{
-            width: 36, height: 36, borderRadius: 999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: CTA, boxShadow: CTA_SH, color: '#0a1f18',
-          }}>
+          <input
+            type="text"
+            readOnly
+            className="composer-input"
+            aria-label="Message Help"
+            placeholder={placeholder || 'Ask about your connection…'}
+            style={{
+              flex: 1, fontSize: 15, fontWeight: 500, fontFamily: TYPE.font,
+            }}
+          />
+          <button
+            type="button"
+            aria-label="Send"
+            style={{
+              width: 36, height: 36, borderRadius: 999, border: 'none', padding: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: CTA, boxShadow: CTA_SH, color: '#0a1f18', cursor: 'pointer',
+            }}
+          >
             <IconSend />
-          </div>
+          </button>
         </div>
       );
     }
@@ -454,11 +469,13 @@
                     style={{
                       border: 'none', background: 'transparent',
                       padding: '4px 2px 8px', cursor: 'pointer',
-                      fontSize: 13, fontWeight: 600, color: T.quiet,
+                      fontSize: 13, fontWeight: 650, color: T.mint,
                       fontFamily: TYPE.font,
+                      display: 'flex', alignItems: 'center', gap: 5,
                     }}
                   >
-                    What Help can do ›
+                    What Help can do
+                    <IconChevron />
                   </button>
                 </div>
               )}
@@ -517,8 +534,7 @@
                       width: 22, height: 22, borderRadius: 999, flexShrink: 0, marginTop: 1,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: T.mintSoft, color: T.mint,
-                      fontSize: 13, fontWeight: 800,
-                    }}>✓</span>
+                    }}><IconCheck size={13} stroke={1.6} /></span>
                     <span style={{
                       fontSize: 14, fontWeight: 500, color: T.primary, lineHeight: 1.4,
                     }}>{t}</span>
@@ -546,8 +562,7 @@
                       width: 22, height: 22, borderRadius: 999, flexShrink: 0, marginTop: 1,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: 'rgba(255,255,255,0.08)', color: T.muted,
-                      fontSize: 12, fontWeight: 800,
-                    }}>✕</span>
+                    }}><IconClose size={12} stroke={1.6} /></span>
                     <span style={{
                       fontSize: 14, fontWeight: 500, color: T.secondary, lineHeight: 1.4,
                     }}>{t}</span>
@@ -635,6 +650,7 @@
                   onClick={onToggleCloud}
                   role="switch"
                   aria-checked={cloudOn}
+                  aria-label="Cloud assist"
                   style={{
                     width: 50, height: 30, borderRadius: 999, border: 'none', flexShrink: 0,
                     background: cloudOn
@@ -644,9 +660,11 @@
                   }}
                 >
                   <span style={{
-                    position: 'absolute', top: 2.5, left: cloudOn ? 22 : 2.5,
+                    position: 'absolute', top: 2.5, left: 2.5,
                     width: 25, height: 25, borderRadius: 999, background: '#fff',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.28)',
+                    transform: cloudOn ? 'translateX(20px)' : 'translateX(0)',
+                    transition: 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
                   }} />
                 </button>
               </div>
@@ -686,16 +704,20 @@
               {!empty && (
                 <div style={{
                   width: 40, height: 40, borderRadius: 999,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.86)',
                   background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 0.5px rgba(255,255,255,0.1)',
-                }} />
+                }}><IconSubscriptions /></div>
               )}
             </div>
             <div style={{
               width: 40, height: 40, borderRadius: 999,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(255,255,255,0.86)',
               background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 0.5px rgba(255,255,255,0.1)',
-            }} />
+            }}><IconSettings /></div>
           </div>
           <div style={{
             position: 'relative', zIndex: 2, padding: '40px 28px',

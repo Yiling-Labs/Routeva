@@ -96,12 +96,12 @@
     const CTA_SH = '0 12px 32px rgba(50,190,130,0.32), inset 0 1px 0 rgba(255,255,255,0.4)';
     const T = {
       primary: 'rgba(255,255,255,0.96)',
-      secondary: 'rgba(255,255,255,0.52)',
+      secondary: 'rgba(255,255,255,0.55)',
       muted: 'rgba(255,255,255,0.58)',
       quiet: 'rgba(255,255,255,0.38)',
       icon: 'rgba(255,255,255,0.82)',
       warn: 'rgba(255,176,120,0.95)',
-      card: 'linear-gradient(155deg, rgba(48,56,62,0.92) 0%, rgba(18,22,26,0.96) 100%)',
+      card: 'linear-gradient(rgba(255,255,255,0.10), rgba(255,255,255,0.045))',
     };
 
     /* Storyboard “now” so Expires vs Expired is deterministic in hi-fi */
@@ -229,9 +229,9 @@
         <button type="button" aria-label={label} style={{
           width: 40, height: 40, borderRadius: 999, border: 'none', padding: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
-          backdropFilter: 'blur(14px)', cursor: 'pointer', color: T.icon,
+          background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 55%, rgba(255,255,255,0.035) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(16px) saturate(1.2)', cursor: 'pointer', color: T.icon,
         }}>{children}</button>
       );
     }
@@ -429,7 +429,7 @@
                 </div>
               ) : null}
               <div style={{
-                marginTop: 4, fontSize: 12, fontWeight: 500, color: T.quiet, lineHeight: 1.35,
+                marginTop: 4, fontSize: 12, fontWeight: 500, color: T.muted, lineHeight: 1.35,
               }}>
                 Updated {sub.updated}
               </div>

@@ -110,3 +110,23 @@
 ## 11. 实现对照
 
 改 UI 时优先读：`02-home.html` 内 `SKIN` / `TYPE` / `GlassOrb` / `ConnectStage` / `FlagOrb` 模式，再映射到 SwiftUI。
+
+## 12. 共享 Token 基准（六屏已归一 · 2026-08-06 评审修复后）
+
+新屏/改屏必须引用以下基准值，禁止另起变体：
+
+| Token | 基准值 | 用途 |
+|---|---|---|
+| `T.quiet` | `rgba(255,255,255,0.38)` | **仅**装饰级弱元信息（协议、分组标题）；禁止任务正文 |
+| `T.muted` | `rgba(255,255,255,0.58)` | 任务元信息 / hint / 底注（≥ ~4.5:1） |
+| `T.secondary` | `rgba(255,255,255,0.55)` | 正文说明 |
+| Hint 文本 | 13px / 500 / `T.muted` | 如 *Swipe down to connect* |
+| Glass orb | `blur(16px) saturate(1.2)` · 0.5px 外环 · 白渐变 0.15→0.05→0.035 · 40×40 正圆 | 顶栏 chrome 唯一配方（以 `02-home.html` `glassSurface` 为准） |
+| 卡片 | `linear-gradient(rgba(255,255,255,0.10), rgba(255,255,255,0.045))` · 圆角 20 | 列表卡 / Group 卡 |
+| 警示 / 到期 | `rgba(255,176,120,0.95)` | Expired、表单错误等暖警示 |
+| 动效曲线 | `cubic-bezier(0.22,1,0.36,1)` | 主交互 0.35–0.55s；toast 0.35s；toggle 0.2s |
+| 按压反馈 | `:active scale(0.97)` + 契约曲线 | 全部按钮面统一 |
+| Spinner | 0.9s linear | reduced-motion 下静态环 |
+| 焦点环 | `:focus-visible` 2px mint（≈ `rgba(140,220,190,0.9)`） | 六屏统一，含 02-home |
+
+**控件语义底线（实现对照稿同样遵守）：** 可点控件 = `<button>` 或带 tabindex/键盘处理；icon-only 控件必有 `aria-label`；switch 必有可访问名；sheet = `role="dialog"` + dismiss 路径（scrim / Escape / *Not now*）；toast = 稳定 `role="status"` 区域（非条件插入）。

@@ -71,6 +71,20 @@
       outline: 2px solid rgba(127,217,176,0.9);
       outline-offset: 4px;
     }
+    /* Shared press feedback (canonical contract curve) */
+    .press {
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .press:active {
+      transform: scale(0.97);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .press { transition: none !important; }
+    }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
   </style>
 </head>
 <body>
@@ -104,7 +118,7 @@
     /* Text on Field Black — contrast-tuned (secondary ≥ ~5:1, footer/hint ≥ ~4.5:1 est.) */
     const T = {
       primary: 'rgba(255,255,255,0.96)',
-      secondary: 'rgba(255,255,255,0.52)',
+      secondary: 'rgba(255,255,255,0.55)',
       muted: 'rgba(255,255,255,0.58)',
       quiet: 'rgba(255,255,255,0.38)',
       icon: 'rgba(255,255,255,0.82)',
@@ -161,6 +175,7 @@
       return (
         <button
           type="button"
+          className="press"
           aria-label={label}
           onClick={onClick}
           style={{
@@ -178,7 +193,7 @@
 
     function Primary({ children, wide }) {
       return (
-        <button type="button" style={{
+        <button type="button" className="press" style={{
           border: 'none', cursor: 'pointer', width: wide ? '100%' : undefined,
           padding: '17px 28px', borderRadius: 18, background: CTA, boxShadow: CTA_SH,
           color: '#0a1f18', fontFamily: TYPE.font, fontSize: 16, fontWeight: 800,
@@ -188,7 +203,7 @@
 
     function Ghost({ children }) {
       return (
-        <button type="button" style={{
+        <button type="button" className="press" style={{
           border: '1px solid rgba(255,255,255,0.14)', cursor: 'pointer', width: '100%',
           padding: '14px 14px 13px', borderRadius: 16, background: 'rgba(255,255,255,0.06)',
           color: 'rgba(255,255,255,0.82)', fontFamily: TYPE.font, fontSize: 15, fontWeight: 600,
@@ -221,11 +236,13 @@
     }
     function HelpPill() {
       return (
-        <div
-          role="button"
+        <button
+          type="button"
+          className="press"
           aria-label="Help"
           style={{
             height: 40, padding: '0 13px 0 10px', borderRadius: 999,
+            border: 'none', cursor: 'pointer', color: T.icon,
             display: 'flex', alignItems: 'center', gap: 6,
             ...glassSurface(),
             fontFamily: TYPE.font,
@@ -238,7 +255,7 @@
           }}>
             Help
           </span>
-        </div>
+        </button>
       );
     }
 
@@ -416,7 +433,7 @@
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7,
                 }}>
                   <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.48)' }}>START</span>
-                  <IconPower size={22} stroke={2.15} color="rgba(255,255,255,0.48)" />
+                  <IconPower size={22} stroke={2} color="rgba(255,255,255,0.48)" />
                   <div style={{
                     position: 'absolute', top: 13, width: 7, height: 7, borderRadius: '50%',
                     background: 'rgba(40, 70, 50, 0.55)', opacity: 0.45,
@@ -628,11 +645,15 @@
 
             <HomeChrome />
 
+            {/* Stable live region: pre-rendered, only its text updates */}
+            <div role="status" aria-live="polite" className="sr-only">
+              {toast === 'visible' ? 'Subscription added' : ''}
+            </div>
+
             {toast !== 'gone' && (
               <div
                 className="toast-exit"
-                role="status"
-                aria-live="polite"
+                aria-hidden="true"
                 style={{
                   position: 'absolute', top: 62, left: 20, right: 20, zIndex: 40,
                   padding: '14px 16px', borderRadius: 18,
@@ -642,7 +663,7 @@
                   display: 'flex', alignItems: 'center', gap: 12,
                   opacity: toast === 'leaving' ? 0 : 1,
                   transform: toast === 'leaving' ? 'translateY(-8px)' : 'translateY(0)',
-                  transition: 'opacity 0.32s ease, transform 0.32s ease',
+                  transition: 'opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
                   pointerEvents: 'none',
                 }}
               >
@@ -651,7 +672,7 @@
                   background: 'rgba(80,200,150,0.2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }} aria-hidden="true">
-                  <IconCheck size={14} stroke={2.2} color="#7fd9b0" />
+                  <IconCheck size={14} stroke={2} color="#7fd9b0" />
                 </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: T.primary, fontFamily: TYPE.font }}>
@@ -706,6 +727,7 @@
               </h1>
               <button
                 type="button"
+                className="press"
                 aria-label="Location"
                 style={{
                   marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -739,7 +761,7 @@
                   paddingTop: 10,
                 }}>
                   <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', color: '#fff', marginTop: 6 }}>START</span>
-                  <IconPower size={24} stroke={2.15} color="#fff" />
+                  <IconPower size={24} stroke={2} color="#fff" />
                   <div style={{
                     position: 'absolute', top: 14, width: 7, height: 7, borderRadius: '50%',
                     background: 'rgba(40, 70, 50, 0.65)', opacity: 0.5,

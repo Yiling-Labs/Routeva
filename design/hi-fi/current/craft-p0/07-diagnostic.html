@@ -84,8 +84,8 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState } = React;
-    const { IconHelp } = window.RoutevaIcons;
+    const { useState, useEffect } = React;
+    const { IconHelp, IconSubscriptions, IconGear } = window.RoutevaIcons;
     const ICON_COLOR = 'rgba(255,255,255,0.88)';
 
     const TYPE = {
@@ -156,7 +156,7 @@
         next: 'Ask Help to walk through what we saw, or export a redacted report.',
         primary: 'Ask Help',
         primaryKind: 'help',
-        secondaryHint: 'Primary is Ask Help when we’re unsure — still a clear next step.',
+        secondaryHint: 'We’ll walk you through what we saw before changing anything.',
       },
     };
 
@@ -217,29 +217,47 @@
       );
     }
 
-    function HelpPillMini() {
+    /* Canonical soft-glass chrome (matches 02-home glassSurface / GlassOrb / HelpPill) */
+    function glassSurface() {
+      return {
+        background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -0.5px 0 rgba(0,0,0,0.2), 0 8px 22px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(16px) saturate(1.2)',
+        WebkitBackdropFilter: 'blur(16px) saturate(1.2)',
+      };
+    }
+
+    function GlassOrb({ children }) {
       return (
         <div style={{
-          height: 36, padding: '0 12px 0 10px', borderRadius: 999,
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: 'linear-gradient(155deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.04) 100%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.08)',
-          backdropFilter: 'blur(12px)',
-          fontSize: 13, fontWeight: 650, color: 'rgba(255,255,255,0.85)', fontFamily: TYPE.font,
+          width: 40, height: 40, borderRadius: 999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          paddingTop: 0.5,
+          ...glassSurface(),
         }}>
-          <IconHelp size={14} color={ICON_COLOR} />
-          Help
+          {children}
         </div>
       );
     }
 
-    function GearMini() {
+    function HelpPill() {
       return (
         <div style={{
-          width: 36, height: 36, borderRadius: 999,
-          background: 'linear-gradient(155deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 6px 16px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.08)',
-        }} />
+          height: 40, padding: '0 13px 0 10px', borderRadius: 999,
+          display: 'flex', alignItems: 'center', gap: 6,
+          ...glassSurface(),
+          fontFamily: TYPE.font,
+        }}>
+          <span style={{ display: 'flex', marginTop: 0.5 }}>
+            <IconHelp color={ICON_COLOR} />
+          </span>
+          <span style={{
+            fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.01em',
+            color: 'rgba(255,255,255,0.9)', lineHeight: 1, paddingBottom: 0.5,
+          }}>
+            Help
+          </span>
+        </div>
       );
     }
 
@@ -273,7 +291,7 @@
     }
 
     /** Dimmed Home “Can’t connect” under the sheet */
-    function HomeUnderlay() {
+    function HomeUnderlay({ dimmed = true, onScrim }) {
       return (
         <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
           <div className="noise" aria-hidden="true" />
@@ -284,8 +302,12 @@
             padding: '8px 20px 0',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 48,
           }}>
-            <HelpPillMini />
-            <GearMini />
+            <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+              <HelpPill />
+              {/* Subscribed (HKG-01) → Subscriptions orb per ADR 0020/0036 */}
+              <GlassOrb><IconSubscriptions size={16} color={ICON_COLOR} /></GlassOrb>
+            </div>
+            <GlassOrb><IconGear size={16} color={ICON_COLOR} /></GlassOrb>
           </div>
           <div style={{
             position: 'relative', zIndex: 2, marginTop: 48, textAlign: 'center', padding: '0 24px',
@@ -311,12 +333,17 @@
               <span style={{ color: T.quiet }}>›</span>
             </div>
           </div>
-          {/* dim scrim for sheet */}
-          <div style={{
-            position: 'absolute', inset: 0, zIndex: 5,
-            background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.72) 100%)',
-            pointerEvents: 'none',
-          }} />
+          {/* dim scrim for sheet — click outside the sheet dismisses it */}
+          {dimmed && (
+            <div
+              onClick={onScrim}
+              style={{
+                position: 'absolute', inset: 0, zIndex: 5,
+                background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.72) 100%)',
+                pointerEvents: onScrim ? 'auto' : 'none',
+              }}
+            />
+          )}
         </div>
       );
     }
@@ -339,18 +366,24 @@
       );
     }
 
-    function DiagnosticSheet({ caseId, onPrimary, onAskHelp, showToast }) {
+    function DiagnosticSheet({ caseId, onPrimary, onAskHelp, onDismiss, showToast, uid }) {
       const c = CASES[caseId] || CASES.fix;
       const bs = badgeStyle(c.badgeTone);
       const primaryIsMint = c.primaryKind === 'repair' || c.primaryKind === 'help';
+      const titleId = `diag-title-${uid || c.id}`;
+      const showNotNow = c.id === 'fix' || c.id === 'network';
 
       return (
-        <div style={{
-          position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10,
-          padding: '0 12px 28px',
-          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-          pointerEvents: 'none',
-        }}>
+        <div
+          role="dialog"
+          aria-labelledby={titleId}
+          style={{
+            position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10,
+            padding: '0 12px 28px',
+            display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+            pointerEvents: 'none',
+          }}
+        >
           <div style={{
             pointerEvents: 'auto',
             borderRadius: 24,
@@ -374,9 +407,12 @@
                 }}>
                   What we found
                 </div>
-                <div style={{
-                  fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: T.primary,
-                }}>
+                <div
+                  id={titleId}
+                  style={{
+                    fontSize: 22, fontWeight: 700, letterSpacing: '-0.025em', color: T.primary,
+                  }}
+                >
                   Can’t connect
                 </div>
               </div>
@@ -391,7 +427,7 @@
             </div>
 
             <div style={{
-              marginTop: 8, fontSize: 12, fontWeight: 500, color: T.quiet,
+              marginTop: 8, fontSize: 12, fontWeight: 500, color: T.muted,
             }}>
               {c.confidence} · Same checks as the rest of the app
             </div>
@@ -402,7 +438,7 @@
 
             {c.secondaryHint && (
               <p style={{
-                marginTop: 12, fontSize: 12, fontWeight: 500, color: T.quiet, lineHeight: 1.4,
+                marginTop: 12, fontSize: 12, fontWeight: 500, color: T.muted, lineHeight: 1.4,
               }}>
                 {c.secondaryHint}
               </p>
@@ -423,28 +459,49 @@
               {c.primary}
             </button>
 
-            {/* ADR 0044 — secondary Ask Help (skip if primary is already Ask Help) */}
+            {/* ADR 0044 — secondary Ask Help (skip if primary is already Ask Help);
+                fix/network also get a tertiary 'Not now' dismiss */}
             {c.primaryKind !== 'help' && (
-              <button
-                type="button"
-                onClick={onAskHelp}
-                style={{
-                  marginTop: 12, width: '100%', border: 'none',
-                  background: 'transparent', cursor: 'pointer',
-                  padding: '10px 8px 4px',
-                  fontFamily: TYPE.font, fontSize: 15, fontWeight: 650,
-                  color: T.mint, textAlign: 'center',
-                }}
-              >
-                Ask Help
-              </button>
+              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={onAskHelp}
+                  style={{
+                    flex: 1, border: 'none',
+                    background: 'transparent', cursor: 'pointer',
+                    padding: '10px 8px 4px',
+                    fontFamily: TYPE.font, fontSize: 15, fontWeight: 650,
+                    color: T.mint, textAlign: 'center',
+                  }}
+                >
+                  Ask Help
+                </button>
+                {showNotNow && (
+                  <button
+                    type="button"
+                    onClick={onDismiss}
+                    style={{
+                      flex: 1, border: 'none',
+                      background: 'transparent', cursor: 'pointer',
+                      padding: '10px 8px 4px',
+                      fontFamily: TYPE.font, fontSize: 15, fontWeight: 650,
+                      color: T.muted, textAlign: 'center',
+                    }}
+                  >
+                    Not now
+                  </button>
+                )}
+              </div>
             )}
 
             {showToast && (
-              <div style={{
-                marginTop: 12, textAlign: 'center',
-                fontSize: 12, fontWeight: 600, color: T.muted,
-              }}>
+              <div
+                role="status"
+                style={{
+                  marginTop: 12, textAlign: 'center',
+                  fontSize: 12, fontWeight: 600, color: T.muted,
+                }}
+              >
                 {showToast}
               </div>
             )}
@@ -453,15 +510,17 @@
       );
     }
 
-    function PhoneScene({ caseId, toast, onPrimary, onAskHelp }) {
+    function PhoneScene({ caseId, toast, onPrimary, onAskHelp, onDismiss, uid }) {
       return (
         <div style={{ height: '100%', position: 'relative' }}>
-          <HomeUnderlay />
+          <HomeUnderlay onScrim={onDismiss} />
           <DiagnosticSheet
             caseId={caseId}
             onPrimary={onPrimary}
             onAskHelp={onAskHelp}
+            onDismiss={onDismiss}
             showToast={toast}
+            uid={uid}
           />
         </div>
       );
@@ -509,7 +568,7 @@
             </button>
           </div>
           <style>{`
-            .spin { animation: sp 0.85s linear infinite; }
+            .spin { animation: sp 0.9s linear infinite; }
             @keyframes sp { to { transform: rotate(360deg); } }
             @media (prefers-reduced-motion: reduce) {
               .spin { animation: none; border-top-color: rgba(127,217,176,0.55); }
@@ -523,6 +582,18 @@
       const [bucket, setBucket] = useState('fix');
       const [toast, setToast] = useState('');
       const [phase, setPhase] = useState('sheet'); // sheet | repairing
+      const [dismissed, setDismissed] = useState(false);
+
+      // Escape dismisses the sheet, like scrim click / 'Not now'
+      useEffect(() => {
+        const onKey = (e) => {
+          if (e.key === 'Escape') setDismissed(true);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, []);
+
+      const dismissSheet = () => setDismissed(true);
 
       const onPrimary = (c) => {
         if (c.primaryKind === 'repair') {
@@ -546,11 +617,15 @@
           <IosFrame>
             {phase === 'repairing' ? (
               <RepairProgress />
+            ) : dismissed ? (
+              <HomeUnderlay dimmed={false} />
             ) : (
               <PhoneScene
                 caseId={bucket}
                 toast={toast}
                 onPrimary={onPrimary}
+                onDismiss={dismissSheet}
+                uid="live"
                 onAskHelp={() => {
                   setToast('→ Help · diagnosis summary attached');
                   setTimeout(() => setToast(''), 2200);
@@ -565,7 +640,7 @@
               <button
                 key={k}
                 type="button"
-                onClick={() => { setBucket(k); setPhase('sheet'); setToast(''); }}
+                onClick={() => { setBucket(k); setPhase('sheet'); setToast(''); setDismissed(false); }}
                 style={{
                   border: bucket === k ? '1px solid #1a1a1a' : '1px solid #888',
                   background: bucket === k ? '#1a1a1a' : 'rgba(255,255,255,0.55)',
