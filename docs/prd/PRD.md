@@ -80,7 +80,7 @@
 - **First-Run（ADR 0019）：** Welcome（仅一次：headline + 一句副文，自备订阅 / 不卖节点）→ Home Empty → 用户主动 Add subscription。**无** 1·2·3 卡片墙；**无** 应用内 VPN 说明页。
 - **VPN 权限：** 首次真正连接手势时出 **iOS 系统 VPN 弹窗**；拒绝 → 回 Home Idle；同意 → 连接至 Connection Success。用途说明放商店/隐私文案，不单独做应用内说明屏。不要求注册/邮箱。
 - **Add Subscription：** Paste from Clipboard 为主，Scan QR / Import file 为辅；**无**手填主 UI、**无**「剪贴板已发现」独立页。解析为叠在 Add 上的 **Parsing 模态**。失败：页内短句 + Paste again；**不覆盖**已有配置。
-- **导入成功：** 直接回 **Home Idle（同壳）** + 短 toast（名称 · 节点数等；**2–3s** 自动消失）；设 Active；**不**自动连。详细字段（到期/流量/更新时间等）进订阅详情/Settings，不挡首次路径。
+- **导入成功：** 直接回 **Home Idle（同壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s** 自动消失）；设 Active；**不**自动连；**不**强制命名（自动取名 + Subscriptions 内可选 Rename，见 ADR 0033）。详细字段（到期/流量/更新时间等）进订阅详情，不挡首次路径。
 - **多订阅模型（Active Subscription）：** 可保存多份 Subscription；同一时间仅 **1 个 Active** 用于连接 / 选节点 / Probe / 诊断 / Repair / Failover。切换 Active 须用户明确操作，记入 Activity；不默认合并多订阅节点池；不做多隧道并行。首次导入的订阅自动成为 Active。
 - **Subscription Refresh（少打扰）：**
   - **触发：** 冷启动或用户点连接，且 Active 距上次成功更新 ≥ **T**（默认 **6h**）→ 尝试更新 Active。
@@ -271,6 +271,7 @@
 - Activity：Beta 须能查看连接 / Failover / 诊断 / Repair / 回滚 / 模式变更等事件；允许列表级 UI，不要求 P0 动效。
 - Active Subscription：同时仅一份参与连接与自愈；切换显式；不合并节点池、不并行多隧道。
 - Subscription Refresh：仅冷启动/连接前按 T（默认 6h）刷 Active；无固定后台周期；失败不覆盖；成功少打扰。
+- Subscription Display Name：导入静默自动取名（配置名 → 元数据/文件名 → host 弱名 → 中性默认）；可选 Rename；不承诺服务商品牌名（ADR 0033）。
 - User Override：仅服务名或单域名 → proxy|direct；≤20 条；无正则/规则市场；Global/Direct 另计。
 - 无云端授权时核心连接/诊断/Repair 可用。
 

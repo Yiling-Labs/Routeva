@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Subscriptions</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      background: #c2c2c0;
+      background-image: radial-gradient(ellipse at 30% 15%, #d8d8d6 0%, #b6b6b4 50%, #a4a4a2 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px 24px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .meta { max-width: 760px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .meta p { font-size: 14px; color: #3a3a3a; margin-top: 8px; line-height: 1.55; max-width: 72ch; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      border: 1px solid #333; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.4);
+    }
+    .row {
+      display: flex; flex-wrap: wrap; gap: 36px; justify-content: center;
+      max-width: 1600px; margin: 0 auto;
+    }
+    .phone-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .lab { font-size: 12px; font-weight: 600; color: #2a2a2a; text-align: center; max-width: 280px; line-height: 1.35; }
+    .lab span { display: block; font-weight: 400; color: #555; margin-top: 2px; font-size: 11px; }
+    .noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px; mix-blend-mode: overlay;
+    }
+    .halftone {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 40%;
+      pointer-events: none; opacity: 0.12;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0.85px, transparent 1.05px);
+      background-size: 4.5px 4.5px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+      mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin-ring { animation: spin 0.9s linear infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .spin-ring { animation: none; border-top-color: rgba(127,217,176,0.55) !important; border-right-color: rgba(127,217,176,0.55) !important; }
+    }
+    button:focus-visible {
+      outline: 2px solid rgba(127,217,176,0.9);
+      outline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Subscriptions · Single list</h1>
+    <p>
+      One screen: all subscriptions listed; <strong>Active</strong> marked on the row in use.
+      No separate “All subscriptions” layer. Update sits on the Active card; Add at the bottom.
+    </p>
+    <div class="tags">
+      <span class="tag">ADR 0020</span>
+      <span class="tag">SINGLE LIST</span>
+      <span class="tag">ADR 0033 · DISPLAY NAME</span>
+      <span class="tag">VISUAL SYSTEM</span>
+    </div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const TYPE = { font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif' };
+    const FIELD = 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)';
+    const CTA = 'linear-gradient(160deg, #8fe8c0 0%, #4bb98a 48%, #2f9a6c 100%)';
+    const CTA_SH = '0 12px 32px rgba(50,190,130,0.32), inset 0 1px 0 rgba(255,255,255,0.4)';
+    const T = {
+      primary: 'rgba(255,255,255,0.96)',
+      secondary: 'rgba(255,255,255,0.52)',
+      muted: 'rgba(255,255,255,0.58)',
+      quiet: 'rgba(255,255,255,0.38)',
+      icon: 'rgba(255,255,255,0.82)',
+      card: 'linear-gradient(155deg, rgba(48,56,62,0.92) 0%, rgba(18,22,26,0.96) 100%)',
+    };
+
+    const SUBS_FULL = [
+      {
+        id: 'apex',
+        name: 'Apex Transit',
+        nodes: 42,
+        expires: 'Sep 12, 2026',
+        usedGb: 86.2,
+        totalGb: 200,
+        updated: 'Today · 9:12 AM',
+        active: true,
+      },
+      {
+        id: 'north',
+        name: 'Northlink',
+        nodes: 18,
+        expires: null,
+        usedGb: null,
+        totalGb: null,
+        updated: '3 days ago',
+        active: false,
+      },
+      {
+        id: 'orbit',
+        name: 'Orbit Pass',
+        nodes: 9,
+        expires: 'Aug 28, 2026',
+        usedGb: 12.4,
+        totalGb: 50,
+        updated: 'Yesterday',
+        active: false,
+      },
+    ];
+
+    const SUBS_SPARSE = [
+      {
+        id: 'north',
+        name: 'Northlink',
+        nodes: 18,
+        expires: null,
+        usedGb: null,
+        totalGb: null,
+        updated: '3 days ago',
+        active: true,
+      },
+      {
+        id: 'apex',
+        name: 'Apex Transit',
+        nodes: 42,
+        expires: 'Sep 12, 2026',
+        usedGb: 86.2,
+        totalGb: 200,
+        updated: 'Today · 9:12 AM',
+        active: false,
+      },
+    ];
+
+    function IosFrame({ children }) {
+      const c = '#fff';
+      return (
+        <div style={{
+          display: 'inline-block', padding: 11, background: '#0a0a0a', borderRadius: 58,
+          boxShadow: '0 0 0 1px #2a2a2a, 0 32px 80px rgba(0,0,0,0.36), inset 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          <div style={{
+            position: 'relative', width: 393, height: 852, borderRadius: 48,
+            overflow: 'hidden', background: FIELD,
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 28px 0', fontSize: 15, fontWeight: 600, color: c, pointerEvents: 'none',
+            }} aria-hidden="true">
+              <span>9:41</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 11 }}>
+                  {[4, 6, 8, 11].map((h, i) => (
+                    <div key={i} style={{ width: 3, height: h, background: c, borderRadius: 1 }} />
+                  ))}
+                </div>
+                <div style={{
+                  width: 25, height: 12, border: `1.5px solid ${c}`, borderRadius: 3, padding: 1,
+                }}>
+                  <div style={{ width: '78%', height: '100%', background: c, borderRadius: 1 }} />
+                </div>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+              width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
+            }} aria-hidden="true" />
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20 }}>{children}</div>
+            <div style={{
+              position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+              width: 128, height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.35)', zIndex: 40,
+            }} aria-hidden="true" />
+          </div>
+        </div>
+      );
+    }
+
+    function GlassOrb({ children, label }) {
+      return (
+        <button type="button" aria-label={label} style={{
+          width: 40, height: 40, borderRadius: 999, border: 'none', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(14px)', cursor: 'pointer', color: T.icon,
+        }}>{children}</button>
+      );
+    }
+
+    function Primary({ children, wide, busy, onCard }) {
+      return (
+        <button type="button" disabled={busy} style={{
+          border: 'none', cursor: busy ? 'default' : 'pointer', width: wide ? '100%' : undefined,
+          padding: onCard ? '13px 18px' : '17px 28px',
+          borderRadius: onCard ? 14 : 18,
+          background: CTA, boxShadow: CTA_SH,
+          color: '#0a1f18', fontFamily: TYPE.font,
+          fontSize: onCard ? 15 : 16, fontWeight: 800,
+          opacity: busy ? 0.72 : 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>{children}</button>
+      );
+    }
+
+    function MapWash() {
+      return (
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, opacity: 0.07, pointerEvents: 'none',
+          backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><g fill='none' stroke='#fff' stroke-width='1' opacity='0.4'>
+              <ellipse cx='200' cy='148' rx='158' ry='88'/><path d='M42 148 Q100 78 200 98 T358 138'/>
+            </g></svg>`)}")`,
+          backgroundSize: '130% auto', backgroundPosition: 'center 38%', backgroundRepeat: 'no-repeat',
+        }} />
+      );
+    }
+
+    function IconClose() {
+      return (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function IconRefresh() {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 12a8 8 0 1 1-2.3-5.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M20 5v5h-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    }
+
+    function Shell({ title, left, children, footer }) {
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div className="halftone" aria-hidden="true" />
+          <div style={{
+            position: 'relative', zIndex: 2, height: '100%',
+            display: 'flex', flexDirection: 'column',
+            padding: '8px 22px 28px',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: 48, marginBottom: 8,
+            }}>
+              <div style={{ width: 40 }}>{left}</div>
+              <div style={{
+                fontSize: 17, fontWeight: 650, letterSpacing: '-0.02em',
+                color: T.primary, fontFamily: TYPE.font,
+              }}>
+                {title}
+              </div>
+              <div style={{ width: 40 }} aria-hidden="true" />
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              {children}
+            </div>
+            {footer && <div style={{ marginTop: 16 }}>{footer}</div>}
+          </div>
+        </div>
+      );
+    }
+
+    function ActiveBadge() {
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '5px 10px', borderRadius: 999,
+          background: 'rgba(80,200,150,0.16)',
+          border: '1px solid rgba(127,217,176,0.35)',
+          fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
+          color: 'rgba(180,240,210,0.95)', textTransform: 'uppercase',
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#7fd9b0', boxShadow: '0 0 8px rgba(127,217,176,0.7)',
+          }} aria-hidden="true" />
+          Active
+        </span>
+      );
+    }
+
+    function TrafficBar({ used, total }) {
+      if (used == null || total == null || total <= 0) return null;
+      const pct = Math.min(100, Math.round((used / total) * 100));
+      return (
+        <div style={{ marginTop: 12 }}>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', marginBottom: 8,
+            fontSize: 13, fontWeight: 500, color: T.secondary, fontFamily: TYPE.font,
+          }}>
+            <span>Data</span>
+            <span style={{ color: 'rgba(255,255,255,0.88)', fontWeight: 600 }}>
+              {used} / {total} GB
+            </span>
+          </div>
+          <div style={{
+            height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.08)',
+            overflow: 'hidden',
+          }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Data used">
+            <div style={{
+              width: `${pct}%`, height: '100%', borderRadius: 999,
+              background: 'linear-gradient(90deg, rgba(127,217,176,0.55) 0%, rgba(79,185,138,0.95) 100%)',
+            }} />
+          </div>
+        </div>
+      );
+    }
+
+    function SubRow({ sub, refreshing }) {
+      const isActive = !!sub.active;
+      return (
+        <div
+          role="listitem"
+          aria-current={isActive ? 'true' : undefined}
+          style={{
+            textAlign: 'left',
+            border: isActive
+              ? '1px solid rgba(127,217,176,0.4)'
+              : '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 20,
+            padding: isActive ? '18px 16px 16px' : '16px 16px 14px',
+            background: isActive
+              ? 'linear-gradient(155deg, rgba(40,56,52,0.95) 0%, rgba(18,24,22,0.98) 100%)'
+              : T.card,
+            boxShadow: isActive
+              ? '0 12px 28px rgba(0,0,0,0.32), inset 0 1px 0 rgba(127,217,176,0.12)'
+              : '0 10px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08)',
+            color: '#fff',
+            fontFamily: TYPE.font,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{
+                fontSize: isActive ? 20 : 17,
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                color: T.primary,
+              }}>
+                {sub.name}
+              </div>
+              <div style={{
+                marginTop: 6, fontSize: 13, fontWeight: 500, color: T.secondary, lineHeight: 1.35,
+              }}>
+                {sub.nodes} nodes
+                {sub.expires ? ` · ${sub.expires}` : ''}
+              </div>
+              <div style={{
+                marginTop: 4, fontSize: 12, fontWeight: 500, color: T.quiet,
+              }}>
+                Updated {sub.updated}
+              </div>
+            </div>
+            {isActive ? (
+              <ActiveBadge />
+            ) : (
+              <button
+                type="button"
+                style={{
+                  border: 'none', background: 'transparent', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)',
+                  whiteSpace: 'nowrap', padding: '4px 0 0',
+                  fontFamily: TYPE.font,
+                }}
+              >
+                Set active
+              </button>
+            )}
+          </div>
+
+          {isActive && (
+            <>
+              <TrafficBar used={sub.usedGb} total={sub.totalGb} />
+              <div style={{ marginTop: 14 }}>
+                <Primary wide busy={refreshing} onCard>
+                  {refreshing ? (
+                    <>
+                      <span className="spin-ring" style={{
+                        width: 14, height: 14, borderRadius: 999,
+                        border: '2px solid transparent',
+                        borderTopColor: '#0a1f18',
+                        borderRightColor: 'rgba(10,31,24,0.25)',
+                        display: 'inline-block',
+                      }} aria-hidden="true" />
+                      Updating…
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ color: '#0a1f18', display: 'flex' }}><IconRefresh /></span>
+                      Update
+                    </>
+                  )}
+                </Primary>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    /* —— Single Subscriptions list (no second “All” page) —— */
+    function SubscriptionsList({ variant }) {
+      // variant: 'full' | 'sparse' | 'refreshing'
+      const items = variant === 'sparse' ? SUBS_SPARSE : SUBS_FULL;
+      const refreshing = variant === 'refreshing';
+
+      return (
+        <IosFrame>
+          <Shell
+            title="Subscriptions"
+            left={<GlassOrb label="Close"><IconClose /></GlassOrb>}
+            footer={<Primary wide>Add subscription</Primary>}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }} role="list">
+              {items.map((s) => (
+                <SubRow key={s.id} sub={s} refreshing={refreshing && s.active} />
+              ))}
+            </div>
+            <div style={{ flex: 1 }} />
+          </Shell>
+        </IosFrame>
+      );
+    }
+
+    /** Placeholder only — full Settings IA lives in 05-settings.html */
+    function SettingsDeepLink() {
+      const sections = [
+        {
+          title: 'Connection',
+          rows: [
+            { label: 'Routing mode', value: 'Auto' },
+            { label: 'DNS', value: 'Automatic' },
+            { label: 'Overrides', value: '2 rules' },
+          ],
+        },
+        {
+          title: 'History',
+          rows: [
+            { label: 'Activity', value: null, chevron: true },
+            { label: 'Snapshots', value: null, chevron: true },
+          ],
+        },
+        {
+          title: 'App',
+          rows: [
+            { label: 'Privacy', value: null, chevron: true },
+            { label: 'Subscriptions', value: 'Apex Transit', chevron: true, emphasize: true },
+            { label: 'About', value: null, chevron: true },
+          ],
+        },
+      ];
+      return (
+        <IosFrame>
+          <Shell
+            title="Settings"
+            left={<GlassOrb label="Close"><IconClose /></GlassOrb>}
+          >
+            {sections.map((sec) => (
+              <div key={sec.title} style={{ marginTop: sec.title === 'Connection' ? 8 : 16 }}>
+                <div style={{
+                  fontSize: 12, fontWeight: 650, letterSpacing: '0.06em', textTransform: 'uppercase',
+                  color: T.quiet, fontFamily: TYPE.font, margin: '0 4px 8px',
+                }}>
+                  {sec.title}
+                </div>
+                <div style={{
+                  borderRadius: 20, overflow: 'hidden',
+                  background: T.card,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}>
+                  {sec.rows.map((r, i) => (
+                    <div
+                      key={r.label}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '15px 16px',
+                        borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                        background: r.emphasize ? 'rgba(127,217,176,0.06)' : 'transparent',
+                      }}
+                    >
+                      <span style={{
+                        fontSize: 16, fontWeight: r.emphasize ? 650 : 500,
+                        color: T.primary, fontFamily: TYPE.font,
+                      }}>
+                        {r.label}
+                      </span>
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        fontSize: 15, fontWeight: 500, color: T.secondary, fontFamily: TYPE.font,
+                      }}>
+                        {r.value}
+                        {(r.chevron || r.value) && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                          </svg>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div style={{ flex: 1 }} />
+          </Shell>
+        </IosFrame>
+      );
+    }
+
+    function App() {
+      return (
+        <div className="row">
+          <div className="phone-col">
+            <div className="lab">1 · List (Active rich)<span>All subs · Active + data + Update</span></div>
+            <SubscriptionsList variant="full" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">1b · List (sparse Active)<span>No traffic rows when unknown</span></div>
+            <SubscriptionsList variant="sparse" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">1c · Updating<span>Update busy on Active card</span></div>
+            <SubscriptionsList variant="refreshing" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">2 · Settings deep link<span>Same list UI · single door</span></div>
+            <SettingsDeepLink />
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

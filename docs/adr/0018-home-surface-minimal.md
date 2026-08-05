@@ -10,3 +10,5 @@ Idle（黑、无点、START 顶）→ 下滑约 ⅓（1 圈点亮）→ 约 ⅔�
 **为何：** 日常关心「连没连上、走哪条节点」；点阵绑定连接过程而非 Idle 装饰；绿场 = Probe 成功真值，禁止假绿。模式切换低频，进 Settings/Agent。
 
 **后果：** 实现与 hi-fi 以本 ADR + CONTEXT **Home Surface / Home Mid Copy / Connect Gesture** 为准。Diagnostic/Repair 等屏仍 sheet，视觉可后补。
+
+**顶栏出口：** 见 **ADR 0020**（Agent · Subscriptions · Settings；Activity 降级；Empty 隐藏 Subscriptions）。

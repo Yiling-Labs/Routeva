@@ -71,6 +71,9 @@
 
 - **无底部 Tab**  
 - 顶栏：左右 **glass orb**（与 Home 同款）  
+- **有订阅：** `[ Agent ] [ Subscriptions ] …… [ Settings ]`（ADR 0020）  
+- **Empty：** `[ Agent ] …… [ Settings ]`（无 Subscriptions）  
+- **Activity** 不进顶栏 → Settings 二级  
 - 二级：push 或 sheet；关闭用 Close / 系统 back  
 - 诊断 / 修复：优先 **底 sheet 玻璃卡**（与早期 probe 诊断语言一致）  
 
@@ -82,9 +85,10 @@
 | **Location / 节点列表** | Field Black；顶栏同款；列表行 glass 分割或轻卡；协议弱标注 |
 | **Diagnostic** | 叠在 dimmed Home 或 Black 场；玻璃大卡；四桶 badge 可略用色但不抢主 CTA |
 | **Repair** | 同 Diagnostic 材质；Confirm = 绿实心；Cancel = ghost |
-| **Activity** | Black 场；时间线轻分割；图标线框、低饱和 |
+| **Subscriptions** | Field Black；**单列表**（Active 行加强 + Update）；流量/到期有则显示、无则隐藏；**少文案**；无 All 第二层 |
+| **Activity** | Settings 内二级；Black 场；时间线轻分割；图标线框、低饱和 |
 | **Agent** | Black 场；输入条 glass 胶囊形；气泡勿厚重拟物 |
-| **Settings** | Black 场；分组标题弱字；toggle / chevron 克制 |
+| **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → History → App** 三段；Activity/Snapshots 二级；Subscriptions 深链；**无** Appearance / Advanced / Cloud AI 开关。权威：`05-settings.html` |
 
 ## 9. 自检清单（新屏交付前）
 

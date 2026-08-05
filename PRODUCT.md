@@ -87,7 +87,7 @@
 
 | 状态 | 说明 |
 |---|---|
-| 已完成 | 工作区 init；GitHub；grill Q1–Q15；grill-with-docs 复审 Q1–Q12；CONTEXT + ADR 0001–0017 |
-| 下一步 | 按 Craft P0 做信息架构/高保真；`app/` 工程与内核选型；封闭测试订阅样本；商店隐私与 VPN 文案 |
+| 已完成 | 工作区 init；GitHub；CONTEXT + ADR（含 0018–0020、0033 等）；Craft P0 hi-fi（Home / Setup / Subscriptions）；**`app/` SwiftUI 壳**（导航 + 导入 stub + 订阅列表） |
+| 下一步 | VPN / Network Extension + Probe；真订阅解析；胶囊手势对齐 `02-home`；Settings 二级落地；封闭测试样本；商店隐私文案 |
 
-开放项（实现期可短 grill）：高级模式细项、分析事件表、隐私营养标签/商店合规终稿、内核选型、Probe 具体目标、TestFlight 规模与样本机场、**商业化时机与是否沿用 0001** 等。
+开放项（实现期可短 grill）：内核选型、Probe 目标、分析事件表、隐私营养标签终稿、TestFlight 样本、**商业化时机与是否沿用 0001** 等。

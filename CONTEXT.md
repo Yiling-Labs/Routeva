@@ -46,16 +46,38 @@ _Avoid_: 视觉花活、用动效掩盖诊断不准
 
 **Craft Priority（MVP）**：
 - **P0 Craft：** Onboarding→导入→首次连上（系统 VPN 弹窗，无自建说明页）；Home 连接态；诊断结果卡（四桶）；Repair 确认/进度/成功或回滚；（商业化后）付费墙  
-- **P0 能力 / P1 Craft：** **Activity** 事件可查（连接、Failover、诊断、Repair、回滚、模式切换等）——Beta 须有清晰列表，动效与视觉可后打磨；Agent 工具过程与可撤销  
+- **P0 能力 / P1 Craft：** **Activity** 事件可查（Settings 二级；连接、Failover、诊断、Repair、回滚、模式切换等）——Beta 须有清晰列表，动效与视觉可后打磨；Agent 工具过程与可撤销；**Subscriptions** 一级面（单列表 + Active 态）
 - **P2：** 高级模式与深层设置  
 用户可见文案以 English 源打磨（见 Product Language）。
 
 **Home Surface**：
-完成前置配置后，Home 根画布服务「选节点 → 连接手势 → 连接真值」；**无底部 Tab**；顶栏 glass 进 Activity / Agent / Settings。中部闭集见 **Home Mid Copy**；连接动效见 **Connect Gesture**。权威 hi-fi：`design/hi-fi/current/craft-p0/02-home.html`。全 app 视觉从 Home 提取：`design/hi-fi/current/craft-p0/visual-system.md`（后续屏必须协调统一）。详见 ADR 0018。  
-_Avoid_: 三栏底 Tab；在 Home 常驻规则实现说明、定位口号、默认展示 Auto；二级页另起无关视觉风格
+完成前置配置后，Home 根画布服务「选节点 → 连接手势 → 连接真值」；**无底部 Tab**；顶栏为**纯离开 Home 的出口**（不做状态红点、不做主任务捷径）。有 Active 时：`[ Agent ] [ Subscriptions ] …… [ Settings ]`；无订阅（Empty）：`[ Agent ] …… [ Settings ]`（**不**显示 Subscriptions）。中部闭集见 **Home Mid Copy**；连接动效见 **Connect Gesture**。权威 hi-fi：`design/hi-fi/current/craft-p0/02-home.html`。全 app 视觉从 Home 提取：`design/hi-fi/current/craft-p0/visual-system.md`。详见 ADR 0018 / **0020**。  
+_Avoid_: 三栏底 Tab；顶栏常驻 Activity；顶栏诊断/刷新捷径；在 Home 常驻规则说明、定位口号、默认展示 Auto；二级页另起无关视觉风格
+
+**Home Chrome（顶栏出口）**：
+- **Agent** — Thick Agent（NL + Tool Allowlist）；故障裁判仍是 Diagnostic Engine  
+- **Subscriptions** — 仅当已有至少一份订阅（通常已有 Active）时显示；进入 **Subscriptions Surface**  
+- **Settings** — 进入 **Settings Surface**（非订阅配置与可解释历史；非日常连接台）  
+- **Activity** — **不进顶栏**；经 Settings 二级（及 Agent 只读摘要）可查  
+_Avoid_: Empty 用 + 替换 Settings；顶栏四钮塞回 Activity
+
+**Settings Surface**：
+从 Home 顶栏进入的一级配置面。**根页主职 = Connection Policy 优先**（ADR 0021）。**根页一级分组闭集（三段，自上而下）：**
+1. **Connection** — 根页固定三行（均为 › 进二级，非 Home 内联控件）：**Routing mode** · **DNS** · **Overrides**（User Override 列表/编辑，≤20）。**DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（钉节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
+2. **History** — 根页固定两行：**Activity ›**（时间序事件，能力 P0）· **Snapshots ›**（保留期内 Config Snapshot 列表与回滚确认）。**Export 脱敏报告**不占 History 根行（可落在 Activity/诊断详情/About 次要动作，细项另议）。根页**不**内嵌事件摘要列表。  
+3. **App** — 根页固定三行：**Privacy ›** · **Subscriptions ›**（深链同一套 UI，含 Empty 时无顶栏入口的补偿）· **About ›**。**无 Appearance 行：** UI 光暗 **仅跟随系统**；**连接绿场仍仅 Connection Success**，不提供主题皮肤或「永远绿」。**Beta 不**在根页放 Restore Purchases / 付费墙 / 账号。  
+   - **Privacy › 闭集：** Data on device（本机、无账号）· What we don’t collect by default（短列表）· Cloud AI **只读**说明（管理在 Agent，无第二开关）· Diagnostics/analytics 明示（无则不强行假开关）· 外链 Privacy Policy。  
+   - **About › 闭集：** 名+版本 · 政策/条款/支持链 · **Export diagnostic report**（脱敏，次要）· 一句不卖节点。**无** 连点 Advanced、无 Rate/Share 必达。  
+**Cloud AI 不进 Settings 根页：** 授权与开关在 **Agent** 内、用户首次需要云端增强时触发（见 **Cloud AI**）；Settings 不预开/预关。根页**无**独立 Assistant 段（避免空壳）。  
+**不上根页：** Appearance/主题包、Cloud AI 开关、订阅 CRUD 副本、Run Diagnostic 主 CTA、协议/内核/规则编辑平铺、Beta 付费墙/Restore Purchases、账号/登录、整屏 Activity 日志、**Advanced / 高级模式入口**（Beta 正式 Settings 不露；内核/日志级别/实验项无用户入口）。Export 等残留挂 Activity/诊断/About **次要动作**；订阅 Refresh 仅 Subscriptions Surface。日常连/断/选节点仍在 Home。Craft 整体属 P2（Activity 能力仍为 P0）。  
+_Avoid_: Settings 当第二连接台；Trust/History 占满根页主视觉；两套订阅管理；五段常驻 Advanced 坟场；无分组的一长串开关；Connection 段塞进节点管理或自由 DNS 编辑器；仅从 Repair 流程才能找到快照列表；Settings 再挂一套 Cloud AI 开关与 Agent 双源；Beta 根页死挂 Restore Purchases；用 Advanced 再镜像一遍 Mode/DNS/Override/Activity；Appearance 劫持连接绿场
+
+**Subscriptions Surface**：
+一级面（非 Settings 内嵌第二套管理）。**单列表**：一屏列出全部 Subscription；**Active** 行高亮（徽章 + 可选到期/流量 + **Update**）；非 Active 行可 **Set active**；底 **Add subscription**。**无**独立「All subscriptions」第二层。**可选 Rename**（非导入阻断）。**无**教学脚注。与 Empty/Add 流共用添加路径。Settings 最多 *Subscriptions ›* **深链到同一套 UI**，不复制 CRUD。权威 hi-fi：`design/hi-fi/current/craft-p0/04-subscriptions.html`。详见 **Subscription Display Name** / ADR **0033**。  
+_Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表双页重复；假设每家都有流量仪表盘；无数据时伪造仪表或写 *Not reported* 解释句
 
 **Home Mid Copy（闭集）**：
-- **无订阅（Home Empty）：** 与 Home **同一壳**（顶栏 Activity · Agent · Settings 不变）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；**不**用右上角 + 替换 Settings
+- **无订阅（Home Empty）：** 顶栏 **仅 Agent + Settings**（无 Subscriptions）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA（及同一 Add 流）
 - **Idle / 手势中（黑场）：** 上部 **国旗 Cover Flow**（选中项下为 **节点名** + 弱协议）；中部 **Not Connected** + **Location ›**；**Idle 无点阵**  
 - **Connecting（黑场）：** Cover Flow 可保留；**Connecting…**；三圈点全亮（未染绿场）  
 - **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；地区 · Connected · 节点+弱协议；三圈绿点  
@@ -69,7 +91,7 @@ _Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下�
 _Avoid_: Welcome→Import→VPN 三连轰炸；自建「Allow VPN」页；欢迎页编号卡片；欢迎页堆叠第三段能力说明
 
 **Add Subscription（交互）**：
-主路径 **Paste from Clipboard**；次要 **Scan QR**、**Import file**（剪贴板与扫码本质相同：取内容 → 解析）。顶部 **一句** 引导去服务商取链接/二维码。**无** 手填大输入框；**无** 独立「剪贴板已发现」确认页。点 Paste/扫码后在 **Add Subscription 上弹出 Parsing 模态**（*Reading clipboard…* / *Reading QR code…*；**非**独立全屏）。成功：直接回 **Home Idle（同一壳）** + 短 toast（**2–3s 自动消失**）；设 Active；**不**自动连。失败：回 Add 页失败态——短句 *Couldn’t add this* + *Copy a fresh link or QR…*；主 CTA Paste again；次要 Scan/File；**不**列协议/格式清单；**不覆盖**已有配置。  
+主路径 **Paste from Clipboard**；次要 **Scan QR**、**Import file**（剪贴板与扫码本质相同：取内容 → 解析）。顶部 **一句** 引导去服务商取链接/二维码。**无** 手填大输入框；**无** 独立「剪贴板已发现」确认页。点 Paste/扫码后在 **Add Subscription 上弹出 Parsing 模态**（*Reading clipboard…* / *Reading QR code…*；**非**独立全屏）。成功：直接回 **Home Idle（同一壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s 自动消失**）；设 Active；**不**自动连；**不**打断命名。失败：回 Add 页失败态——短句 *Couldn’t add this* + *Copy a fresh link or QR…*；主 CTA Paste again；次要 Scan/File；**不**列协议/格式清单；**不覆盖**已有配置。  
 _Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳不一致；失败文案堆 Clash/YAML 等格式科普
 
 **Connect Gesture**：
@@ -78,11 +100,12 @@ _Avoid_: Idle 常驻点阵；未 Probe 成功就整屏染绿；点阵超过 3 �
 
 **Routing Mode Entry**：
 Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：Cover Flow + Location 入口；Connected 节点行可点。  
-_Avoid_: Home 主视觉级模式切换
+**Settings · Routing mode ›：** 单选三档 + 各一行副文（Auto = provider rules + smart nodes；Global = all via proxy；Direct = no proxy）；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
+_Avoid_: Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器
 
 **Activity Log**：
-本机时间序事件记录，用于解释「系统刚做了什么」（连接、Node Failover、诊断、Repair、回滚、Global/Direct 或 Override 等）。Beta **必须可查看**（能力 P0）；呈现精致度属 Craft P1。不上传原始订阅/Token。  
-_Avoid_: Beta 无任何事件可查；把 Activity 当成可后做的纯装饰
+本机时间序事件记录，用于解释「系统刚做了什么」（连接、Node Failover、诊断、Repair、回滚、Global/Direct 或 Override 等）。Beta **必须可查看**（能力 P0）；呈现精致度属 Craft P1。**入口：** Settings 二级（及 Agent 工具摘要），**非** Home 顶栏常驻。不上传原始订阅/Token。  
+_Avoid_: Beta 无任何事件可查；把 Activity 当成可后做的纯装饰；Home 顶栏常驻 Activity
 
 **Proxy Client**：
 本产品是代理**客户端**：导入、解析、连接、诊断与配置；用户须自备订阅或节点来源。
@@ -91,6 +114,10 @@ _Avoid_: VPN 服务商、机场、节点商城
 **Subscription**：
 用户自有的代理订阅或等价导入物（链接、单节点 URI、二维码、Clash/Mihomo/sing-box 等配置）。产品不销售 Subscription。
 _Avoid_: 套餐、会员订阅（与 App 内购「永久解锁」混淆时需写全称）
+
+**Subscription Display Name**：
+该 Subscription 在 UI 中的显示名（列表/Active 标题/成功 toast）。**不承诺**协议能提供服务商品牌名。导入时**静默自动取名**，优先级：① 配置内明确 profile/`name` 等 → ② 拉取时可用的响应元数据/文件名（若有）→ ③ 由订阅 URL host 派生的弱名 → ④ 中性默认（如 *Subscription* / *Subscription 2*）。**禁止**导入流程强制用户命名。用户可在 Subscriptions Surface **可选 Rename**；节点备注名 ≠ 订阅显示名。  
+_Avoid_: 粘贴后必填机场名；把单节点 URI 备注当成服务商品牌；伪造「官方店名」
 
 **Active Subscription**：
 同一时间参与连接、Node Selection、Connectivity Probe、诊断、Repair 与 Failover 的**唯一** Subscription。用户可保存多份 Subscription，但必须显式选择其一为 Active；切换 Active 为显式动作（记 Activity，必要时按 Snapshot Policy 建快照）。不默认合并多订阅节点池，不双栈并行多隧道。  
@@ -167,8 +194,8 @@ _Avoid_: 无边界聊天机器人；「AI 随便改配置」
 _Avoid_: 开放式工具插件；模型自行注册新工具
 
 **Cloud AI（Optional）**：
-云端模型是 **Opt-in 增强**，不是 Agent 默认大脑。默认路径：快捷问题 / 本地或规则编排 / 模板化解释 + 同一套工具。开启云端须明确授权与可见指示，且可一键关闭；只允许发送脱敏后的结构化上下文（如意图类型、诊断摘要），禁止 Token、节点凭证、原始订阅正文、完整浏览域名与对话原文默认上传。无云/拒云时，连接、Diagnostic Engine 与白名单 Repair 仍须可用。
-_Avoid_: 云端默认大脑；无云则无 Agent
+云端模型是 **Opt-in 增强**，不是 Agent 默认大脑。默认路径：快捷问题 / 本地或规则编排 / 模板化解释 + 同一套工具。**授权入口在 Agent 面**：用户首次需要云端增强时再知情同意；开启后须有可见指示，且在 Agent 内可一键关闭。**不**在 Settings 根页预置开关（避免与 Agent 双源）。只允许发送脱敏后的结构化上下文（如意图类型、诊断摘要），禁止 Token、节点凭证、原始订阅正文、完整浏览域名与对话原文默认上传。无云/拒云时，连接、Diagnostic Engine 与白名单 Repair 仍须可用。
+_Avoid_: 云端默认大脑；无云则无 Agent；Settings 与 Agent 两套 Cloud AI 开关
 
 **Beta Access**：
 **Beta 阶段（直至宣布进入商业化）产品行为：MVP 范围内能力全部可用，不限额、不展示付费墙。** Free Experience / Pro Unlock / Paywall Timing 仅为**日后收费规划的目标草稿**，不是 Beta 验收或出门条件。主证明点仍是 Self-Healing Loop 与连接稳定性。详见 ADR 0006。  
@@ -202,8 +229,9 @@ _Avoid_: 强制登录才能连接；自建账户体系当 MVP 依赖
 _Avoid_: 以自建庞大域名库当主分流；规则社区；完整策略组编辑器
 
 **User Override Rule**：
-用户或 Agent 发起的**结构化覆盖层**：每条为 `目标`（预设服务名 **或** 单个域名）→ `proxy | direct`。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。Beta 最多 **20** 条。Global / Direct 总开关不计入这 20 条。  
-_Avoid_: 手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；无限条迷你规则编辑器
+用户或 Agent 发起的**结构化覆盖层**：每条为 `目标`（预设 **Service** 名 **或** 单个 **Domain**）→ `proxy | direct`。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。Beta 最多 **20** 条。Global / Direct 总开关不计入这 20 条。  
+**Settings 交互（Overrides ›）：** 列表（每条可开/关/删）+ **Add** sheet（选 Service 或 Domain → Proxy/Direct → Save）；**无** 正则/通配/一行速记语法；满 20 禁用 Add。Service 预设表由产品维护（实现期定名单）；Domain 为单域名。Agent 写同一模型，非只读旁路。  
+_Avoid_: 手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；无限条迷你规则编辑器；Overrides 仅 Agent 可写、Settings 不能 Add
 
 **Node Selection**：
 在可用节点集合内，按延迟、握手、实际访问成功率（含 Connectivity Probe）、近期失败与稳定性等加权评分，选出当前节点；不能只按 Ping 排序。属客户端主智能之一。

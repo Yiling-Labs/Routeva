@@ -16,7 +16,7 @@
 
 ### ios
 
-- Xcode/工程与源码在 `app/`（后续加入）。  
+- Xcode/工程与源码在 `app/`：`project.yml` → `xcodegen generate` → `Routeva.xcodeproj`。见 `app/README.md`。  
 - App Store 截图与元数据在 `gtm/stores/app_store/`。  
 - 证书与配置描述文件不入库。
 

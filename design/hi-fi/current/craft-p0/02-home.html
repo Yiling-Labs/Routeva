@@ -261,24 +261,27 @@
       );
     }
 
-    function IconList({ color }) {
-      return (
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-          <path d="M4 7h16M4 12h12M4 17h14" stroke={color} strokeWidth="1.85" strokeLinecap="round" />
-        </svg>
-      );
-    }
     function IconAgent({ color }) {
       return (
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 4a6 6 0 0 0-6 6v1.1c0 .75-.3 1.45-.85 1.95L4 14.6V16h16v-1.4l-1.15-1.55c-.55-.5-.85-1.2-.85-1.95V10a6 6 0 0 0-6-6z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
           <path d="M10 18.2a2 2 0 0 0 4 0" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
         </svg>
       );
     }
+    /* Subscriptions — stack / layers (not Activity list) */
+    function IconSubscriptions({ color }) {
+      return (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="4" y="5" width="16" height="4" rx="1.2" stroke={color} strokeWidth="1.6" />
+          <rect x="4" y="11" width="16" height="4" rx="1.2" stroke={color} strokeWidth="1.6" />
+          <rect x="4" y="17" width="11" height="3" rx="1" stroke={color} strokeWidth="1.6" />
+        </svg>
+      );
+    }
     function IconGear({ color }) {
       return (
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.6" />
           <path d="M12 3v2.1M12 18.9V21M3 12h2.1M18.9 12H21M5.7 5.7l1.5 1.5M16.8 16.8l1.5 1.5M5.7 18.3l1.5-1.5M16.8 7.2l1.5-1.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
         </svg>
@@ -320,8 +323,8 @@
       );
     }
 
-    function TopChrome({ light }) {
-      // Icons always light-on-field so chrome doesn’t read as a dark/light strip
+    function TopChrome({ light, empty }) {
+      // ADR 0020: [Agent][Subscriptions]…[Settings] when has sub; Empty hides Subscriptions
       const c = 'rgba(255,255,255,0.82)';
       return (
         <div style={{
@@ -330,8 +333,10 @@
           background: 'transparent',
         }}>
           <div style={{ display: 'flex', gap: 10 }}>
-            <GlassOrb light={light}><IconList color={c} /></GlassOrb>
             <GlassOrb light={light}><IconAgent color={c} /></GlassOrb>
+            {!empty && (
+              <GlassOrb light={light}><IconSubscriptions color={c} /></GlassOrb>
+            )}
           </div>
           <GlassOrb light={light}><IconGear color={c} /></GlassOrb>
         </div>
@@ -1158,7 +1163,7 @@
             }} />
 
             <div style={{ position: 'relative', zIndex: 2, height: '100%' }}>
-            <TopChrome light={light} />
+            <TopChrome light={light} empty={s === 'setup'} />
 
             {/* ===== UPPER BAND (pin layout) ===== */}
             {showSession && (

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Settings</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      background: #c2c2c0;
+      background-image: radial-gradient(ellipse at 30% 15%, #d8d8d6 0%, #b6b6b4 50%, #a4a4a2 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px 24px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .meta { max-width: 920px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .meta p { font-size: 14px; color: #3a3a3a; margin-top: 8px; line-height: 1.55; max-width: 72ch; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      border: 1px solid #333; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.4);
+    }
+    .row {
+      display: flex; flex-wrap: wrap; gap: 36px; justify-content: center;
+      max-width: 1800px; margin: 0 auto;
+    }
+    .phone-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .lab {
+      font-size: 12px; font-weight: 600; color: #2a2a2a; text-align: center;
+      max-width: 280px; line-height: 1.35;
+    }
+    .lab span { display: block; font-weight: 400; color: #555; margin-top: 2px; font-size: 11px; }
+    .noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px; mix-blend-mode: overlay;
+    }
+    .halftone {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 40%;
+      pointer-events: none; opacity: 0.15;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0.85px, transparent 1.05px);
+      background-size: 4.5px 4.5px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+      mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+    }
+    button:focus-visible {
+      outline: 2px solid rgba(127,217,176,0.9);
+      outline-offset: 3px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Settings · Connection Policy first</h1>
+    <p>
+      ADR 0021–0032 closed set. Root: <strong>Connection → History → App</strong>.
+      No Appearance, Advanced, Cloud AI toggle, or subscription CRUD.
+      Soft glass on Field Black — same family as Home / Subscriptions.
+    </p>
+    <div class="tags">
+      <span class="tag">SETTINGS SURFACE</span>
+      <span class="tag">POLICY FIRST</span>
+      <span class="tag">NO ADVANCED</span>
+      <span class="tag">VISUAL SYSTEM</span>
+    </div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const TYPE = { font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif' };
+    const FIELD = 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)';
+    const CTA = 'linear-gradient(160deg, #8fe8c0 0%, #4bb98a 48%, #2f9a6c 100%)';
+    const CTA_SH = '0 12px 32px rgba(50,190,130,0.32), inset 0 1px 0 rgba(255,255,255,0.4)';
+    const T = {
+      primary: 'rgba(255,255,255,0.96)',
+      secondary: 'rgba(255,255,255,0.52)',
+      muted: 'rgba(255,255,255,0.58)',
+      quiet: 'rgba(255,255,255,0.38)',
+      icon: 'rgba(255,255,255,0.82)',
+      card: 'linear-gradient(155deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)',
+      mint: 'rgba(127,217,176,0.95)',
+      mintSoft: 'rgba(127,217,176,0.18)',
+    };
+
+    const MODE_OPTS = [
+      { id: 'auto', title: 'Auto', sub: 'Provider rules + smart nodes' },
+      { id: 'global', title: 'Global', sub: 'All traffic via proxy' },
+      { id: 'direct', title: 'Direct', sub: 'No proxy' },
+    ];
+    const DNS_OPTS = [
+      { id: 'automatic', title: 'Automatic', sub: 'System / tunnel default' },
+      { id: 'privacy', title: 'Privacy', sub: 'Encrypted DNS when possible' },
+      { id: 'compat', title: 'Compatibility', sub: 'Prefer widely reachable resolvers' },
+    ];
+    const OVERRIDE_DEMO = [
+      { id: 1, target: 'ChatGPT', kind: 'Service', action: 'Proxy', on: true },
+      { id: 2, target: 'intranet.corp', kind: 'Domain', action: 'Direct', on: true },
+    ];
+    const ACTIVITY_DEMO = [
+      { t: '9:14 AM', title: 'Connected', detail: 'HKG-01 · Probe OK' },
+      { t: '9:12 AM', title: 'Subscription updated', detail: 'Apex Transit · quiet refresh' },
+      { t: 'Yesterday', title: 'Node failover', detail: 'SJC-12 → HKG-01' },
+      { t: 'Yesterday', title: 'Repair completed', detail: 'DNS → Compatibility' },
+      { t: 'Mon', title: 'Mode changed', detail: 'Auto → Global' },
+    ];
+    const SNAP_DEMO = [
+      { id: 's1', title: 'Before Repair', when: 'Yesterday · 6:02 PM', note: 'DNS Compatibility attempt' },
+      { id: 's2', title: 'Before mode change', when: 'Mon · 11:20 AM', note: 'Auto → Global' },
+      { id: 's3', title: 'Before override', when: 'Sun · 8:44 PM', note: 'Added ChatGPT → Proxy' },
+    ];
+
+    function IosFrame({ children }) {
+      const c = '#fff';
+      return (
+        <div style={{
+          display: 'inline-block', padding: 11, background: '#0a0a0a', borderRadius: 58,
+          boxShadow: '0 0 0 1px #2a2a2a, 0 32px 80px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.06)',
+        }}>
+          <div style={{
+            position: 'relative', width: 393, height: 852, borderRadius: 48,
+            overflow: 'hidden', background: FIELD,
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 28px 0', fontSize: 15, fontWeight: 600, color: c, pointerEvents: 'none',
+            }} aria-hidden="true">
+              <span>9:41</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 11 }}>
+                  {[4, 6, 8, 11].map((h, i) => (
+                    <div key={i} style={{ width: 3, height: h, background: c, borderRadius: 1 }} />
+                  ))}
+                </div>
+                <div style={{
+                  width: 25, height: 12, border: `1.5px solid ${c}`, borderRadius: 3, padding: 1,
+                }}>
+                  <div style={{ width: '78%', height: '100%', background: c, borderRadius: 1 }} />
+                </div>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+              width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
+            }} aria-hidden="true" />
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20 }}>{children}</div>
+            <div style={{
+              position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+              width: 128, height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.35)', zIndex: 40,
+            }} aria-hidden="true" />
+          </div>
+        </div>
+      );
+    }
+
+    function GlassOrb({ children, label, onClick }) {
+      return (
+        <button
+          type="button"
+          aria-label={label}
+          onClick={onClick}
+          style={{
+            width: 40, height: 40, borderRadius: 999, border: 'none', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'linear-gradient(155deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(14px)', cursor: onClick ? 'pointer' : 'default', color: T.icon,
+          }}
+        >
+          {children}
+        </button>
+      );
+    }
+
+    function MapWash() {
+      return (
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, opacity: 0.07, pointerEvents: 'none',
+          backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><g fill='none' stroke='#fff' stroke-width='1' opacity='0.4'>
+              <ellipse cx='200' cy='148' rx='158' ry='88'/><path d='M42 148 Q100 78 200 98 T358 138'/>
+            </g></svg>`)}")`,
+          backgroundSize: '130% auto', backgroundPosition: 'center 38%', backgroundRepeat: 'no-repeat',
+        }} />
+      );
+    }
+
+    function IconClose() {
+      return (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function IconBack() {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    }
+    function IconChevron() {
+      return (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
+      );
+    }
+    function IconCheck() {
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5 12.5l4.5 4.5L19 7" stroke={T.mint} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    }
+
+    function Shell({ title, left, right, children, footer }) {
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div className="halftone" aria-hidden="true" />
+          <div style={{
+            position: 'relative', zIndex: 2, height: '100%',
+            display: 'flex', flexDirection: 'column',
+            padding: '8px 22px 28px',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: 48, marginBottom: 6, flexShrink: 0,
+            }}>
+              <div style={{ width: 40 }}>{left}</div>
+              <div style={{
+                fontSize: 17, fontWeight: 650, letterSpacing: '-0.02em',
+                color: T.primary, fontFamily: TYPE.font,
+              }}>
+                {title}
+              </div>
+              <div style={{ width: 40, display: 'flex', justifyContent: 'flex-end' }}>{right || null}</div>
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'auto' }}>
+              {children}
+            </div>
+            {footer && <div style={{ marginTop: 14, flexShrink: 0 }}>{footer}</div>}
+          </div>
+        </div>
+      );
+    }
+
+    function SectionLabel({ children }) {
+      return (
+        <div style={{
+          fontSize: 12, fontWeight: 650, letterSpacing: '0.06em', textTransform: 'uppercase',
+          color: T.quiet, fontFamily: TYPE.font, margin: '18px 4px 8px',
+        }}>
+          {children}
+        </div>
+      );
+    }
+
+    function Group({ children }) {
+      return (
+        <div style={{
+          borderRadius: 20, overflow: 'hidden',
+          background: T.card,
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 10px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
+        }}>
+          {children}
+        </div>
+      );
+    }
+
+    function Row({ label, value, onClick, last, emphasize }) {
+      return (
+        <button
+          type="button"
+          onClick={onClick}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 12, padding: '15px 16px', border: 'none', cursor: onClick ? 'pointer' : 'default',
+            background: emphasize ? 'rgba(127,217,176,0.06)' : 'transparent',
+            borderTop: last === false ? 'none' : undefined,
+            borderBottom: last ? 'none' : '1px solid rgba(255,255,255,0.06)',
+            fontFamily: TYPE.font, textAlign: 'left', color: T.primary,
+          }}
+        >
+          <span style={{ fontSize: 16, fontWeight: emphasize ? 650 : 500 }}>{label}</span>
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 15, fontWeight: 500, color: T.secondary, flexShrink: 0,
+          }}>
+            {value}
+            {onClick && <span style={{ color: T.quiet, display: 'flex' }}><IconChevron /></span>}
+          </span>
+        </button>
+      );
+    }
+
+    function Primary({ children, wide, onClick }) {
+      return (
+        <button type="button" onClick={onClick} style={{
+          border: 'none', cursor: 'pointer', width: wide ? '100%' : undefined,
+          padding: '16px 22px', borderRadius: 18, background: CTA, boxShadow: CTA_SH,
+          color: '#0a1f18', fontFamily: TYPE.font, fontSize: 16, fontWeight: 800,
+        }}>{children}</button>
+      );
+    }
+
+    function Ghost({ children, onClick }) {
+      return (
+        <button type="button" onClick={onClick} style={{
+          border: '1px solid rgba(255,255,255,0.14)', cursor: 'pointer', width: '100%',
+          padding: '14px 16px', borderRadius: 16, background: 'rgba(255,255,255,0.06)',
+          color: 'rgba(255,255,255,0.88)', fontFamily: TYPE.font, fontSize: 15, fontWeight: 600,
+        }}>{children}</button>
+      );
+    }
+
+    /* —— Screens —— */
+
+    function SettingsRoot({ onNav, modeLabel, dnsLabel, overrideCount }) {
+      return (
+        <Shell title="Settings" left={<GlassOrb label="Close"><IconClose /></GlassOrb>}>
+          <SectionLabel>Connection</SectionLabel>
+          <Group>
+            <Row label="Routing mode" value={modeLabel} onClick={() => onNav('mode')} />
+            <Row label="DNS" value={dnsLabel} onClick={() => onNav('dns')} />
+            <Row
+              label="Overrides"
+              value={overrideCount === 0 ? 'None' : `${overrideCount} rules`}
+              onClick={() => onNav('overrides')}
+              last
+            />
+          </Group>
+
+          <SectionLabel>History</SectionLabel>
+          <Group>
+            <Row label="Activity" value={null} onClick={() => onNav('activity')} />
+            <Row label="Snapshots" value={null} onClick={() => onNav('snapshots')} last />
+          </Group>
+
+          <SectionLabel>App</SectionLabel>
+          <Group>
+            <Row label="Privacy" value={null} onClick={() => onNav('privacy')} />
+            <Row label="Subscriptions" value="Apex Transit" onClick={() => onNav('subs')} emphasize />
+            <Row label="About" value={null} onClick={() => onNav('about')} last />
+          </Group>
+
+          <p style={{
+            marginTop: 22, padding: '0 6px', fontSize: 13, fontWeight: 500,
+            color: T.quiet, lineHeight: 1.45, fontFamily: TYPE.font, textAlign: 'center',
+          }}>
+            Appearance follows system. Cloud AI is managed in Agent.
+          </p>
+        </Shell>
+      );
+    }
+
+    function PickerScreen({ title, options, selected, onSelect, onBack, footerNote }) {
+      return (
+        <Shell title={title} left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}>
+          <Group>
+            {options.map((o, i) => {
+              const on = o.id === selected;
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => onSelect(o.id)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '15px 16px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                    background: on ? 'rgba(127,217,176,0.08)' : 'transparent',
+                    borderBottom: i === options.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                    fontFamily: TYPE.font, color: T.primary,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 600 }}>{o.title}</div>
+                    <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: T.secondary, lineHeight: 1.35 }}>
+                      {o.sub}
+                    </div>
+                  </div>
+                  <div style={{ width: 20, display: 'flex', justifyContent: 'center' }}>
+                    {on ? <IconCheck /> : null}
+                  </div>
+                </button>
+              );
+            })}
+          </Group>
+          {footerNote && (
+            <p style={{
+              marginTop: 16, padding: '0 6px', fontSize: 13, fontWeight: 500,
+              color: T.quiet, lineHeight: 1.45, fontFamily: TYPE.font,
+            }}>
+              {footerNote}
+            </p>
+          )}
+        </Shell>
+      );
+    }
+
+    function OverridesScreen({ items, onBack, onAdd }) {
+      return (
+        <Shell
+          title="Overrides"
+          left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}
+          footer={<Primary wide onClick={onAdd}>Add override</Primary>}
+        >
+          {items.length === 0 ? (
+            <div style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', padding: '24px 12px', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: T.primary, letterSpacing: '-0.02em' }}>
+                No overrides
+              </div>
+              <p style={{
+                marginTop: 10, fontSize: 14, fontWeight: 500, color: T.secondary,
+                lineHeight: 1.45, maxWidth: 28ch,
+              }}>
+                Route a site through proxy or direct — up to 20 rules.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+              {items.map((r) => (
+                <div key={r.id} style={{
+                  borderRadius: 18, padding: '14px 16px',
+                  background: T.card, border: '1px solid rgba(255,255,255,0.1)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 650, color: T.primary }}>{r.target}</div>
+                    <div style={{ marginTop: 4, fontSize: 12, fontWeight: 500, color: T.quiet }}>
+                      {r.kind} · {r.action}
+                    </div>
+                  </div>
+                  <div
+                    role="switch"
+                    aria-checked={r.on}
+                    style={{
+                      width: 48, height: 30, borderRadius: 999, flexShrink: 0,
+                      background: r.on
+                        ? 'linear-gradient(160deg, #6fd4a8 0%, #3aa878 100%)'
+                        : 'rgba(255,255,255,0.14)',
+                      boxShadow: r.on
+                        ? 'inset 0 1px 0 rgba(255,255,255,0.35)'
+                        : 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                      position: 'relative',
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute', top: 3, left: r.on ? 20 : 3,
+                      width: 24, height: 24, borderRadius: 999, background: '#fff',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                    }} />
+                  </div>
+                </div>
+              ))}
+              <p style={{
+                marginTop: 6, fontSize: 12, fontWeight: 500, color: T.quiet,
+                lineHeight: 1.4, padding: '0 4px',
+              }}>
+                Overrides layer on top of Auto. Global / Direct are set in Routing mode.
+              </p>
+            </div>
+          )}
+        </Shell>
+      );
+    }
+
+    function AddOverrideSheet({ onClose }) {
+      return (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 30,
+          background: 'rgba(0,0,0,0.45)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+        }}>
+          <div style={{
+            borderRadius: '24px 24px 0 0',
+            background: 'linear-gradient(168deg, #353b42 0%, #1a1f24 55%, #101418 100%)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 -12px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
+            padding: '14px 20px 36px',
+          }}>
+            <div style={{
+              width: 36, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.2)',
+              margin: '0 auto 16px',
+            }} />
+            <div style={{
+              fontSize: 18, fontWeight: 700, color: T.primary, letterSpacing: '-0.02em', marginBottom: 14,
+            }}>
+              Add override
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 650, letterSpacing: '0.05em', textTransform: 'uppercase', color: T.quiet, marginBottom: 8 }}>
+              Target
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              {['Service', 'Domain'].map((t, i) => (
+                <div key={t} style={{
+                  flex: 1, padding: '12px 10px', borderRadius: 14, textAlign: 'center',
+                  fontSize: 14, fontWeight: 650,
+                  background: i === 0 ? T.mintSoft : 'rgba(255,255,255,0.06)',
+                  border: i === 0 ? '1px solid rgba(127,217,176,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                  color: T.primary,
+                }}>{t}</div>
+              ))}
+            </div>
+            <div style={{
+              padding: '14px 16px', borderRadius: 14, marginBottom: 16,
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+              fontSize: 15, fontWeight: 500, color: T.secondary,
+            }}>
+              ChatGPT
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 650, letterSpacing: '0.05em', textTransform: 'uppercase', color: T.quiet, marginBottom: 8 }}>
+              Action
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              {['Proxy', 'Direct'].map((t, i) => (
+                <div key={t} style={{
+                  flex: 1, padding: '12px 10px', borderRadius: 14, textAlign: 'center',
+                  fontSize: 14, fontWeight: 650,
+                  background: i === 0 ? T.mintSoft : 'rgba(255,255,255,0.06)',
+                  border: i === 0 ? '1px solid rgba(127,217,176,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                  color: T.primary,
+                }}>{t}</div>
+              ))}
+            </div>
+            <Primary wide onClick={onClose}>Save</Primary>
+            <div style={{ height: 10 }} />
+            <Ghost onClick={onClose}>Cancel</Ghost>
+          </div>
+        </div>
+      );
+    }
+
+    function ActivityScreen({ onBack }) {
+      return (
+        <Shell title="Activity" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}>
+          <div style={{ marginTop: 4 }}>
+            {ACTIVITY_DEMO.map((e, i) => (
+              <div key={i} style={{
+                display: 'flex', gap: 14, padding: '14px 4px',
+                borderBottom: i === ACTIVITY_DEMO.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+              }}>
+                <div style={{
+                  width: 72, flexShrink: 0, fontSize: 12, fontWeight: 500, color: T.quiet, paddingTop: 2,
+                }}>{e.t}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 650, color: T.primary }}>{e.title}</div>
+                  <div style={{ marginTop: 3, fontSize: 13, fontWeight: 500, color: T.secondary }}>{e.detail}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Shell>
+      );
+    }
+
+    function SnapshotsScreen({ onBack }) {
+      return (
+        <Shell title="Snapshots" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+            {SNAP_DEMO.map((s) => (
+              <div key={s.id} style={{
+                borderRadius: 18, padding: '16px',
+                background: T.card, border: '1px solid rgba(255,255,255,0.1)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+              }}>
+                <div style={{ fontSize: 16, fontWeight: 650, color: T.primary }}>{s.title}</div>
+                <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: T.secondary }}>{s.when}</div>
+                <div style={{ marginTop: 6, fontSize: 12, fontWeight: 500, color: T.quiet }}>{s.note}</div>
+                <button type="button" style={{
+                  marginTop: 12, border: '1px solid rgba(255,255,255,0.14)',
+                  background: 'rgba(255,255,255,0.06)', borderRadius: 12,
+                  padding: '10px 14px', fontSize: 14, fontWeight: 650,
+                  color: T.primary, fontFamily: TYPE.font, cursor: 'pointer',
+                }}>
+                  Restore…
+                </button>
+              </div>
+            ))}
+          </div>
+          <p style={{
+            marginTop: 16, fontSize: 12, fontWeight: 500, color: T.quiet, lineHeight: 1.4, padding: '0 4px',
+          }}>
+            Kept for about 7 days or the last 10 snapshots.
+          </p>
+        </Shell>
+      );
+    }
+
+    function PrivacyScreen({ onBack }) {
+      const blocks = [
+        {
+          h: 'Data on this device',
+          b: 'Subscriptions, configuration, snapshots, and Activity stay on your iPhone. Routeva has no account.',
+        },
+        {
+          h: 'What we don’t collect by default',
+          b: 'Raw subscription tokens, full browsing history or domains, page content, and chat transcripts.',
+        },
+        {
+          h: 'Cloud AI',
+          b: 'Optional. Default is on-device. If you enable it in Agent, only structured context is sent — never tokens or node credentials. Manage in Agent.',
+        },
+        {
+          h: 'Diagnostics',
+          b: 'Core connection data stays local. Product analytics, if present, will be disclosed and optional.',
+        },
+      ];
+      return (
+        <Shell title="Privacy" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
+            {blocks.map((x) => (
+              <div key={x.h} style={{
+                borderRadius: 18, padding: '16px',
+                background: T.card, border: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: T.primary, marginBottom: 8 }}>{x.h}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: T.secondary, lineHeight: 1.45 }}>{x.b}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <Ghost>Privacy Policy</Ghost>
+          </div>
+        </Shell>
+      );
+    }
+
+    function AboutScreen({ onBack }) {
+      return (
+        <Shell title="About" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}>
+          <div style={{
+            marginTop: 12, borderRadius: 20, padding: '22px 18px', textAlign: 'center',
+            background: T.card, border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+          }}>
+            <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: T.primary }}>
+              Routeva
+            </div>
+            <div style={{ marginTop: 6, fontSize: 14, fontWeight: 500, color: T.secondary }}>
+              Version 1.0.0 (100)
+            </div>
+            <p style={{
+              marginTop: 14, fontSize: 13, fontWeight: 500, color: T.quiet, lineHeight: 1.4,
+            }}>
+              We don’t sell or recommend providers.
+            </p>
+          </div>
+
+          <SectionLabel>Links</SectionLabel>
+          <Group>
+            <Row label="Privacy Policy" value={null} onClick={() => {}} />
+            <Row label="Terms of Use" value={null} onClick={() => {}} />
+            <Row label="Support" value={null} onClick={() => {}} last />
+          </Group>
+
+          <div style={{ marginTop: 18 }}>
+            <Ghost>Export diagnostic report</Ghost>
+          </div>
+        </Shell>
+      );
+    }
+
+    function SubsPlaceholder({ onBack }) {
+      return (
+        <Shell title="Subscriptions" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}>
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 20,
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 650, color: T.primary }}>Same surface</div>
+            <p style={{ marginTop: 8, fontSize: 14, color: T.secondary, lineHeight: 1.45, maxWidth: 28ch }}>
+              Deep link to the Subscriptions list — not a second copy. See 04-subscriptions.html.
+            </p>
+          </div>
+        </Shell>
+      );
+    }
+
+    /* —— Interactive app —— */
+    function Interactive() {
+      const [screen, setScreen] = useState('root');
+      const [mode, setMode] = useState('auto');
+      const [dns, setDns] = useState('automatic');
+      const [showAdd, setShowAdd] = useState(false);
+
+      const modeLabel = MODE_OPTS.find((m) => m.id === mode)?.title || 'Auto';
+      const dnsLabel = DNS_OPTS.find((d) => d.id === dns)?.title || 'Automatic';
+
+      let body = null;
+      if (screen === 'root') {
+        body = (
+          <SettingsRoot
+            onNav={setScreen}
+            modeLabel={modeLabel}
+            dnsLabel={dnsLabel}
+            overrideCount={OVERRIDE_DEMO.length}
+          />
+        );
+      } else if (screen === 'mode') {
+        body = (
+          <PickerScreen
+            title="Routing mode"
+            options={MODE_OPTS}
+            selected={mode}
+            onSelect={setMode}
+            onBack={() => setScreen('root')}
+            footerNote="Home shows a quiet hint only when mode isn’t Auto."
+          />
+        );
+      } else if (screen === 'dns') {
+        body = (
+          <PickerScreen
+            title="DNS"
+            options={DNS_OPTS}
+            selected={dns}
+            onSelect={setDns}
+            onBack={() => setScreen('root')}
+            footerNote="Repair uses this same set — no custom DNS form."
+          />
+        );
+      } else if (screen === 'overrides') {
+        body = (
+          <div style={{ height: '100%', position: 'relative' }}>
+            <OverridesScreen
+              items={OVERRIDE_DEMO}
+              onBack={() => setScreen('root')}
+              onAdd={() => setShowAdd(true)}
+            />
+            {showAdd && <AddOverrideSheet onClose={() => setShowAdd(false)} />}
+          </div>
+        );
+      } else if (screen === 'activity') {
+        body = <ActivityScreen onBack={() => setScreen('root')} />;
+      } else if (screen === 'snapshots') {
+        body = <SnapshotsScreen onBack={() => setScreen('root')} />;
+      } else if (screen === 'privacy') {
+        body = <PrivacyScreen onBack={() => setScreen('root')} />;
+      } else if (screen === 'about') {
+        body = <AboutScreen onBack={() => setScreen('root')} />;
+      } else if (screen === 'subs') {
+        body = <SubsPlaceholder onBack={() => setScreen('root')} />;
+      }
+
+      return <IosFrame>{body}</IosFrame>;
+    }
+
+    /* —— Static storyboard frames —— */
+    function FrameRoot() {
+      return (
+        <IosFrame>
+          <SettingsRoot
+            onNav={() => {}}
+            modeLabel="Auto"
+            dnsLabel="Automatic"
+            overrideCount={2}
+          />
+        </IosFrame>
+      );
+    }
+    function FrameMode() {
+      return (
+        <IosFrame>
+          <PickerScreen
+            title="Routing mode"
+            options={MODE_OPTS}
+            selected="auto"
+            onSelect={() => {}}
+            onBack={() => {}}
+            footerNote="Home shows a quiet hint only when mode isn’t Auto."
+          />
+        </IosFrame>
+      );
+    }
+    function FrameDns() {
+      return (
+        <IosFrame>
+          <PickerScreen
+            title="DNS"
+            options={DNS_OPTS}
+            selected="automatic"
+            onSelect={() => {}}
+            onBack={() => {}}
+            footerNote="Repair uses this same set — no custom DNS form."
+          />
+        </IosFrame>
+      );
+    }
+    function FrameOverrides() {
+      return (
+        <IosFrame>
+          <OverridesScreen items={OVERRIDE_DEMO} onBack={() => {}} onAdd={() => {}} />
+        </IosFrame>
+      );
+    }
+    function FrameActivity() {
+      return (
+        <IosFrame>
+          <ActivityScreen onBack={() => {}} />
+        </IosFrame>
+      );
+    }
+    function FrameAbout() {
+      return (
+        <IosFrame>
+          <AboutScreen onBack={() => {}} />
+        </IosFrame>
+      );
+    }
+
+    function App() {
+      return (
+        <>
+          <div className="row" style={{ marginBottom: 48 }}>
+            <div className="phone-col">
+              <div className="lab">Interactive<span>Tap rows · change mode/DNS · Add sheet</span></div>
+              <Interactive />
+            </div>
+          </div>
+          <div className="row">
+            <div className="phone-col">
+              <div className="lab">1 · Root<span>Connection · History · App</span></div>
+              <FrameRoot />
+            </div>
+            <div className="phone-col">
+              <div className="lab">2 · Routing mode<span>Three intents + one-line subs</span></div>
+              <FrameMode />
+            </div>
+            <div className="phone-col">
+              <div className="lab">3 · DNS<span>Automatic · Privacy · Compatibility</span></div>
+              <FrameDns />
+            </div>
+            <div className="phone-col">
+              <div className="lab">4 · Overrides<span>List + toggles · Add CTA</span></div>
+              <FrameOverrides />
+            </div>
+            <div className="phone-col">
+              <div className="lab">5 · Activity<span>Capability P0 · craft light</span></div>
+              <FrameActivity />
+            </div>
+            <div className="phone-col">
+              <div className="lab">6 · About<span>Export secondary · no sell line</span></div>
+              <FrameAbout />
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
