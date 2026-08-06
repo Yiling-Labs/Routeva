@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Routeva · App Icon · 10 Concepts</title>
+<style>
+  :root {
+    --paper: #0b0e11;
+    --paper-2: #171c21;
+    --paper-top: #2e343a;
+    --ink: rgba(255,255,255,0.96);
+    --ink2: rgba(255,255,255,0.72);
+    --mute: rgba(255,255,255,0.55);
+    --quiet: rgba(255,255,255,0.38);
+    --mint: #7fd9b0;
+    --mint-lift: #9ee8c4;
+    --mint-ink: #0a1f18;
+    --edge: rgba(255,255,255,0.12);
+    --glass: rgba(255,255,255,0.07);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --g: clamp(1.1rem, 3.5vw, 2.25rem);
+    --fb-top: #2e343a;
+    --fb-deep: #0b0e11;
+    --fg-top: #4d7a6c;
+    --fg-deep: #1f3f38;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    background: linear-gradient(168deg, var(--paper-top) 0%, var(--paper-2) 40%, var(--paper) 100%);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* —— header —— */
+  .top {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    padding: 0.9rem var(--g);
+    background: color-mix(in srgb, var(--paper) 82%, transparent);
+    backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 1px solid var(--edge);
+  }
+  .brand {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .brand strong { color: var(--ink2); font-weight: 700; }
+  .top__meta {
+    font-size: 13px; color: var(--mute); font-weight: 500;
+  }
+  .top__meta em { color: var(--mint); font-style: normal; font-weight: 600; }
+
+  /* —— intro —— */
+  .intro {
+    max-width: 72rem; margin: 0 auto;
+    padding: 2rem var(--g) 1.25rem;
+  }
+  .kicker {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 0.75rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 4vw, 2.45rem);
+    font-weight: 700; letter-spacing: -0.03em; line-height: 1.12;
+    max-width: 22ch; margin-bottom: 0.85rem;
+  }
+  .lede {
+    font-size: 15px; line-height: 1.55; color: var(--ink2);
+    max-width: 52ch; margin-bottom: 1.1rem;
+  }
+  .families {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .fam {
+    font-size: 12px; font-weight: 600; color: var(--ink2);
+    padding: 0.35rem 0.75rem; border-radius: 999px;
+    border: 1px solid var(--edge); background: var(--glass);
+  }
+  .fam b { color: var(--mint); font-weight: 700; }
+
+  /* —— stage: preview + home —— */
+  .stage {
+    max-width: 72rem; margin: 0 auto;
+    padding: 0.5rem var(--g) 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  @media (min-width: 900px) {
+    .stage { grid-template-columns: 1.15fr 0.85fr; align-items: stretch; }
+  }
+  .preview-card, .home-card {
+    border-radius: 24px;
+    border: 1px solid var(--edge);
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    padding: 1.25rem 1.35rem 1.4rem;
+  }
+  .card-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--quiet); margin-bottom: 1rem;
+  }
+  .preview-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem 2rem;
+  }
+  .preview-hero {
+    width: 168px; height: 168px;
+    border-radius: 38px;
+    overflow: hidden;
+    box-shadow:
+      0 24px 48px rgba(0,0,0,0.45),
+      0 0 0 0.5px rgba(255,255,255,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.18);
+    flex-shrink: 0;
+  }
+  .preview-hero .icon-face { width: 100%; height: 100%; border-radius: 0; }
+  .preview-meta h2 {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+    margin-bottom: 0.35rem;
+  }
+  .preview-meta .num {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--mint); text-transform: uppercase; margin-bottom: 0.4rem;
+  }
+  .preview-meta p {
+    font-size: 14px; line-height: 1.5; color: var(--ink2);
+    max-width: 32ch; margin-bottom: 0.85rem;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tag {
+    font-size: 11px; font-weight: 600; color: var(--mute);
+    padding: 0.25rem 0.55rem; border-radius: 6px;
+    background: rgba(0,0,0,0.28); border: 1px solid var(--edge);
+  }
+  .sizes {
+    display: flex; align-items: flex-end; gap: 1rem; margin-top: 1.15rem;
+    padding-top: 1rem; border-top: 1px solid var(--edge);
+  }
+  .size-item { text-align: center; }
+  .size-item .icon-face {
+    display: block; margin: 0 auto 0.4rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  }
+  .size-item span {
+    font-size: 10px; font-weight: 600; color: var(--quiet);
+    letter-spacing: 0.04em;
+  }
+  .s60 { width: 60px; height: 60px; border-radius: 13.5px; }
+  .s40 { width: 40px; height: 40px; border-radius: 9px; }
+  .s29 { width: 29px; height: 29px; border-radius: 6.5px; }
+
+  /* home mock */
+  .home-card { display: flex; flex-direction: column; }
+  .home-wall {
+    flex: 1;
+    border-radius: 20px;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, #3a4550 0%, transparent 55%),
+      linear-gradient(180deg, #1a2229 0%, #0a0c0f 100%);
+    min-height: 280px;
+    padding: 1.5rem 1.25rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .home-wall::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 18px 18px;
+    opacity: 0.6; pointer-events: none;
+  }
+  .home-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.1rem 0.65rem;
+    justify-items: center;
+  }
+  .home-app {
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    width: 100%;
+  }
+  .home-app .icon-face {
+    width: 56px; height: 56px; border-radius: 12.5px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+  .home-app .ghost {
+    width: 56px; height: 56px; border-radius: 12.5px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .home-app label {
+    font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.88);
+    text-align: center; max-width: 4.5rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .home-hint {
+    margin-top: 1rem; font-size: 12px; color: var(--quiet); text-align: center;
+  }
+
+  /* —— grid of 10 —— */
+  .section {
+    max-width: 72rem; margin: 0 auto;
+    padding: 0.25rem var(--g) 3rem;
+  }
+  .section h3 {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute);
+    margin-bottom: 0.85rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1000px) { .grid { grid-template-columns: repeat(5, 1fr); gap: 0.85rem; } }
+
+  .cell {
+    appearance: none; border: 1px solid var(--edge);
+    background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025));
+    border-radius: 18px;
+    padding: 1rem 0.75rem 0.9rem;
+    cursor: pointer;
+    text-align: center;
+    color: inherit;
+    font: inherit;
+    transition: border-color 0.25s var(--ease), transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+  }
+  .cell:hover {
+    border-color: rgba(127,217,176,0.35);
+    transform: translateY(-2px);
+  }
+  .cell:focus-visible {
+    outline: 2px solid rgba(140,220,190,0.9);
+    outline-offset: 2px;
+  }
+  .cell.is-on {
+    border-color: rgba(127,217,176,0.65);
+    box-shadow: 0 0 0 1px rgba(127,217,176,0.25), 0 12px 32px rgba(0,0,0,0.35);
+    background: linear-gradient(180deg, rgba(127,217,176,0.12), rgba(255,255,255,0.03));
+  }
+  .cell .icon-face {
+    width: 88px; height: 88px;
+    border-radius: 20px;
+    margin: 0 auto 0.75rem;
+    box-shadow:
+      0 10px 24px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .cell .id {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--mint); text-transform: uppercase; margin-bottom: 0.25rem;
+  }
+  .cell .name {
+    font-size: 13px; font-weight: 700; color: var(--ink);
+    margin-bottom: 0.2rem;
+  }
+  .cell .why {
+    font-size: 11px; line-height: 1.4; color: var(--mute);
+  }
+
+  /* —— assumptions —— */
+  .notes {
+    max-width: 72rem; margin: 0 auto;
+    padding: 0 var(--g) 3.5rem;
+  }
+  .notes details {
+    border: 1px solid var(--edge);
+    border-radius: 16px;
+    background: var(--glass);
+    padding: 0.9rem 1.15rem;
+  }
+  .notes summary {
+    cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink2);
+    list-style: none;
+  }
+  .notes summary::-webkit-details-marker { display: none; }
+  .notes ul {
+    margin: 0.75rem 0 0.25rem 1.1rem;
+    font-size: 13px; line-height: 1.55; color: var(--mute);
+  }
+  .notes li { margin-bottom: 0.3rem; }
+
+  /* ========== ICON FACES ========== */
+  .icon-face {
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .icon-face svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* shared backgrounds via data-bg on .icon-face */
+  .bg-black {
+    background: linear-gradient(165deg, var(--fb-top) 0%, #1a1f24 45%, var(--fb-deep) 100%);
+  }
+  .bg-green {
+    background: linear-gradient(165deg, var(--fg-top) 0%, #2a554a 50%, var(--fg-deep) 100%);
+  }
+  .bg-mint {
+    background: linear-gradient(160deg, #9ee8c4 0%, #7fd9b0 40%, #3da87a 100%);
+  }
+  .bg-split {
+    background:
+      linear-gradient(135deg,
+        #2e343a 0%, #1a1f24 46%,
+        #1f3f38 54%, #4d7a6c 100%);
+  }
+  .bg-void {
+    background: #0b0e11;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">Routeva · <strong>App Icon Explore</strong></div>
+  <div class="top__meta">点选方案 · 当前 <em id="sel-label">01 · Rings Probe</em></div>
+</header>
+
+<section class="intro">
+  <p class="kicker">Instrument Quiet · craft-p0</p>
+  <h1>十个图标方向，从产品母题长出来</h1>
+  <p class="lede">
+    不做盾牌、锁、地球密钥。母题来自 Home 的<strong>三圈点亮</strong>、<strong>滑动胶囊</strong>、
+    Connectivity Probe 与「Route / via」路径感；色板锁定 Field Black + mint。
+    点选下方卡片，看大预览与弹簧板语境。
+  </p>
+  <div class="families">
+    <span class="fam"><b>A</b> UI 签名 · 01–02</span>
+    <span class="fam"><b>B</b> 路径语义 · 03–04 · 09–10</span>
+    <span class="fam"><b>C</b> 字标与场域 · 05–08</span>
+  </div>
+</section>
+
+<section class="stage">
+  <div class="preview-card">
+    <div class="card-label">Selected · large + scale test</div>
+    <div class="preview-row">
+      <div class="preview-hero" id="hero-slot"></div>
+      <div class="preview-meta">
+        <div class="num" id="meta-num">01</div>
+        <h2 id="meta-name">Rings Probe</h2>
+        <p id="meta-desc">Home 连接过程的三圈 partial arc——产品最独有的运动签名，静态后仍可辨。</p>
+        <div class="tags" id="meta-tags"></div>
+      </div>
+    </div>
+    <div class="sizes" id="size-row"></div>
+  </div>
+
+  <div class="home-card">
+    <div class="card-label">Springboard context</div>
+    <div class="home-wall">
+      <div class="home-grid" id="home-grid"></div>
+      <p class="home-hint">Routeva 与常见工具并置 · 检验是否被淹没</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <h3>十方案 · 点选比较</h3>
+  <div class="grid" id="grid" role="listbox" aria-label="App icon concepts"></div>
+</section>
+
+<section class="notes">
+  <details>
+    <summary>Assumptions · 可审计清单</summary>
+    <ul>
+      <li>探索板，非最终 1024 PNG；圆角为 iOS continuous-corner 近似预览。</li>
+      <li>主图标无全名文字；仅 05 使用单字母 R monogram。</li>
+      <li>全部实心底（无透明），对齐 App Store 常见要求。</li>
+      <li>故意避开 VPN 滥俗：盾 / 锁 / 钥匙 / wireframe 地球 / 霓虹紫。</li>
+      <li>色与材质对齐 <code>visual-system.md</code> + 官网 Instrument Quiet。</li>
+      <li>选定后：导出 1024、Android adaptive 安全区、favicon 同步。</li>
+    </ul>
+  </details>
+</section>
+
+<script>
+/**
+ * Routeva App Icon · 10 concepts
+ * form 来自：三圈点阵 / 胶囊 / Probe / Route-via / Field 双态
+ */
+const ICONS = [
+  {
+    id: "01",
+    name: "Rings Probe",
+    family: "UI 签名",
+    why: "三圈 partial arc · 连接过程签名",
+    desc: "Home 连接过程的三圈 partial arc——产品最独有的运动签名，静态后仍可辨。",
+    tags: ["UI 签名", "Probe", "黑场"],
+    bg: "bg-black",
+    draw(svg) {
+      // three concentric arcs, mint, 240° open top — mirror Home dots rings
+      const c = 512, rings = [
+        { r: 140, w: 36, o: 1 },
+        { r: 230, w: 28, o: 0.72 },
+        { r: 320, w: 22, o: 0.42 },
+      ];
+      let g = `<defs>
+        <linearGradient id="m1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#9ee8c4"/><stop offset="100%" stop-color="#7fd9b0"/>
+        </linearGradient>
+        <filter id="soft"><feGaussianBlur stdDeviation="2"/></filter>
+      </defs>
+      <circle cx="${c}" cy="${c}" r="18" fill="url(#m1)" opacity="0.95"/>`;
+      rings.forEach((ring, i) => {
+        const start = -210, sweep = 240; // degrees, open at top
+        const a0 = (start * Math.PI) / 180;
+        const a1 = ((start + sweep) * Math.PI) / 180;
+        const x0 = c + ring.r * Math.cos(a0);
+        const y0 = c + ring.r * Math.sin(a0);
+        const x1 = c + ring.r * Math.cos(a1);
+        const y1 = c + ring.r * Math.sin(a1);
+        g += `<path d="M ${x0} ${y0} A ${ring.r} ${ring.r} 0 1 1 ${x1} ${y1}"
+          fill="none" stroke="url(#m1)" stroke-width="${ring.w}"
+          stroke-linecap="round" opacity="${ring.o}"/>`;
+      });
+      return g;
+    },
+  },
+  {
+    id: "02",
+    name: "Capsule Thumb",
+    family: "UI 签名",
+    why: "竖直 START 胶囊 · 主动作剪影",
+    desc: "把 Home 唯一主动作——竖直滑动胶囊——压成 mark。一眼像「能拨的控件」，不像通用 VPN。",
+    tags: ["UI 签名", "胶囊", "黑场"],
+    bg: "bg-black",
+    draw() {
+      return `
+      <defs>
+        <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9ee8c4"/><stop offset="100%" stop-color="#5fbe96"/>
+        </linearGradient>
+        <linearGradient id="track" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.14)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.05)"/>
+        </linearGradient>
+        <linearGradient id="thumb" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="40%" stop-color="#e8eef2"/>
+          <stop offset="100%" stop-color="#c5d0d8"/>
+        </linearGradient>
+      </defs>
+      <!-- track -->
+      <rect x="372" y="168" width="280" height="688" rx="140"
+        fill="url(#track)" stroke="rgba(255,255,255,0.14)" stroke-width="4"/>
+      <!-- thumb at top (START position) -->
+      <rect x="392" y="188" width="240" height="300" rx="120"
+        fill="url(#thumb)"
+        style="filter: drop-shadow(0 12px 24px rgba(0,0,0,0.45))"/>
+      <!-- mint LED top -->
+      <rect x="468" y="220" width="88" height="10" rx="5" fill="url(#cap)" opacity="0.9"/>
+      `;
+    },
+  },
+  {
+    id: "03",
+    name: "Route Arc",
+    family: "路径语义",
+    why: "单条路由弧 · 名字即路径",
+    desc: "一条从左下到右上的粗路由弧 + 端点节点。极简、耐小尺寸，直接对应 Routeva 的 route。",
+    tags: ["路径", "极简", "黑场"],
+    bg: "bg-black",
+    draw() {
+      return `
+      <defs>
+        <linearGradient id="arc" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stop-color="#5fbe96"/><stop offset="100%" stop-color="#9ee8c4"/>
+        </linearGradient>
+      </defs>
+      <path d="M 220 720 C 280 420, 520 280, 780 260"
+        fill="none" stroke="url(#arc)" stroke-width="72" stroke-linecap="round"/>
+      <circle cx="220" cy="720" r="48" fill="#7fd9b0"/>
+      <circle cx="780" cy="260" r="56" fill="#9ee8c4"/>
+      <circle cx="780" cy="260" r="22" fill="#0b0e11" opacity="0.35"/>
+      `;
+    },
+  },
+  {
+    id: "04",
+    name: "Node Link",
+    family: "路径语义",
+    why: "双节点柔连 · 代理链路",
+    desc: "两个 glass 节点与柔和链路——「已有订阅 → 经客户端到达」的抽象，不画地球。",
+    tags: ["路径", "节点", "黑场"],
+    bg: "bg-black",
+    draw() {
+      return `
+      <defs>
+        <linearGradient id="link" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#7fd9b0" stop-opacity="0.35"/>
+          <stop offset="50%" stop-color="#9ee8c4"/>
+          <stop offset="100%" stop-color="#7fd9b0" stop-opacity="0.35"/>
+        </linearGradient>
+        <radialGradient id="orb" cx="0.35" cy="0.3" r="0.7">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.35)"/>
+          <stop offset="45%" stop-color="rgba(127,217,176,0.55)"/>
+          <stop offset="100%" stop-color="rgba(47,154,108,0.9)"/>
+        </radialGradient>
+      </defs>
+      <path d="M 280 512 C 400 360, 624 360, 744 512"
+        fill="none" stroke="url(#link)" stroke-width="40" stroke-linecap="round"/>
+      <circle cx="250" cy="540" r="118" fill="url(#orb)"
+        stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+      <circle cx="774" cy="540" r="118" fill="url(#orb)"
+        stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+      <circle cx="250" cy="540" r="28" fill="rgba(255,255,255,0.85)"/>
+      <circle cx="774" cy="540" r="28" fill="rgba(255,255,255,0.85)"/>
+      `;
+    },
+  },
+  {
+    id: "05",
+    name: "R Monogram",
+    family: "字标与场域",
+    why: "精致 R · glass 圆场",
+    desc: "单字母 R 居中，衬 soft glass 圆。偏品牌字标；小尺寸仍靠字形识别，适合长期品牌化。",
+    tags: ["字标", "Glass", "黑场"],
+    bg: "bg-black",
+    draw() {
+      return `
+      <defs>
+        <radialGradient id="disk" cx="0.4" cy="0.32" r="0.75">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.16)"/>
+          <stop offset="55%" stop-color="rgba(255,255,255,0.05)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
+        </radialGradient>
+        <linearGradient id="rfill" x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#c8d4dc"/>
+        </linearGradient>
+      </defs>
+      <circle cx="512" cy="512" r="340" fill="url(#disk)"
+        stroke="rgba(255,255,255,0.14)" stroke-width="3"/>
+      <circle cx="512" cy="512" r="300" fill="none"
+        stroke="rgba(127,217,176,0.22)" stroke-width="2"/>
+      <text x="512" y="568" text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, SF Pro Display, system-ui, sans-serif"
+        font-size="420" font-weight="600" fill="url(#rfill)"
+        letter-spacing="-0.04em">R</text>
+      <circle cx="512" cy="780" r="8" fill="#7fd9b0" opacity="0.9"/>
+      `;
+    },
+  },
+  {
+    id: "06",
+    name: "Field Success",
+    family: "字标与场域",
+    why: "绿场成功态 · 全屏 mint 场域",
+    desc: "直接用 Connection Success 的 Field Green 做底，白探针环居中——图标本身即「已连上」的承诺色。",
+    tags: ["场域", "成功绿", "强识别"],
+    bg: "bg-green",
+    draw() {
+      return `
+      <defs>
+        <linearGradient id="wring" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.95)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.55)"/>
+        </linearGradient>
+      </defs>
+      <circle cx="512" cy="512" r="88" fill="rgba(255,255,255,0.92)"/>
+      <path d="M 512 280 A 232 232 0 1 1 511.9 280"
+        fill="none" stroke="url(#wring)" stroke-width="36" stroke-linecap="round"
+        stroke-dasharray="920 280" transform="rotate(-20 512 512)"/>
+      <path d="M 512 200 A 312 312 0 1 1 511.9 200"
+        fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="22" stroke-linecap="round"
+        stroke-dasharray="1100 420" transform="rotate(30 512 512)"/>
+      `;
+    },
+  },
+  {
+    id: "07",
+    name: "Black → Green",
+    family: "字标与场域",
+    why: "对角双场 · 黑到绿的旅程",
+    desc: "Field Black 与 Field Green 对角分割，一条 mint 路径穿越——叙事「从断开到连上」的最小剧情。",
+    tags: ["场域", "叙事", "双色"],
+    bg: "bg-split",
+    draw() {
+      return `
+      <defs>
+        <linearGradient id="path7" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stop-color="#9ee8c4"/><stop offset="100%" stop-color="#ffffff"/>
+        </linearGradient>
+      </defs>
+      <!-- soft diagonal seam highlight -->
+      <line x1="80" y1="940" x2="940" y2="80"
+        stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+      <path d="M 200 760 C 340 640, 520 420, 780 280"
+        fill="none" stroke="url(#path7)" stroke-width="56" stroke-linecap="round"/>
+      <circle cx="200" cy="760" r="42" fill="#7fd9b0"/>
+      <circle cx="780" cy="280" r="52" fill="#ffffff"/>
+      `;
+    },
+  },
+  {
+    id: "08",
+    name: "Soft Core",
+    family: "字标与场域",
+    why: "玻璃球 + mint 芯 · Soft glass",
+    desc: "最贴 visual-system 材质：深空底上一枚 soft glass 球，mint 内核微光。克制、消费级精致。",
+    tags: ["材质", "Glass", "克制"],
+    bg: "bg-void",
+    draw() {
+      return `
+      <defs>
+        <radialGradient id="glassball" cx="0.35" cy="0.28" r="0.72">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.28)"/>
+          <stop offset="35%" stop-color="rgba(255,255,255,0.08)"/>
+          <stop offset="70%" stop-color="rgba(255,255,255,0.03)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0.01)"/>
+        </radialGradient>
+        <radialGradient id="core" cx="0.4" cy="0.35" r="0.65">
+          <stop offset="0%" stop-color="#c8f5df"/>
+          <stop offset="45%" stop-color="#7fd9b0"/>
+          <stop offset="100%" stop-color="#2f9a6c"/>
+        </radialGradient>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="18" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <circle cx="512" cy="512" r="300" fill="url(#glassball)"
+        stroke="rgba(255,255,255,0.16)" stroke-width="2.5"/>
+      <circle cx="512" cy="512" r="298" fill="none"
+        stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+      <!-- specular -->
+      <ellipse cx="420" cy="380" rx="90" ry="48"
+        fill="rgba(255,255,255,0.14)" transform="rotate(-28 420 380)"/>
+      <circle cx="512" cy="530" r="110" fill="url(#core)" filter="url(#glow)" opacity="0.95"/>
+      `;
+    },
+  },
+  {
+    id: "09",
+    name: "Heal Loop",
+    family: "路径语义",
+    why: "自愈回路 · 开口环",
+    desc: "近闭合的 mint 环，缺口处一点——Self-Healing Loop 的符号：可诊断、可修复、可回滚的回路感。",
+    tags: ["自愈", "回路", "黑场"],
+    bg: "bg-black",
+    draw() {
+      return `
+      <defs>
+        <linearGradient id="loop" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#9ee8c4"/><stop offset="100%" stop-color="#4db892"/>
+        </linearGradient>
+      </defs>
+      <!-- open ring ~300° -->
+      <path d="M 512 200
+        A 280 280 0 1 1 300 720"
+        fill="none" stroke="url(#loop)" stroke-width="64" stroke-linecap="round"/>
+      <!-- gap terminal dots -->
+      <circle cx="512" cy="200" r="36" fill="#9ee8c4"/>
+      <circle cx="300" cy="720" r="28" fill="#7fd9b0" opacity="0.85"/>
+      <!-- inner quiet ring -->
+      <circle cx="512" cy="500" r="120" fill="none"
+        stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+      <circle cx="512" cy="500" r="36" fill="rgba(127,217,176,0.9)"/>
+      `;
+    },
+  },
+  {
+    id: "10",
+    name: "Via Chevron",
+    family: "路径语义",
+    why: "双线 via · 前进路径",
+    desc: "两道圆角 chevron 向前——via 的几何化。比单箭头更仪器感，小尺寸仍清晰。",
+    tags: ["路径", "几何", "黑场"],
+    bg: "bg-black",
+    draw() {
+      return `
+      <defs>
+        <linearGradient id="ch" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#5fbe96"/><stop offset="100%" stop-color="#b6f0d4"/>
+        </linearGradient>
+      </defs>
+      <path d="M 256 620 L 512 360 L 768 620"
+        fill="none" stroke="url(#ch)" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M 256 780 L 512 520 L 768 780"
+        fill="none" stroke="url(#ch)" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"
+        opacity="0.38"/>
+      `;
+    },
+  },
+];
+
+function makeFace(icon, extraClass = "") {
+  const el = document.createElement("div");
+  el.className = `icon-face ${icon.bg} ${extraClass}`.trim();
+  el.setAttribute("aria-hidden", "true");
+  el.innerHTML = `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">${icon.draw()}</svg>`;
+  return el;
+}
+
+function cloneFace(icon, sizeClass) {
+  const el = makeFace(icon, sizeClass);
+  return el;
+}
+
+let selected = ICONS[0];
+
+function renderMeta() {
+  const icon = selected;
+  document.getElementById("sel-label").textContent = `${icon.id} · ${icon.name}`;
+  document.getElementById("meta-num").textContent = icon.id;
+  document.getElementById("meta-name").textContent = icon.name;
+  document.getElementById("meta-desc").textContent = icon.desc;
+
+  const tags = document.getElementById("meta-tags");
+  tags.innerHTML = "";
+  icon.tags.forEach((t) => {
+    const s = document.createElement("span");
+    s.className = "tag";
+    s.textContent = t;
+    tags.appendChild(s);
+  });
+
+  const hero = document.getElementById("hero-slot");
+  hero.innerHTML = "";
+  hero.appendChild(makeFace(icon));
+
+  const sizes = document.getElementById("size-row");
+  sizes.innerHTML = "";
+  [
+    ["s60", "60pt"],
+    ["s40", "40pt"],
+    ["s29", "29pt"],
+  ].forEach(([cls, label]) => {
+    const wrap = document.createElement("div");
+    wrap.className = "size-item";
+    wrap.appendChild(cloneFace(icon, cls));
+    const sp = document.createElement("span");
+    sp.textContent = label;
+    wrap.appendChild(sp);
+    sizes.appendChild(wrap);
+  });
+
+  // home grid
+  const grid = document.getElementById("home-grid");
+  grid.innerHTML = "";
+  const placeholders = 7;
+  // position 1 = Routeva
+  for (let i = 0; i < 8; i++) {
+    const app = document.createElement("div");
+    app.className = "home-app";
+    if (i === 1) {
+      app.appendChild(makeFace(icon));
+      const lab = document.createElement("label");
+      lab.textContent = "Routeva";
+      app.appendChild(lab);
+    } else {
+      const g = document.createElement("div");
+      g.className = "ghost";
+      // slight hue variance
+      const hues = [210, 30, 260, 180, 40, 320, 140, 90];
+      g.style.background = `linear-gradient(145deg, hsla(${hues[i]},18%,28%,0.55), hsla(${hues[i]},12%,14%,0.7))`;
+      app.appendChild(g);
+      const lab = document.createElement("label");
+      lab.textContent = ["Photos", "Maps", "Notes", "Music", "Mail", "Files", "Clock", "Settings"][i] || "App";
+      if (i === 1) lab.textContent = "Routeva";
+      app.appendChild(lab);
+    }
+    grid.appendChild(app);
+  }
+
+  // cells active state
+  document.querySelectorAll(".cell").forEach((btn) => {
+    btn.classList.toggle("is-on", btn.dataset.id === icon.id);
+  });
+}
+
+function buildGrid() {
+  const grid = document.getElementById("grid");
+  ICONS.forEach((icon) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cell";
+    btn.dataset.id = icon.id;
+    btn.setAttribute("role", "option");
+    btn.setAttribute("aria-label", `${icon.id} ${icon.name}`);
+    btn.appendChild(makeFace(icon));
+    const id = document.createElement("div");
+    id.className = "id";
+    id.textContent = icon.id;
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = icon.name;
+    const why = document.createElement("div");
+    why.className = "why";
+    why.textContent = icon.why;
+    btn.appendChild(id);
+    btn.appendChild(name);
+    btn.appendChild(why);
+    btn.addEventListener("click", () => {
+      selected = icon;
+      renderMeta();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+buildGrid();
+renderMeta();
+</script>
+</body>
+</html>

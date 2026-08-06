@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Routeva · Pick Your App Icon · 10 Finished</title>
+<style>
+  :root {
+    --bg: #0b0e11;
+    --bg2: #14191f;
+    --ink: rgba(255,255,255,0.96);
+    --ink2: rgba(255,255,255,0.72);
+    --mute: rgba(255,255,255,0.5);
+    --quiet: rgba(255,255,255,0.32);
+    --mint: #7fd9b0;
+    --edge: rgba(255,255,255,0.1);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --g: clamp(1rem, 3vw, 2rem);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    background: linear-gradient(180deg, #1c232a 0%, var(--bg2) 35%, var(--bg) 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.75rem; padding: 0.9rem var(--g);
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    backdrop-filter: blur(20px) saturate(150%);
+    border-bottom: 1px solid var(--edge);
+  }
+  .brand {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .brand em { color: var(--mint); font-style: normal; }
+  .status {
+    font-size: 13px; color: var(--mute); font-weight: 500;
+  }
+  .status strong { color: var(--mint); font-weight: 700; }
+
+  .intro {
+    max-width: 80rem; margin: 0 auto;
+    padding: 1.75rem var(--g) 1rem;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    font-weight: 700; letter-spacing: -0.03em; line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+  .lede {
+    font-size: 14px; line-height: 1.5; color: var(--ink2); max-width: 48ch;
+  }
+
+  /* Selection strip */
+  .sel-bar {
+    max-width: 80rem; margin: 0 auto 1.25rem;
+    padding: 0 var(--g);
+  }
+  .sel-inner {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem;
+    padding: 1rem 1.2rem;
+    border-radius: 20px;
+    border: 1px solid var(--edge);
+    background: linear-gradient(165deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+  }
+  .sel-icon {
+    width: 88px; height: 88px; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+    flex-shrink: 0; background: #111;
+  }
+  .sel-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .sel-meta { flex: 1; min-width: 12rem; }
+  .sel-meta .id {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--mint); text-transform: uppercase; margin-bottom: 0.2rem;
+  }
+  .sel-meta h2 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+  .sel-meta p { font-size: 13px; color: var(--ink2); line-height: 1.45; max-width: 40ch; }
+  .sel-sizes { display: flex; gap: 0.75rem; align-items: flex-end; }
+  .sel-sizes img {
+    border-radius: 22%; box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  }
+  .sel-sizes span {
+    display: block; text-align: center; font-size: 9px; color: var(--quiet);
+    margin-top: 0.25rem; font-weight: 600;
+  }
+
+  /* Full grid — all 10 equal */
+  .board {
+    max-width: 80rem; margin: 0 auto;
+    padding: 0 var(--g) 3rem;
+  }
+  .board h3 {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 0.85rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.9rem;
+  }
+  @media (min-width: 720px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(5, 1fr); gap: 1rem; } }
+
+  .tile {
+    appearance: none; border: 1.5px solid var(--edge);
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border-radius: 22px;
+    padding: 1rem 0.85rem 1rem;
+    cursor: pointer; color: inherit; font: inherit; text-align: center;
+    transition: transform 0.35s var(--ease), border-color 0.35s var(--ease), box-shadow 0.35s var(--ease);
+  }
+  .tile:hover { transform: translateY(-3px); border-color: rgba(127,217,176,0.35); }
+  .tile:active { transform: scale(0.97); transition-duration: 0.1s; }
+  .tile:focus-visible {
+    outline: 2px solid rgba(140,220,190,0.9); outline-offset: 3px;
+  }
+  .tile.is-on {
+    border-color: rgba(127,217,176,0.75);
+    box-shadow: 0 0 0 1px rgba(127,217,176,0.25), 0 16px 40px rgba(0,0,0,0.4);
+    background: linear-gradient(180deg, rgba(127,217,176,0.12), rgba(255,255,255,0.02));
+  }
+  .tile__img {
+    width: 100%; aspect-ratio: 1; max-width: 160px;
+    margin: 0 auto 0.85rem;
+    border-radius: 32px; overflow: hidden;
+    box-shadow: 0 14px 32px rgba(0,0,0,0.45);
+    background: #0a0c0f;
+  }
+  .tile__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tile__id {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--mint); text-transform: uppercase; margin-bottom: 0.2rem;
+  }
+  .tile__name { font-size: 14px; font-weight: 700; margin-bottom: 0.25rem; }
+  .tile__why { font-size: 11px; line-height: 1.4; color: var(--mute); }
+
+  /* Phone strip */
+  .phone-row {
+    max-width: 80rem; margin: 0 auto;
+    padding: 0 var(--g) 2.5rem;
+  }
+  .phone-row h3 {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 0.85rem;
+  }
+  .phones {
+    display: flex; flex-wrap: wrap; gap: 1rem; justify-content: flex-start;
+  }
+  .phone {
+    width: 200px;
+    border-radius: 28px; padding: 8px;
+    background: linear-gradient(160deg, #2a3038, #0a0c0f);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 20px 48px rgba(0,0,0,0.4);
+  }
+  .phone__s {
+    border-radius: 22px; overflow: hidden;
+    background: linear-gradient(180deg, #1a222a, #07090c);
+    padding: 1.6rem 0.7rem 0.8rem; min-height: 280px; position: relative;
+  }
+  .phone__s::before {
+    content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 64px; height: 18px; border-radius: 999px; background: #000;
+  }
+  .pg {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0.65rem 0.35rem; margin-top: 0.35rem;
+  }
+  .pa { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+  .pa img, .pa .g {
+    width: 36px; height: 36px; border-radius: 8.5px;
+  }
+  .pa .g {
+    background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  }
+  .pa label {
+    font-size: 7px; color: rgba(255,255,255,0.85); max-width: 2.6rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .phone__cap {
+    text-align: center; font-size: 11px; color: var(--quiet);
+    margin-top: 0.55rem; font-weight: 600;
+  }
+
+  footer {
+    max-width: 80rem; margin: 0 auto;
+    padding: 0 var(--g) 3rem;
+    font-size: 12px; color: var(--quiet); line-height: 1.5;
+  }
+  footer code {
+    font-size: 11px; color: var(--mute);
+    background: rgba(255,255,255,0.05); padding: 0.1rem 0.35rem; border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">Routeva · <em>10 Finished Icons</em></div>
+  <div class="status">已选 <strong id="status">01 · Probe Rings</strong> · 键盘 1–0 快选</div>
+</header>
+
+<section class="intro">
+  <h1>全部做好了 · 直接挑</h1>
+  <p class="lede">十枚 1024 成品。点任意一枚，顶部条与弹簧板同步。选定后回我编号即可。</p>
+</section>
+
+<section class="sel-bar">
+  <div class="sel-inner">
+    <div class="sel-icon"><img id="sel-img" src="assets/01-probe-rings.jpg" alt="" /></div>
+    <div class="sel-meta">
+      <div class="id" id="sel-id">01</div>
+      <h2 id="sel-name">Probe Rings</h2>
+      <p id="sel-desc">Connectivity Probe 波纹签名 · 连接过程的产品符号</p>
+    </div>
+    <div class="sel-sizes" id="sel-sizes"></div>
+  </div>
+</section>
+
+<section class="board">
+  <h3>All ten · equal weight</h3>
+  <div class="grid" id="grid" role="listbox" aria-label="Finished app icons"></div>
+</section>
+
+<section class="phone-row">
+  <h3>Springboard · selected only</h3>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone__s">
+        <div class="pg" id="pg"></div>
+      </div>
+      <div class="phone__cap" id="phone-cap">Routeva on Home Screen</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  PNG 导出：<code>exports/png-1024/</code> · 对照图：<code>exports/contact-sheet.png</code> ·
+  交互展板：<code>01-icon-gallery.html</code>
+</footer>
+
+<script>
+const ICONS = [
+  { id:"01", file:"assets/01-probe-rings.jpg", name:"Probe Rings",
+    desc:"Connectivity Probe 波纹签名 · 连接过程的产品符号" },
+  { id:"02", file:"assets/02-capsule-switch.jpg", name:"Capsule Switch",
+    desc:"Home 滑动胶囊的实体开关 · 直接操纵隐喻" },
+  { id:"03", file:"assets/03-route-path.jpg", name:"Route Path",
+    desc:"双弧路径连接节点 · 名字即路径" },
+  { id:"04", file:"assets/04-linked-orbs.jpg", name:"Linked Orbs",
+    desc:"玻璃双球 + mint 连杆 · soft glass 链路" },
+  { id:"05", file:"assets/05-r-monogram.jpg", name:"R Monogram",
+    desc:"磨砂 R 字标 + mint 点 · 长期品牌货架识别" },
+  { id:"06", file:"assets/06-success-field.jpg", name:"Success Field",
+    desc:"Field Green 全场 + 白玻璃芯 · 连接成功承诺色" },
+  { id:"07", file:"assets/07-field-journey.jpg", name:"Field Journey",
+    desc:"黑→绿对角 · 从断开到连上的最小叙事" },
+  { id:"08", file:"assets/08-glass-core.jpg", name:"Glass Core",
+    desc:"玻璃透镜包 mint 同心层 · 最贴 soft glass 材质" },
+  { id:"09", file:"assets/09-heal-ring.jpg", name:"Heal Ring",
+    desc:"开口自愈环 · Self-Healing Loop 的简洁符号" },
+  { id:"10", file:"assets/10-via-up.jpg", name:"Via Up",
+    desc:"双 chevron 向上 · via 前进几何" },
+];
+
+let selected = ICONS[0];
+
+function render() {
+  const ic = selected;
+  document.getElementById("status").textContent = `${ic.id} · ${ic.name}`;
+  document.getElementById("sel-id").textContent = ic.id;
+  document.getElementById("sel-name").textContent = ic.name;
+  document.getElementById("sel-desc").textContent = ic.desc;
+  document.getElementById("sel-img").src = ic.file;
+  document.getElementById("phone-cap").textContent = `${ic.id} · ${ic.name}`;
+
+  const sizes = document.getElementById("sel-sizes");
+  sizes.innerHTML = "";
+  [60, 40, 29].forEach((px) => {
+    const wrap = document.createElement("div");
+    const img = document.createElement("img");
+    img.src = ic.file;
+    img.width = px; img.height = px;
+    img.alt = "";
+    img.style.borderRadius = Math.round(px * 0.225) + "px";
+    const sp = document.createElement("span");
+    sp.textContent = px + "pt";
+    wrap.appendChild(img);
+    wrap.appendChild(sp);
+    sizes.appendChild(wrap);
+  });
+
+  const pg = document.getElementById("pg");
+  pg.innerHTML = "";
+  const names = ["Photos","Routeva","Notes","Music","Mail","Files","Clock","Maps"];
+  const hues = [210,0,40,320,200,160,25,180];
+  for (let i = 0; i < 8; i++) {
+    const a = document.createElement("div");
+    a.className = "pa";
+    if (i === 1) {
+      const img = document.createElement("img");
+      img.src = ic.file; img.alt = "Routeva";
+      a.appendChild(img);
+    } else {
+      const g = document.createElement("div");
+      g.className = "g";
+      g.style.background = `linear-gradient(145deg,hsla(${hues[i]},32%,42%,0.75),hsla(${hues[i]},28%,16%,0.9))`;
+      a.appendChild(g);
+    }
+    const lab = document.createElement("label");
+    lab.textContent = names[i];
+    a.appendChild(lab);
+    pg.appendChild(a);
+  }
+
+  document.querySelectorAll(".tile").forEach((t) => {
+    t.classList.toggle("is-on", t.dataset.id === ic.id);
+  });
+}
+
+function build() {
+  const grid = document.getElementById("grid");
+  ICONS.forEach((ic) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tile";
+    b.dataset.id = ic.id;
+    b.setAttribute("role", "option");
+    b.setAttribute("aria-label", `${ic.id} ${ic.name}`);
+    b.innerHTML = `
+      <div class="tile__img"><img src="${ic.file}" alt="" /></div>
+      <div class="tile__id">${ic.id}</div>
+      <div class="tile__name">${ic.name}</div>
+      <div class="tile__why">${ic.desc.split("·")[0].trim()}</div>
+    `;
+    b.addEventListener("click", () => { selected = ic; render(); });
+    grid.appendChild(b);
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  const map = {1:0,2:1,3:2,4:3,5:4,6:5,7:6,8:7,9:8,0:9};
+  if (e.key in map) { selected = ICONS[map[e.key]]; render(); }
+});
+
+build();
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Routeva · App Icon Gallery · Final 10</title>
+<style>
+  :root {
+    --paper: #07090c;
+    --paper-2: #10151a;
+    --paper-top: #1c2228;
+    --ink: rgba(255,255,255,0.96);
+    --ink2: rgba(255,255,255,0.74);
+    --mute: rgba(255,255,255,0.52);
+    --quiet: rgba(255,255,255,0.34);
+    --mint: #7fd9b0;
+    --mint-lift: #b6f5d6;
+    --edge: rgba(255,255,255,0.10);
+    --glass: rgba(255,255,255,0.055);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --g: clamp(1.1rem, 3.2vw, 2.4rem);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% -10%, rgba(127,217,176,0.08), transparent 55%),
+      radial-gradient(ellipse 40% 30% at 90% 80%, rgba(77,122,108,0.12), transparent 50%),
+      linear-gradient(180deg, var(--paper-top) 0%, var(--paper-2) 35%, var(--paper) 100%);
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.35;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  }
+  .wrap { position: relative; z-index: 1; }
+
+  /* top bar */
+  .top {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.75rem; padding: 0.95rem var(--g);
+    background: color-mix(in srgb, var(--paper) 72%, transparent);
+    backdrop-filter: blur(22px) saturate(160%);
+    border-bottom: 1px solid var(--edge);
+  }
+  .brand {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .brand em { color: var(--mint); font-style: normal; }
+  .hint { font-size: 12px; color: var(--quiet); font-weight: 500; }
+  .hint kbd {
+    font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 0.2rem 0.4rem; border-radius: 5px;
+    border: 1px solid var(--edge); background: var(--glass); color: var(--mute);
+  }
+
+  /* hero */
+  .hero {
+    max-width: 78rem; margin: 0 auto;
+    padding: 2rem var(--g) 1.25rem;
+    display: grid; gap: 1.5rem;
+  }
+  @media (min-width: 960px) {
+    .hero { grid-template-columns: 1.15fr 0.85fr; align-items: center; gap: 2rem; }
+  }
+  .kicker {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--mint); margin-bottom: 0.65rem;
+  }
+  h1 {
+    font-size: clamp(1.85rem, 4.2vw, 2.75rem);
+    font-weight: 700; letter-spacing: -0.035em; line-height: 1.08;
+    margin-bottom: 0.75rem;
+  }
+  .lede {
+    font-size: 15px; line-height: 1.55; color: var(--ink2);
+    max-width: 40ch; margin-bottom: 1.25rem;
+  }
+
+  .stage-card {
+    border-radius: 28px;
+    border: 1px solid var(--edge);
+    background: linear-gradient(165deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+    padding: 1.5rem;
+    display: grid; gap: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .stage-card { grid-template-columns: auto 1fr; align-items: center; gap: 1.75rem; }
+  }
+
+  .icon-3d {
+    width: min(220px, 48vw); height: min(220px, 48vw);
+    margin: 0 auto;
+    perspective: 900px;
+  }
+  .icon-3d__inner {
+    width: 100%; height: 100%;
+    border-radius: 48px;
+    overflow: hidden;
+    transform-style: preserve-3d;
+    transition: transform 0.45s var(--ease);
+    box-shadow:
+      0 40px 80px rgba(0,0,0,0.55),
+      0 0 0 1px rgba(255,255,255,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.18);
+    background: #0b0e11;
+  }
+  .icon-3d__inner img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .icon-3d:hover .icon-3d__inner {
+    transform: rotateX(8deg) rotateY(-12deg) scale(1.03);
+  }
+
+  .meta .num {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--mint); text-transform: uppercase; margin-bottom: 0.35rem;
+  }
+  .meta h2 {
+    font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+    font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.4rem;
+  }
+  .meta p {
+    font-size: 14px; line-height: 1.5; color: var(--ink2);
+    max-width: 34ch; margin-bottom: 0.9rem;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+  .tag {
+    font-size: 11px; font-weight: 600; color: var(--mute);
+    padding: 0.28rem 0.6rem; border-radius: 999px;
+    border: 1px solid var(--edge); background: rgba(0,0,0,0.25);
+  }
+  .scales {
+    display: flex; align-items: flex-end; gap: 1.1rem;
+    padding-top: 0.85rem; border-top: 1px solid var(--edge);
+  }
+  .scale { text-align: center; }
+  .scale img {
+    display: block; border-radius: 22.5%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    margin: 0 auto 0.4rem;
+  }
+  .scale span {
+    font-size: 10px; font-weight: 600; color: var(--quiet); letter-spacing: 0.04em;
+  }
+
+  /* phone mock */
+  .phone-wrap {
+    display: flex; justify-content: center;
+  }
+  .phone {
+    width: min(280px, 78vw);
+    border-radius: 40px;
+    padding: 12px;
+    background: linear-gradient(160deg, #2a3038, #0a0c0f);
+    box-shadow:
+      0 40px 100px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .phone__screen {
+    border-radius: 30px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 90% 60% at 50% 0%, #3d4a56 0%, transparent 55%),
+      linear-gradient(180deg, #1a222a, #07090c);
+    min-height: 460px;
+    position: relative;
+    padding: 2.4rem 1rem 1.1rem;
+  }
+  .phone__island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 96px; height: 28px; border-radius: 999px; background: #000;
+  }
+  .phone__time {
+    position: absolute; top: 14px; left: 22px;
+    font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.9);
+  }
+  .phone__grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1rem 0.55rem; margin-top: 0.5rem;
+  }
+  .papp { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .papp img, .papp .ghost {
+    width: 52px; height: 52px; border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  }
+  .papp .ghost {
+    background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .papp label {
+    font-size: 9px; font-weight: 500; color: rgba(255,255,255,0.9);
+    max-width: 3.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .phone__dock {
+    margin-top: 1.4rem;
+    display: flex; justify-content: center; gap: 0.7rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 22px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .phone__dock .ghost {
+    width: 48px; height: 48px; border-radius: 11px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  }
+
+  /* grid */
+  .section {
+    max-width: 78rem; margin: 0 auto;
+    padding: 0.5rem var(--g) 3.5rem;
+  }
+  .section__head {
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+    gap: 0.5rem; margin-bottom: 1rem;
+  }
+  .section__head h3 {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .section__head span { font-size: 12px; color: var(--quiet); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem;
+  }
+  @media (min-width: 700px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(5, 1fr); gap: 1rem; } }
+
+  .card {
+    appearance: none; border: 1px solid var(--edge);
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border-radius: 22px;
+    padding: 1rem 0.85rem 1rem;
+    cursor: pointer; color: inherit; font: inherit; text-align: center;
+    transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+    position: relative;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(127,217,176,0.35);
+  }
+  .card:focus-visible {
+    outline: 2px solid rgba(140,220,190,0.9);
+    outline-offset: 3px;
+  }
+  .card.is-on {
+    border-color: rgba(127,217,176,0.7);
+    box-shadow:
+      0 0 0 1px rgba(127,217,176,0.25),
+      0 20px 50px rgba(0,0,0,0.4),
+      0 0 40px rgba(127,217,176,0.12);
+    background: linear-gradient(180deg, rgba(127,217,176,0.12), rgba(255,255,255,0.02));
+  }
+  .card__icon {
+    width: 100%; aspect-ratio: 1;
+    max-width: 132px; margin: 0 auto 0.85rem;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow:
+      0 16px 36px rgba(0,0,0,0.45),
+      0 0 0 0.5px rgba(255,255,255,0.1);
+    background: #0b0e11;
+  }
+  .card__icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card__id {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    color: var(--mint); text-transform: uppercase; margin-bottom: 0.2rem;
+  }
+  .card__name { font-size: 13px; font-weight: 700; margin-bottom: 0.25rem; }
+  .card__why { font-size: 11px; line-height: 1.4; color: var(--mute); }
+
+  .families {
+    display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1.25rem;
+  }
+  .fam {
+    font-size: 12px; font-weight: 600; color: var(--ink2);
+    padding: 0.35rem 0.75rem; border-radius: 999px;
+    border: 1px solid var(--edge); background: var(--glass);
+  }
+  .fam b { color: var(--mint); }
+
+  footer {
+    max-width: 78rem; margin: 0 auto;
+    padding: 0 var(--g) 3rem;
+    font-size: 12px; color: var(--quiet); line-height: 1.5;
+  }
+  footer code {
+    font-size: 11px; color: var(--mute);
+    background: var(--glass); padding: 0.1rem 0.35rem; border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Routeva · <em>Final Icon Gallery</em></div>
+    <div class="hint">点击挑选 · 键盘 <kbd>1</kbd>–<kbd>0</kbd> 快选 · 当前 <span id="sel-label" style="color:var(--mint);font-weight:600">01</span></div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <p class="kicker">Instrument Quiet · 1024 finished</p>
+      <h1>十枚成品图标<br/>全部做好，等你挑</h1>
+      <p class="lede">
+        Soft glass 材质、Field Black / mint、光泽与景深统一。
+        刻意避开盾 / 锁 / 地球——从探针、探针、路径与自愈回路长出来。
+      </p>
+      <div class="families">
+        <span class="fam"><b>A</b> UI 签名 · 01–02</span>
+        <span class="fam"><b>B</b> 路径 · 03–04 · 09–10</span>
+        <span class="fam"><b>C</b> 字标场域 · 05–08</span>
+      </div>
+
+      <div class="stage-card">
+        <div class="icon-3d" id="tilt">
+          <div class="icon-3d__inner">
+            <img id="hero-img" alt="Selected app icon" src="assets/01-rings-probe.jpg" />
+          </div>
+        </div>
+        <div class="meta">
+          <div class="num" id="meta-num">01</div>
+          <h2 id="meta-name">Rings Probe</h2>
+          <p id="meta-desc">Connectivity Probe 的波纹签名——发光 mint 弧线自中心展开，冷静、可识别、很 Routeva。</p>
+          <div class="tags" id="meta-tags"></div>
+          <div class="scales" id="scales"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone" aria-hidden="true">
+        <div class="phone__screen">
+          <div class="phone__time">9:41</div>
+          <div class="phone__island"></div>
+          <div class="phone__grid" id="phone-grid"></div>
+          <div class="phone__dock">
+            <div class="ghost" style="background:linear-gradient(145deg,#4a9eff,#1a5fd0)"></div>
+            <div class="ghost" style="background:linear-gradient(145deg,#34d399,#059669)"></div>
+            <div class="ghost" style="background:linear-gradient(145deg,#fbbf24,#d97706)"></div>
+            <div class="ghost" style="background:linear-gradient(145deg,#a78bfa,#6d28d9)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__head">
+      <h3>Ten finished marks</h3>
+      <span>点一张 · 上方大图 + 弹簧板同步更新</span>
+    </div>
+    <div class="grid" id="grid" role="listbox" aria-label="Routeva app icons"></div>
+  </section>
+
+  <footer>
+    资产：<code>design/hi-fi/_explore/2026-08-06-app-icon-10/assets/0N-*.jpg</code>（1024×1024 JPEG）。
+    选定后导出无 alpha PNG + Android adaptive 安全区。键盘 1–9、0=10。
+  </footer>
+</div>
+
+<script>
+const ICONS = [
+  {
+    id: "01", key: "1", file: "assets/01-rings-probe.jpg",
+    name: "Rings Probe",
+    why: "探针波纹 · 连接签名",
+    desc: "Connectivity Probe 的波纹签名——发光 mint 弧线自中心展开，冷静、可识别、很 Routeva。",
+    tags: ["UI 签名", "Probe", "黑场"],
+  },
+  {
+    id: "02", key: "2", file: "assets/02-capsule-thumb.jpg",
+    name: "Capsule Thumb",
+    why: "硬件级滑动胶囊",
+    desc: "把 Home 的 START 胶囊做成实体开关质感——玻璃外壳、银框拇指、mint LED，像可拨的精密器件。",
+    tags: ["UI 签名", "胶囊", "硬件感"],
+  },
+  {
+    id: "03", key: "3", file: "assets/03-route-arc.jpg",
+    name: "Route Arc",
+    why: "双弧路由 · 名字即路径",
+    desc: "双线轨道弧连接两端节点，像一次精简的路由跃迁——路径感强，小尺寸仍清晰。",
+    tags: ["路径", "极简", "发光"],
+  },
+  {
+    id: "04", key: "4", file: "assets/04-node-link.jpg",
+    name: "Node Link",
+    why: "玻璃双节点链路",
+    desc: "两枚 soft glass 球体由 mint 神经链路相连——「已有订阅 → 经客户端到达」的抽象，不画地球。",
+    tags: ["路径", "Glass", "节点"],
+  },
+  {
+    id: "05", key: "5", file: "assets/05-r-monogram.jpg",
+    name: "R Monogram",
+    why: "玻璃球字标 R",
+    desc: "虹彩 soft glass 球体内嵌精致 R，右下 mint 点——长期品牌字标，货架识别度最高。",
+    tags: ["字标", "Glass", "品牌"],
+  },
+  {
+    id: "06", key: "6", file: "assets/06-field-success.jpg",
+    name: "Field Success",
+    why: "绿场成功态",
+    desc: "整屏 Field Green + 白探针环与玻璃芯——图标本身就是「Connected」的承诺色。",
+    tags: ["场域", "成功绿", "冲击"],
+  },
+  {
+    id: "07", key: "7", file: "assets/07-black-green.jpg",
+    name: "Black → Green",
+    why: "对角旅程 · 断开到连上",
+    desc: "黑场到绿场的对角分割，蜿蜒发光路径穿越——最小叙事：从 Not Connected 到 Connected。",
+    tags: ["场域", "叙事", "双色"],
+  },
+  {
+    id: "08", key: "8", file: "assets/08-soft-core.jpg",
+    name: "Soft Core",
+    why: "玻璃包裹 mint 芯",
+    desc: "方形 soft glass 胶囊里一枚多层 mint 内核——最贴 craft-p0 材质，安静但很贵。",
+    tags: ["材质", "Glass", "克制"],
+  },
+  {
+    id: "09", key: "9", file: "assets/09-heal-loop.jpg",
+    name: "Heal Loop",
+    why: "自愈回路 · 开口环",
+    desc: "近闭合 mint 回路 + 电路纹理与终端节点——Self-Healing Loop 的仪器符号。",
+    tags: ["自愈", "回路", "仪器"],
+  },
+  {
+    id: "10", key: "0", file: "assets/10-via-chevron.jpg",
+    name: "Via Chevron",
+    why: "双线 via 前进",
+    desc: "两道发光 chevron 向上——via 的几何化，干净利落，弹簧板上很醒目。",
+    tags: ["路径", "几何", "前进"],
+  },
+];
+
+let selected = ICONS[0];
+
+function render() {
+  const icon = selected;
+  document.getElementById("sel-label").textContent = icon.id + " · " + icon.name;
+  document.getElementById("meta-num").textContent = icon.id;
+  document.getElementById("meta-name").textContent = icon.name;
+  document.getElementById("meta-desc").textContent = icon.desc;
+  document.getElementById("hero-img").src = icon.file;
+  document.getElementById("hero-img").alt = icon.name;
+
+  const tags = document.getElementById("meta-tags");
+  tags.innerHTML = "";
+  icon.tags.forEach((t) => {
+    const s = document.createElement("span");
+    s.className = "tag";
+    s.textContent = t;
+    tags.appendChild(s);
+  });
+
+  const scales = document.getElementById("scales");
+  scales.innerHTML = "";
+  [[60, "60pt"], [40, "40pt"], [29, "29pt"]].forEach(([px, label]) => {
+    const d = document.createElement("div");
+    d.className = "scale";
+    const img = document.createElement("img");
+    img.src = icon.file;
+    img.alt = "";
+    img.width = px;
+    img.height = px;
+    img.style.borderRadius = Math.round(px * 0.225) + "px";
+    const sp = document.createElement("span");
+    sp.textContent = label;
+    d.appendChild(img);
+    d.appendChild(sp);
+    scales.appendChild(d);
+  });
+
+  // phone grid
+  const grid = document.getElementById("phone-grid");
+  grid.innerHTML = "";
+  const names = ["Photos", "Routeva", "Notes", "Music", "Mail", "Files", "Clock", "Maps", "Wallet", "Watch", "Books", "Settings"];
+  const hues = [210, 0, 40, 320, 200, 160, 25, 180, 280, 350, 30, 220];
+  for (let i = 0; i < 12; i++) {
+    const app = document.createElement("div");
+    app.className = "papp";
+    if (i === 1) {
+      const img = document.createElement("img");
+      img.src = icon.file;
+      img.alt = "Routeva";
+      app.appendChild(img);
+    } else {
+      const g = document.createElement("div");
+      g.className = "ghost";
+      g.style.background = `linear-gradient(145deg, hsla(${hues[i]},35%,42%,0.75), hsla(${hues[i]},30%,18%,0.9))`;
+      app.appendChild(g);
+    }
+    const lab = document.createElement("label");
+    lab.textContent = names[i];
+    app.appendChild(lab);
+    grid.appendChild(app);
+  }
+
+  document.querySelectorAll(".card").forEach((btn) => {
+    btn.classList.toggle("is-on", btn.dataset.id === icon.id);
+  });
+}
+
+function buildGrid() {
+  const root = document.getElementById("grid");
+  ICONS.forEach((icon) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "card";
+    btn.dataset.id = icon.id;
+    btn.setAttribute("role", "option");
+    btn.setAttribute("aria-label", `${icon.id} ${icon.name}`);
+    btn.innerHTML = `
+      <div class="card__icon"><img src="${icon.file}" alt="" loading="eager" /></div>
+      <div class="card__id">${icon.id}</div>
+      <div class="card__name">${icon.name}</div>
+      <div class="card__why">${icon.why}</div>
+    `;
+    btn.addEventListener("click", () => {
+      selected = icon;
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    root.appendChild(btn);
+  });
+}
+
+// subtle tilt follow
+const tilt = document.getElementById("tilt");
+const inner = tilt.querySelector(".icon-3d__inner");
+tilt.addEventListener("pointermove", (e) => {
+  const r = tilt.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width - 0.5;
+  const y = (e.clientY - r.top) / r.height - 0.5;
+  inner.style.transform = `rotateX(${(-y * 16).toFixed(2)}deg) rotateY(${(x * 18).toFixed(2)}deg) scale(1.03)`;
+});
+tilt.addEventListener("pointerleave", () => {
+  inner.style.transform = "";
+});
+
+document.addEventListener("keydown", (e) => {
+  const map = { "1":0,"2":1,"3":2,"4":3,"5":4,"6":5,"7":6,"8":7,"9":8,"0":9 };
+  if (e.key in map) {
+    selected = ICONS[map[e.key]];
+    render();
+  }
+});
+
+buildGrid();
+render();
+</script>
+</body>
+</html>
