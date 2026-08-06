@@ -4,7 +4,7 @@
 
 **Connection 三项维持根页可发现：** Routing mode 三选一；DNS 意图三档预设；Overrides 常驻但 **O3 呈现**（空态/副文防「完整规则引擎」误读）。有价值的「专业」= 可审计策略意图；无价值 = 内核旋钮、自定义 DNS 表单、正则/规则市场、Advanced 坟场。
 
-**O3 English 源（hi-fi `05-settings.html`）：** 空态标题 *No exceptions yet*；怎么用 *Pin a domain to proxy or direct when Auto isn’t enough.*；边界 *A few exceptions, not a full rule set.*；chip *One domain each*（**无**条数额度；ADR 0050）；列表顶同旨提示；CTA / sheet 标题 *Add exception*；目标 **仅 Domain**（ADR 0049）；sheet 副文禁 regex/通配；根页计数 `None` / `N`（不写 *rules*）。
+**O3 English 源（hi-fi `05-settings.html`）：** 空态标题 *No exceptions yet*；怎么用 *Pin a domain to proxy or direct when Auto isn’t enough.*；边界 *A few exceptions, not a full rule set.*；chip *One domain each*（**无**条数额度；ADR 0050）；列表顶同旨提示；CTA / sheet 标题 *Add exception*；目标 **仅 Domain**（ADR **0057**）；sheet 副文禁 regex/通配；根页计数 `None` / `N`（不写 *rules*）。
 
 **Settings Admission Gate（新项默认全过）：** ① 改流量/连接策略意图；② 半专业会主动改；③ 小白失败/Help 可一句话进同一页；④ 短闭集 + 意图文案；⑤ 与 Home/Repair/Help 同源。**例外：** **About**（及合规说明）走**信任 / 合规**闸门，不要求「改流量意图」。**Activity / Snapshots 不进 Settings 根页**（ADR **0051**）——可解释与回滚靠机制 + Help / 诊断·Repair 触点，不占审计墙入口。
 

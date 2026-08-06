@@ -2,7 +2,9 @@
 
 ## 状态
 
-Accepted · 2026-08-06
+Accepted · 2026-08-06  
+
+**编号独占：** **0049 = 仅本 ADR（Dual-Native）**。User Override Domain only 已改号为 **ADR 0057**（勿再写 0049）。
 
 ## 上下文
 

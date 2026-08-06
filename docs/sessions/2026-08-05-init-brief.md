@@ -120,6 +120,23 @@
 ### 2026-08-05 — Grill-with-docs 复审 Q10 订阅更新
 - **决议：A** — 冷启动/连接前按 T=6h 刷 Active；禁止固定后台周期；成功少打扰；失败不覆盖
 - **已写入：** CONTEXT（Subscription Refresh）；PRD §4.1；ADR 0015
+- **后续修订（2026-08-06 grill）：** 见下条；旧「连接前 + T=6h、无总闸」作废
+
+### 2026-08-06 — Grill-with-docs · 订阅自动刷新总闸与机制
+- **问题：** 订阅管理漏「是否自动刷新」；自动机制需钉死（节点/规则等整份再拉）
+- **决议：**
+  1. **全局** Auto-update 开关 · **默认开** · 放 **Settings › App 根页**（顺序：Auto-update → Subscriptions › → About ›）
+  2. **开时：** 仅**严格冷启动** + Active + 可远程源 + 距上次成功 ≥ **T=24h** → 整份替换（节点 + 规则/策略组 + 有则元数据）
+  3. **不做：** 连接前自动刷 · 热启动/回前台 · 后台周期轮询 · 不可刷新源假装成功
+  4. **成功：** 安静 + Activity；节点身份失效静默丢偏好（Preferred）
+  5. **自动失败：** 完全安静、不覆盖；**手动 Update** 仍在 Subscriptions，失败可提示
+- **已写入：** CONTEXT（Subscription Refresh / Settings App / Admission 例外）；ADR **0015** 修订 · **0026**；PRD §4.1 / IA / 验收；`en.yaml` keys；acceptance Settings root
+- **后续补齐（同日）：**
+  - `en.yaml`：`subs.update.unavailable*` · `subs.update.failed*`
+  - acceptance Subscriptions 1d/1e；hi-fi `04-subscriptions` 故事板 + Settings 深链示意
+  - hi-fi `05-settings` App Toggle 行
+  - **Privacy Policy** 新增 *Subscription updates & your provider* + What you control 中 Auto-update
+  - **实现任务：** 1d/1e → [`docs/prd/features/subscription-refresh-ui-states.md`](../prd/features/subscription-refresh-ui-states.md)（IMPL-SUB-1d / 1e）；acceptance 表已挂链
 
 ### 2026-08-05 — Grill-with-docs 复审 Q11 Agent 工具闭集
 - **决议：A** — Agent Tool Allowlist 只读+变更闭集；禁止项写死；扩展须改文档
@@ -128,7 +145,7 @@
 ### 2026-08-05 — Grill-with-docs 复审 Q12 User Override
 - **决议：A** — 服务名或单域名 → proxy|direct；上限 20；无正则/规则市场
 - **已写入：** CONTEXT（User Override Rule）；PRD §4.7；ADR 0017
-- **后续收窄（2026-08-06）：** 去掉 Service 预设，仅单 Domain → proxy|direct；见 **ADR 0049**
+- **后续收窄（2026-08-06）：** 去掉 Service 预设，仅单 Domain → proxy|direct；见 **ADR 0057**（原误标 0049；0049 = Dual-Native）
 - **后续（2026-08-06）：** Beta **不设**条数硬上限（废止「最多 20」配额）；见 **ADR 0050**
 
 ### 2026-08-05 — Grill-with-docs 复审收口

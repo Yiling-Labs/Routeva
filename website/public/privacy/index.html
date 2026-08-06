@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Privacy Policy · Routeva</title>
-  <meta name="description" content="Routeva privacy policy: data on device, optional Help cloud assist, iCloud domain-exception backup on iPhone, diagnostics, and your controls." />
+  <meta name="description" content="Routeva privacy policy: data on device, subscription refresh via your provider, optional Help cloud assist, iCloud domain-exception backup on iPhone, diagnostics, and your controls." />
   <link rel="canonical" href="https://routeva.yilinglabs.com/privacy/" />
   <style>
     :root {
@@ -118,6 +118,36 @@
       </p>
     </div>
 
+    <h2>Subscription updates &amp; your provider</h2>
+    <p>
+      To keep nodes and provider rules current, Routeva may <strong>request your subscription
+      configuration from the provider you already use</strong> (the same kind of link or remote
+      profile you imported). That traffic goes to <strong>your provider</strong>, not to Routeva
+      as a subscription host. We do not sell nodes.
+    </p>
+    <ul>
+      <li>
+        <strong>Auto-update</strong> is <strong>on by default</strong>. When on, Routeva may refresh
+        the <strong>active</strong> subscription on a <strong>cold launch</strong> of the app
+        (about once a day if it has been that long since a successful update)—not every time you
+        connect, and not as a fixed background polling schedule.
+      </li>
+      <li>You can turn auto-update off in <strong>Settings → Auto-update subscription</strong>.</li>
+      <li>You can also refresh manually with <strong>Update</strong> on the Subscriptions screen.</li>
+      <li>
+        Single-node links or imports with no remote update URL cannot be refreshed this way;
+        Routeva will not pretend they updated.
+      </li>
+      <li>
+        If an automatic refresh fails, Routeva keeps your last working configuration and does not
+        interrupt you with a banner. A failed <em>manual</em> update can show an in-app message.
+      </li>
+      <li>
+        Routeva does <strong>not</strong> upload your raw subscription tokens or full subscription
+        body to Routeva servers as part of this refresh path.
+      </li>
+    </ul>
+
     <h2>Domain exceptions &amp; iCloud (iPhone)</h2>
     <p>
       On <strong>iPhone</strong>, the small list of <strong>domain exceptions</strong> you add
@@ -173,6 +203,8 @@
     <h2>What you control</h2>
     <ul>
       <li>Cloud assist opt-out in Help</li>
+      <li><strong>Auto-update subscription</strong> on or off in Settings (default on)</li>
+      <li>Manual subscription Update on the Subscriptions screen</li>
       <li>System VPN permission (iOS system prompt on first connect)</li>
       <li>iCloud availability for domain-exception backup via your Apple ID / system iCloud settings (iPhone)</li>
       <li>Export of a redacted diagnostic report from About (you choose when to share it)</li>

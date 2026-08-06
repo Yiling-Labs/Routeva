@@ -277,6 +277,16 @@
     ], p);
   }
 
+  // ellipsis / more-horizontal → SF ellipsis
+  function IconMore(props) {
+    var p = Object.assign({ size: SIZE.chrome, stroke: STROKE.chrome }, props || {});
+    return Icon([
+      circle(12, 12, 1),
+      circle(19, 12, 1),
+      circle(5, 12, 1),
+    ], p);
+  }
+
   /** Alias: Help mark same as Help (unified glyph) */
   var IconHelpMark = IconHelp;
 
@@ -307,5 +317,6 @@
     IconList: IconList,
     IconArrowDown: IconArrowDown,
     IconArrowUp: IconArrowUp,
+    IconMore: IconMore,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

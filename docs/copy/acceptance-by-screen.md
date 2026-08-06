@@ -46,7 +46,25 @@
 | Mode ≠ Auto | 源码 `modeHint` 插槽；**故事板默认帧未演示**；key 与 CONTEXT 闭集一致，实现按非 Auto 显示 |
 | 禁止项 | 未见 provider rules 墙 / VERIFIED / *Needs attention* / 顶栏 Activity |
 
-**不应出现：** provider rules 教学墙 · VERIFIED/probe 叠词 · 主状态 *Needs attention* · 顶栏 Activity。
+**不应出现：** provider rules 教学墙 · VERIFIED/probe 叠词 · 主状态 *Needs attention* · 顶栏 Activity · Home 上 *Pinned* / 偏好徽章（偏好仅 Location check）。
+
+---
+
+## 1b · Location · [`08-location.html`](../../design/hi-fi/current/craft-p0/08-location.html)
+
+> ADR **0055** / **0056** · **Preferred node** · **Latency Test**  
+> **分组：** ≥2 → 导航下横向 chip（可左右滑），列表仅当前组；=1 → **无** chip，直接列表
+
+| 帧 | 验收焦点 | Keys | ☑ |
+|---|---|---|---|
+| **Interactive multi** | chip 条 · 切组 · 点选 · Test | `location.title` S · `location.groups.a11y` S · `location.test` S · `location.testing` S · `location.latency.*` S · 组名来自订阅 | [ ] |
+| **1 Multi · preferred group** | 含偏好的 chip 选中 · 行 check | 仅偏好行 check · 无 *Pinned*/*Current* 文案徽章 | [ ] |
+| **2 Multi · other tab** | 切组换列表 · 偏好组 chip 可弱点 | 同上 | [ ] |
+| **3 Single group** | **无** chip 条 | 同上 | [ ] |
+| **4 Testing** | 顶栏 busy | `location.testing` S | [ ] |
+| **5 Empty** | 0 节点 · 无 strip | `location.empty.title` S · `.body` S · `.update` S | [ ] |
+
+**不应出现：** 全部 group 纵向长卷主路径 · 搜索框 · 列表顶 *Auto* 行 · *Pinned* / *Current* 徽章 · 顶栏 `⋯` · *Use automatic* · 硬 *Ping* · 按延迟重排 · 订阅 CRUD 主路径 · 硬 Pin 禁 Failover 叙事。
 
 ---
 
@@ -72,12 +90,18 @@
 | **1 List · Active rich** | 标题 · Active · meta · Update · Add | `subs.title` S · `subs.active.badge` S · `subs.meta.nodes` S · `subs.meta.expires` S · `subs.meta.updated` S · `subs.update` S · `subs.add` S · `subs.data_label` S（有流量时） | [ ] |
 | **1b List · sparse** | 无到期/流量整槽省略 | 同上；**不**出现 *Not reported* | [ ] |
 | **1c Updating** | busy | `subs.updating` S | [ ] |
+| **1d Not remote-refreshable** | 无 URL 的 Active：无主 Update CTA；说明 | `subs.update.unavailable` S · `subs.update.unavailable.hint` S；**不**出现可点 *Update* 假装成功 | [ ] → **实现任务** [IMPL-SUB-1d](../prd/features/subscription-refresh-ui-states.md#impl-sub-1d--not-remote-refreshable无远程源) |
+| **1e Manual Update failed** | 列表内错误（仅手动） | `subs.update.failed` S · `subs.update.failed.hint` S · `subs.update` S 可重试 | [ ] → **实现任务** [IMPL-SUB-1e](../prd/features/subscription-refresh-ui-states.md#impl-sub-1e--manual-update-failed仅手动失败) |
 | **非 Active 行** | Set active | `subs.set_active` S | [ ] |
 | **Expired** | 警示标签 | `subs.meta.expired` S | [ ] |
 | **Rename / 默认名** | 可选 | `subs.rename` S · `subs.default_name` S · `subs.default_name_n` S | [ ] |
-| **2 Settings deep link** | 同一套 UI 标题 | `subs.title`（门在 Settings：`settings.app.subscriptions`） | [ ] |
+| **2 Settings deep link** | 同一套 UI 标题；App 含 Auto-update | `subs.title`（门：`settings.app.subscriptions`）；深链示意应含 `settings.app.auto_update.*` | [ ] |
 
-**不应出现：** 裸日期贴 nodes · *Renews* · All subscriptions 第二层。
+**不应出现：** 裸日期贴 nodes · *Renews* · All subscriptions 第二层 · 自动刷新失败 Toast · 无远程源却 *Update* 成功。
+
+**实现任务（1d / 1e）：** 编码 DoD、双端勾选与顺序见  
+[`docs/prd/features/subscription-refresh-ui-states.md`](../prd/features/subscription-refresh-ui-states.md)  
+（**IMPL-SUB-1d** · **IMPL-SUB-1e**）。文案 ☑ 在实现走查通过后勾；勿仅因 hi-fi 有帧就勾实现完成。
 
 ---
 
@@ -85,7 +109,7 @@
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 Root** | 段 · 三行+副文 · App 两行 · Close | `settings.title` S · `settings.section.connection` S · `settings.section.app` S · `settings.routing.title`+`.subtitle` S · `settings.dns.title`+`.subtitle` S · `settings.overrides.title`+`.subtitle` S · `settings.app.subscriptions` S · `settings.app.about` S · `chrome.close` S · 计数 `chrome.none` / 数字 | [ ] |
+| **1 Root** | 段 · Connection 三行+副文 · App 三行（Auto-update Toggle 默认开 · Subscriptions · About）· Close | `settings.title` S · `settings.section.connection` S · `settings.section.app` S · `settings.routing.title`+`.subtitle` S · `settings.dns.title`+`.subtitle` S · `settings.overrides.title`+`.subtitle` S · `settings.app.auto_update.title`+`.subtitle` S · `settings.app.subscriptions` S · `settings.app.about` S · `chrome.close` S · 计数 `chrome.none` / 数字 | [ ] |
 | **2 Routing mode** | 三档 | `settings.routing.{auto,global,direct}.{title,sub}` S · `chrome.back` S | [ ] |
 | **3 DNS** | 三档 | `settings.dns.{automatic,privacy,compatibility}.{title,sub}` S | [ ] |
 | **4 Overrides empty** | O3 空态 | `settings.overrides.empty.title` S · `.howto` S · `.boundary` **L** · `.chip` S · `settings.overrides.add` S | [ ] |
@@ -118,7 +142,7 @@
 
 ## 6 · Diagnostic + Repair · [`07-diagnostic.html`](../../design/hi-fi/current/craft-p0/07-diagnostic.html)
 
-> **走查 2026-08-06：** CASES 四桶 + RepairProgress + 壳字段。结果 **pass（结果态稿外）**。
+> **走查 2026-08-06：** CASES 四桶 + RepairProgress + 壳字段。**2026-08-06 续：** 补帧 **6 Success · 7 Rolled back**。
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
@@ -128,7 +152,8 @@
 | **3 Your network** | | `diag.bucket.your_network` **L** · `diag.confidence.medium` **L** · `diag.example.network.*` **L** · `diag.cta.try_again` S · `diag.cta.not_now` S · `diag.cta.ask_help` S | [x] |
 | **4 Not sure** | 主 CTA = Ask Help | `diag.bucket.not_sure` **L** · `diag.confidence.low` **L** · `diag.example.unsure.*` **L** · `diag.cta.ask_help` S（主） · **无** 编造修复 | [x] |
 | **5 Repairing** | 进度卡 | `repair.progress.title` **L** · `repair.progress.step_example` **L**（样例步） · `repair.cancel` S | [x] |
-| **结果（稿外/实现）** | 成功/回滚 | `repair.success.title` S · `repair.rolled_back.title` **L** · `repair.rolled_back.body` **L** | [~] |
+| **6 Success** | 绿场 + 结果卡 | `repair.success.title` S · `repair.success.body` **L** · `repair.success.cta` S（Done）· Home 绿场 *Connected* 可与 `home.connected.status` 同源 | [x] |
+| **7 Rolled back** | 黑场 + 恢复卡 | `repair.rolled_back.title` **L** · `repair.rolled_back.body` **L** · `repair.rolled_back.cta` S · 次要 `diag.cta.ask_help` S | [x] |
 
 **走查附注（Diagnostic）**
 
@@ -138,7 +163,7 @@
 | 壳 | *What we found* · *Can't connect* · Why/Impact/Next · `{confidence} · Same checks as the rest of the app` 合成行匹配 `diag.meta.confidence_line` |
 | CTA 矩阵 | fix→Repair+Ask Help+Not now；provider→Got it+Ask Help（**无** Repair）；network→Try again+Not now+Ask Help；unsure→**主** Ask Help |
 | Repairing | *Repairing…* · 样例步 · Cancel 一致 |
-| 结果态 | **hi-fi 无独立成功/回滚帧**；`repair.success` / `rolled_back.*` 仅键表种子 — 勾为 `[~]`，实现期补帧或跟 Home 绿场 |
+| 结果态 | **6** 绿场 + *Repair verified. You’re connected again.* + Done；**7** *Rolled back* + 恢复 body + Done + Ask Help |
 | 禁止项 | 未见内部桶名 Client-Fixable 等 · 非 fix 桶无 Repair 主钮 · 无双实心主 CTA |
 
 **不应出现：** 非 Client-Fixable 上的 Repair 主按钮 · 内部桶名 · 双实心主 CTA。
@@ -168,16 +193,18 @@
 
 | 日期 | 范围 | 结果 | 备注 |
 |---|---|---|---|
-| 2026-08-06 | **§1 Home** + **§6 Diagnostic** | **pass（附注）** | 见各节「走查附注」；结果态 repair 回滚为 `[~]`；Home cant/setup 靠源码+交叉屏 |
+| 2026-08-06 | **§1 Home** + **§6 Diagnostic** | **pass（附注）** | 结果态曾 `[~]`；同日补 **6/7** 后结果键可勾 |
+| 2026-08-06 | **§6 续 · Repair 结果帧** | **pass** | hi-fi 6 Success · 7 Rolled back；`repair.success.body` / `.cta` / `rolled_back.cta` 入键表 |
 | | §2–§5 · §7–§8 | 未走 | 下一轮 |
 
 ### 本轮 gap / follow-up（非 blocker）
 
 | ID | 说明 | 建议 |
 |---|---|---|
-| H-1 | 02-home 故事板未挂 `cant` / `setup` 静态帧 | 可选补帧，或实现验收以 07 underlay + 03-setup 为准 |
-| H-2 | `modeHint` 故事板未演示 Global/Direct | 可选加一帧 mode≠Auto；key 已齐 |
-| D-1 | 无 Repair 成功/回滚专用 hi-fi | 实现跟 Home 绿场 + `repair.rolled_back.*`；或补一帧 |
+| H-1 | 02-home 故事板未挂 `cant` / `setup` 静态帧 | **决议（2026-08-06 grill）：跨屏验收即可** — Empty → `03-setup`；Can’t connect → `07` underlay + 源码 `state="cant"`；不强制本轮补 02 静态帧 |
+| H-2 | `modeHint` 故事板未演示 Global/Direct | **同上：** key 已齐；实现按非 Auto 显示；可选加帧非 blocker |
+| B-1 | Auto-update 副文 *When you launch…* vs 严格冷启动 | **决议（2026-08-06 grill）：保留现副文**；政策真源 ADR 0015；不写冷启动 jargon；误解再迭代 |
+| D-1 | ~~无 Repair 成功/回滚专用 hi-fi~~ | **已补** 帧 6/7（2026-08-06） |
 | D-2 | `repair.progress.step_example` 为 DNS Compatibility 演示步 | 实现用动态步文案，勿写死唯一样例 |
 
 **已知样例/草稿（不算实现 blocker）：**
@@ -191,7 +218,7 @@
 ## 完成定义（本表）
 
 - [x] §1 Home 帧勾完（2026-08-06）  
-- [x] §6 Diagnostic 帧勾完（结果态 `[~]`）  
+- [x] §6 Diagnostic 帧勾完（含 **6 Success · 7 Rolled back**）  
 - [ ] §2–§5 · §7 全部帧勾完  
 - [ ] 所有 **L** 键与 CONTEXT/ADR 无冲突（本轮抽检：诊断锁 en / Repair CTA 与 0047·0010·0041 一致）  
 - [ ] 实现绑定 key 名与本表一致（Android：`.` → `_`）  

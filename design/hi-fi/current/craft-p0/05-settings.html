@@ -74,8 +74,9 @@
   <div class="meta">
     <h1>Settings · Connection Policy first</h1>
     <p>
-      ADR 0021–0032 · <strong>0045</strong> · <strong>0051</strong> (no History on root).
+      ADR 0021–0032 · <strong>0015</strong> · <strong>0045</strong> · <strong>0051</strong> (no History on root).
       Root: <strong>Connection → App</strong> only.
+      App: <strong>Auto-update subscription</strong> (default on) · Subscriptions · About.
       Overrides <strong>O3</strong>: domain exceptions, not a rule-engine empty state.
       No History/Activity/Snapshots rows, Appearance, Advanced, or Cloud AI toggle.
     </p>
@@ -144,6 +145,8 @@
     /** About legal links open the public site (not in-app long pages). */
     const PRIVACY_POLICY_URL = 'https://routeva.yilinglabs.com/privacy/';
     const TERMS_OF_USE_URL = 'https://routeva.yilinglabs.com/terms/';
+    /** Support discovery → site Contact (same trust surface as Privacy); not a second inbox. */
+    const SUPPORT_URL = 'https://routeva.yilinglabs.com/privacy/#contact';
 
     function IosFrame({ children }) {
       const c = '#fff';
@@ -392,7 +395,10 @@
       overrides: 'Exceptions for specific domains',
     };
 
-    function SettingsRoot({ onNav, onClose, modeLabel, dnsLabel, overrideCount }) {
+    function SettingsRoot({
+      onNav, onClose, modeLabel, dnsLabel, overrideCount,
+      autoUpdate = true, onAutoUpdateChange,
+    }) {
       return (
         <Shell title="Settings" left={<GlassOrb label="Close" onClick={onClose}><IconClose /></GlassOrb>}>
           <SectionLabel first>Connection</SectionLabel>
@@ -420,6 +426,32 @@
 
           <SectionLabel>App</SectionLabel>
           <Group>
+            <div
+              style={{
+                width: '100%', minHeight: 64,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 12, padding: '13px 16px',
+                borderBottom: `1px solid ${T.hairline}`,
+                fontFamily: TYPE.font, color: T.primary,
+              }}
+            >
+              <span style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ fontSize: 16, fontWeight: 500, letterSpacing: '-0.01em' }}>
+                  Auto-update subscription
+                </span>
+                <span style={{
+                  fontSize: 13, fontWeight: 500, color: T.muted, lineHeight: 1.3,
+                  letterSpacing: '-0.01em',
+                }}>
+                  When you launch the app, refresh the active subscription about once a day
+                </span>
+              </span>
+              <Toggle
+                on={autoUpdate}
+                label="Auto-update subscription"
+                onChange={(next) => onAutoUpdateChange && onAutoUpdateChange(next)}
+              />
+            </div>
             <Row label="Subscriptions" value="Apex Transit" onClick={() => onNav('subs')} />
             <Row label="About" onClick={() => onNav('about')} last />
           </Group>
@@ -1117,6 +1149,11 @@
       }
     }
 
+    /**
+     * About 闭集（CONTEXT / ADR 0031 / 0054 / en.yaml）：
+     * 名+版本 · 隐私承诺 · iOS iCloud 披露 · Links(Privacy · Terms · Support) · Export 次要。
+     * craft-p0 以 iPhone 为主验收 → 展示 iCloud 句；Android 实现须省略该行。
+     */
     function AboutScreen({ onBack }) {
       return (
         <Shell title="About" left={<GlassOrb label="Back" onClick={onBack}><IconBack /></GlassOrb>}>
@@ -1139,6 +1176,13 @@
             }}>
               Privacy first. Temporary help context only — and you can turn cloud assist off.
             </p>
+            {/* settings.about.icloud_exceptions · iOS only · ADR 0054 */}
+            <p style={{
+              marginTop: 10, fontSize: 12, fontWeight: 500, color: T.muted, lineHeight: 1.4,
+              opacity: 0.92,
+            }}>
+              On iPhone, domain exceptions may back up to your iCloud for reinstalls and device switches.
+            </p>
           </div>
 
           <SectionLabel>Links</SectionLabel>
@@ -1152,6 +1196,10 @@
               label="Terms of Use"
               subtitle="Rules for using Routeva"
               onClick={() => openExternal(TERMS_OF_USE_URL)}
+            />
+            <Row
+              label="Support"
+              onClick={() => openExternal(SUPPORT_URL)}
               last
             />
           </Group>
@@ -1187,6 +1235,7 @@
       const [screen, setScreen] = useState('root');
       const [mode, setMode] = useState('auto');
       const [dns, setDns] = useState('automatic');
+      const [autoUpdate, setAutoUpdate] = useState(true);
       const [showAdd, setShowAdd] = useState(false);
       const [overrides, setOverrides] = useState(OVERRIDE_DEMO);
 
@@ -1222,6 +1271,8 @@
             modeLabel={modeLabel}
             dnsLabel={dnsLabel}
             overrideCount={overrides.length}
+            autoUpdate={autoUpdate}
+            onAutoUpdateChange={setAutoUpdate}
           />
         );
       } else if (screen === 'mode') {
@@ -1300,9 +1351,15 @@
           </div>
           <div className="row">
             <div className="phone-col">
-              <div className="lab">1 · Root<span>Connection · App · no History</span></div>
+              <div className="lab">1 · Root<span>Connection · App · Auto-update · no History</span></div>
               {frame(
-                <SettingsRoot onNav={() => {}} modeLabel="Auto" dnsLabel="Automatic" overrideCount={2} />
+                <SettingsRoot
+                  onNav={() => {}}
+                  modeLabel="Auto"
+                  dnsLabel="Automatic"
+                  overrideCount={2}
+                  autoUpdate
+                />
               )}
             </div>
             <div className="phone-col">
@@ -1369,7 +1426,7 @@
               )}
             </div>
             <div className="phone-col">
-              <div className="lab">5 · About<span>Privacy Policy → web · export</span></div>
+              <div className="lab">5 · About<span>promise · iCloud (iOS) · Privacy · Terms · Support · Export</span></div>
               {frame(<AboutScreen onBack={() => {}} />)}
             </div>
           </div>

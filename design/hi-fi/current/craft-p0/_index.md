@@ -1,6 +1,6 @@
 # craft-p0 · current
 
-**当前优先级：** Home / Setup / Subscriptions / Settings / Help / **Diagnostic** 已有高保真稿。
+**当前优先级：** Home / Setup / Subscriptions / Settings / Help / Diagnostic / **Location** 已有高保真稿。
 
 | 文件 | 说明 |
 |---|---|
@@ -10,6 +10,7 @@
 | **[05-settings.html](./05-settings.html)** | **Settings** 根页 + 二级（ADR 0021–0034 · **0045** O3 Overrides） |
 | **[06-agent.html](./06-agent.html)** | **Help / Agent Surface**（ADR 0035–0043） |
 | **[07-diagnostic.html](./07-diagnostic.html)** | **诊断 sheet** 四桶 + Repair / Ask Help（ADR 0041 / 0044） |
+| **[08-location.html](./08-location.html)** | **Location Surface** 横向分组 chip · **点选 = Preferred** · Latency Test（ADR **0055** / **0056**） |
 | **[visual-system.md](./visual-system.md)** | **全 app 风格约束**（从 Home 提取；后续屏必读） |
 | [design-spec.md](./design-spec.md) | Home 视觉 / 交互规格 |
 
@@ -44,20 +45,22 @@
 | 1 | List · Active rich | 全部在一屏；*Expires* 有标签；Orbit *Expired* 警示 |
 | 1b | List · sparse Active | 未知流量/到期整槽省略 |
 | 1c | Updating | Active 卡上 Update busy |
-| 2 | Settings deep link | 单门（权威 Settings 见 05） |
+| 1d | Not remote-refreshable | 无远程 URL：说明、无假 Update（ADR 0015） |
+| 1e | Manual Update failed | 卡内错误 + 可重试 Update |
+| 2 | Settings deep link | App 含 Auto-update Toggle；权威 Settings 见 05 |
 
 ## Settings 故事板
 
 | # | 状态 | 备注 |
 |---|---|---|
 | Interactive | 全导航 | 改 Mode/DNS；Overrides Add sheet |
-| 1 | Root | **Connection · App**；Connection 三行各带**释义副文**（非场景/非选项）；**无** History（ADR **0051**） |
+| 1 | Root | **Connection · App**；App 三行含 **Auto-update**（ADR **0015**）；Connection 三行各带**释义副文**；**无** History（ADR **0051**） |
 | 2 | Routing mode | Auto / Global / Direct |
 | 3 | DNS | Automatic / Privacy / Compatibility |
 | 4 | Overrides empty | O3：*No exceptions yet* · not a full rule set |
 | 4b | Overrides list | 顶提示 + toggle + remove + *Add exception* |
-| 4c | Add exception | **键盘打开态**：单 Domain 输入 + 压缩 sheet；Domain only（ADR 0049） |
-| 5 | About | 隐私承诺 · Privacy / Terms 外链 · Export（`/privacy/` · `/terms/`） |
+| 4c | Add exception | **键盘打开态**：单 Domain 输入 + 压缩 sheet；Domain only（ADR **0057**） |
+| 5 | About | 隐私承诺 · **iCloud 披露（iOS）** · Privacy / Terms / **Support** 外链 · Export（`/privacy/` · `/terms/` · `#contact`） |
 
 ## Help / Agent 故事板
 
@@ -82,5 +85,18 @@
 | 3 | Your network | *Try again* · Ask Help |
 | 4 | Not sure | 主 CTA 即为 *Ask Help* |
 | 5 | Repairing | 快照 · 步骤 · Cancel |
+| 6 | Success | 绿场 + *Connected* · *Repair verified…* · Done（`repair.success.*`） |
+| 7 | Rolled back | *Rolled back* · 恢复说明 · Done · Ask Help（`repair.rolled_back.*`） |
 
-更新：2026-08-06（docs sync · IA/Cloud/0051 · PRD §4.10）
+## Location 故事板
+
+| # | 状态 | 备注 |
+|---|---|---|
+| Interactive | 多组 | 横向 chip · 切组 · Preferred · Test |
+| 1 | Multi · Japan | chip 条 + Tokyo-01 check |
+| 2 | Multi · other tab | 偏好在他组 · chip 弱点 |
+| 3 | Single group | **无** chip 条 |
+| 4 | Testing… | 顶栏 busy |
+| 5 | Empty | 0 节点 |
+
+更新：2026-08-06（Location 横向分组切换 · ADR 0056）

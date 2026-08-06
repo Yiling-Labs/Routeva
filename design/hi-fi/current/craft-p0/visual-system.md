@@ -83,13 +83,13 @@
 | 屏幕 | 与 Home 的协调方式 |
 |---|---|
 | **Onboarding / Import** | Field Black；大标题 28–30；主 CTA 薄荷绿实心；少步骤。**Parsing** = 叠在 Add 上的玻璃 status 模态（非全屏）。成功 = Home Idle 同壳 + 短 toast（2–3s），不另起结果页 |
-| **Location / 节点列表** | Field Black；顶栏同款；列表行 glass 分割或轻卡；协议弱标注 |
+| **Location / 节点列表** | Field Black；顶栏 Back + *Location* + *Test*；**≥2 组** 导航下横向 glass chip（可左右滑）；列表仅当前组；**1 组无 chip**；行：名 · Preferred check · 弱协议 · ms；权威 `08-location.html`（ADR **0055**/**0056**） |
 | **Diagnostic** | 叠在 dimmed Home（Can’t connect 黑场）；底 glass sheet；四桶白话；Why/Impact/Next；主 CTA；**次要 Ask Help**（Not sure 时可作主 CTA）。权威：`07-diagnostic.html` |
 | **Repair** | 同场材质进度卡；Snapshot 文案；Cancel = ghost；验证后回绿场或失败 sheet |
 | **Subscriptions** | Field Black；**单列表**（Active 行加强 + Update）；流量/到期有则显示、无则隐藏；**到期必带 Expires/Expired 标签**（已过期暖警示色，非连接绿）；禁止裸日期贴 nodes；**少文案**；无 All 第二层 |
 | **Activity** | **非**独立一级/Settings 二级主入口（ADR **0051**）。若后续做完整时间线：Black 场；轻分割；图标线框、低饱和；优先从 Help / 诊断上下文进入 |
 | **Help / Agent** | Black 场；顶 **信任条**（Cloud 默认 On）；空态求助文案 + chips；气泡轻量；输入条 glass 胶囊；边界页 Can/Can’t。权威：`06-agent.html`（ADR 0035–0043） |
-| **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → App** 两段（**无** History · ADR **0051**）；App 仅 Subscriptions + About；隐私经 About → Privacy Policy；**无** 根页 Privacy / Appearance / Advanced / Cloud AI / Activity / Snapshots。**Overrides O3：** 空态/列表提示 *exceptions, not a full rule set*；CTA *Add exception*；根计数数字/None 不写 *rules*（ADR 0045）。权威：`05-settings.html` |
+| **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → App** 两段（**无** History · ADR **0051**）；**App 三行：** **Auto-update subscription**（Toggle，默认开 · ADR **0015**）· Subscriptions › · About ›；隐私经 About → Privacy Policy（含 iOS iCloud 披露 · Support · Export · ADR **0031**）；**无** 根页 Privacy / Appearance / Advanced / Cloud AI / Activity / Snapshots。**Overrides O3：** 空态/列表提示 *exceptions, not a full rule set*；CTA *Add exception*；根计数数字/None 不写 *rules*（ADR 0045）。权威：`05-settings.html` |
 
 ## 9. 自检清单（新屏交付前）
 

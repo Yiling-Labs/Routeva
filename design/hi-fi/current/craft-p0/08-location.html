@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · Location</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+  <script src="./icons.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      background: #c2c2c0;
+      background-image: radial-gradient(ellipse at 30% 15%, #d8d8d6 0%, #b6b6b4 50%, #a4a4a2 100%);
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px 24px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .meta { max-width: 920px; margin: 0 auto 28px; }
+    .meta h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+    .meta p { font-size: 14px; color: #3a3a3a; margin-top: 8px; line-height: 1.55; max-width: 72ch; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      border: 1px solid #333; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.4);
+    }
+    .row {
+      display: flex; flex-wrap: wrap; gap: 36px; justify-content: center;
+      max-width: 1900px; margin: 0 auto;
+    }
+    .phone-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .lab {
+      font-size: 12px; font-weight: 600; color: #2a2a2a; text-align: center;
+      max-width: 280px; line-height: 1.35;
+    }
+    .lab span { display: block; font-weight: 400; color: #555; margin-top: 2px; font-size: 11px; }
+    .noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px; mix-blend-mode: overlay;
+    }
+    .halftone {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 40%;
+      pointer-events: none; opacity: 0.14;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0.85px, transparent 1.05px);
+      background-size: 4.5px 4.5px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+      mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+    }
+    button {
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.12s ease;
+    }
+    button:active:not(:disabled) { transform: scale(0.985); opacity: 0.92; }
+    button:focus-visible {
+      outline: 2px solid rgba(127,217,176,0.9);
+      outline-offset: 3px;
+    }
+    .scroll-fade {
+      mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
+      -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
+    }
+    .group-strip {
+      display: flex; flex-direction: row; flex-wrap: nowrap; gap: 8px;
+      overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 0 0 10px;
+      margin: 0 -22px;
+      padding-left: 22px; padding-right: 22px;
+    }
+    .group-strip::-webkit-scrollbar { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+      button:active:not(:disabled) { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>Location · Node list</h1>
+    <p>
+      ADR <strong>0055</strong> / <strong>0056</strong> · CONTEXT <strong>Location Surface</strong> · <strong>Preferred node</strong>.
+      Full-screen from Home <strong>Location ›</strong>.
+      <strong>Groups ≥ 2:</strong> sticky horizontal chips under nav · tap chip → that group’s nodes only · overflow scrolls sideways.
+      <strong>Groups = 1:</strong> no chip strip · list only.
+      Tap node = <strong>preferred</strong> (Failover still ok) · top <strong>Test</strong> = Latency · no ⋯ · no search.
+    </p>
+    <div class="tags">
+      <span class="tag">LOCATION SURFACE</span>
+      <span class="tag">HORIZONTAL GROUPS</span>
+      <span class="tag">ADR 0055 · 0056</span>
+      <span class="tag">PREFERRED NODE</span>
+      <span class="tag">LATENCY TEST</span>
+    </div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+    const { IconBack, IconCheck, IconRefresh, IconList } = window.RoutevaIcons;
+
+    const TYPE = {
+      font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif',
+    };
+    const FIELD = 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)';
+    const T = {
+      primary: 'rgba(255,255,255,0.96)',
+      secondary: 'rgba(255,255,255,0.55)',
+      muted: 'rgba(255,255,255,0.58)',
+      quiet: 'rgba(255,255,255,0.38)',
+      icon: 'rgba(255,255,255,0.82)',
+      card: 'linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)',
+      cardBorder: 'rgba(255,255,255,0.11)',
+      hairline: 'rgba(255,255,255,0.065)',
+      mint: 'rgba(127,217,176,0.95)',
+      mintSoft: 'rgba(127,217,176,0.16)',
+      mintBorder: 'rgba(127,217,176,0.38)',
+    };
+    const L = {
+      padX: 22,
+      navH: 48,
+      rowPadY: 14,
+      rowPadX: 16,
+      groupR: 20,
+      groupShadow: '0 10px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.09)',
+    };
+
+    /** Multi-group demo — enough chips to need horizontal scroll */
+    const DEMO_GROUPS_MULTI = [
+      {
+        id: 'auto',
+        name: 'Auto',
+        nodes: [
+          { id: 'auto-01', name: 'Smart Select', protocol: 'VLESS' },
+          { id: 'auto-02', name: 'Fallback Pool', protocol: 'VMess' },
+        ],
+      },
+      {
+        id: 'hk',
+        name: 'Hong Kong',
+        nodes: [
+          { id: 'hk-01', name: 'HK-01 Edge', protocol: 'VLESS' },
+          { id: 'hk-02', name: 'HK-02 Metro', protocol: 'VMess' },
+          { id: 'hk-03', name: 'HK-03 Lite', protocol: 'Trojan' },
+        ],
+      },
+      {
+        id: 'jp',
+        name: 'Japan',
+        nodes: [
+          { id: 'jp-01', name: 'Tokyo-01', protocol: 'VLESS' },
+          { id: 'jp-02', name: 'Osaka-02', protocol: 'Hysteria2' },
+          { id: 'jp-03', name: 'Tokyo-03 Relay', protocol: 'VMess' },
+        ],
+      },
+      {
+        id: 'sg',
+        name: 'Singapore',
+        nodes: [
+          { id: 'sg-01', name: 'SG-01', protocol: 'VLESS' },
+          { id: 'sg-02', name: 'SG-02 Fast', protocol: 'Hysteria2' },
+        ],
+      },
+      {
+        id: 'us',
+        name: 'United States',
+        nodes: [
+          { id: 'us-01', name: 'LAX-01', protocol: 'VLESS' },
+          { id: 'us-02', name: 'SJC-02', protocol: 'Trojan' },
+        ],
+      },
+      {
+        id: 'stream',
+        name: 'Streaming',
+        nodes: [
+          { id: 'st-01', name: 'US West Media', protocol: 'VLESS' },
+          { id: 'st-02', name: 'SG Stream', protocol: 'Trojan' },
+        ],
+      },
+      {
+        id: 'game',
+        name: 'Gaming',
+        nodes: [
+          { id: 'gm-01', name: 'JP Game Lowping', protocol: 'Hysteria2' },
+          { id: 'gm-02', name: 'TW Game', protocol: 'VLESS' },
+        ],
+      },
+    ];
+
+    /** Single-group demo — chip strip hidden */
+    const DEMO_GROUPS_SINGLE = [
+      {
+        id: 'all',
+        name: 'All nodes',
+        nodes: [
+          { id: 'n-01', name: 'Node Alpha', protocol: 'VLESS' },
+          { id: 'n-02', name: 'Node Beta', protocol: 'VMess' },
+          { id: 'n-03', name: 'Node Gamma', protocol: 'Trojan' },
+          { id: 'n-04', name: 'Node Delta', protocol: 'Hysteria2' },
+        ],
+      },
+    ];
+
+    const DEMO_LATENCIES = {
+      'auto-01': 45, 'auto-02': 88,
+      'hk-01': 38, 'hk-02': 52, 'hk-03': 'timeout',
+      'jp-01': 64, 'jp-02': 71, 'jp-03': 89,
+      'sg-01': 55, 'sg-02': 48,
+      'us-01': 168, 'us-02': 155,
+      'st-01': 142, 'st-02': 98,
+      'gm-01': 42, 'gm-02': 58,
+      'n-01': 40, 'n-02': 61, 'n-03': 73, 'n-04': 55,
+    };
+
+    function groupIdForNode(groups, nodeId) {
+      if (!nodeId) return groups[0] && groups[0].id;
+      for (const g of groups) {
+        if (g.nodes.some((n) => n.id === nodeId)) return g.id;
+      }
+      return groups[0] && groups[0].id;
+    }
+
+    function IosFrame({ children }) {
+      const c = '#fff';
+      return (
+        <div style={{
+          display: 'inline-block', padding: 11, background: '#0a0a0a', borderRadius: 58,
+          boxShadow: '0 0 0 1px #2a2a2a, 0 32px 80px rgba(0,0,0,0.36), inset 0 0 0 1px rgba(255,255,255,0.06)',
+        }}>
+          <div style={{
+            position: 'relative', width: 393, height: 852, borderRadius: 48,
+            overflow: 'hidden', background: FIELD,
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 54, zIndex: 40,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 28px 0', fontSize: 15, fontWeight: 600, color: c, pointerEvents: 'none',
+            }} aria-hidden="true">
+              <span>9:41</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 11 }}>
+                  {[4, 6, 8, 11].map((h, i) => (
+                    <div key={i} style={{ width: 3, height: h, background: c, borderRadius: 1 }} />
+                  ))}
+                </div>
+                <div style={{
+                  width: 25, height: 12, border: `1.5px solid ${c}`, borderRadius: 3, padding: 1,
+                }}>
+                  <div style={{ width: '78%', height: '100%', background: c, borderRadius: 1 }} />
+                </div>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+              width: 120, height: 34, background: '#000', borderRadius: 999, zIndex: 50,
+            }} aria-hidden="true" />
+            <div style={{ position: 'absolute', inset: 0, paddingTop: 54, paddingBottom: 20 }}>{children}</div>
+            <div style={{
+              position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+              width: 128, height: 5, borderRadius: 999, background: 'rgba(255,255,255,0.35)', zIndex: 40,
+            }} aria-hidden="true" />
+          </div>
+        </div>
+      );
+    }
+
+    function GlassOrb({ children, label, onClick }) {
+      return (
+        <button
+          type="button"
+          aria-label={label}
+          onClick={onClick}
+          style={{
+            width: 40, height: 40, borderRadius: 999, border: 'none', padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'linear-gradient(155deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 52%, rgba(255,255,255,0.035) 100%)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -0.5px 0 rgba(0,0,0,0.2), 0 8px 22px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)',
+            cursor: onClick ? 'pointer' : 'default', color: T.icon,
+          }}
+        >
+          {children}
+        </button>
+      );
+    }
+
+    function MapWash() {
+      return (
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, opacity: 0.065, pointerEvents: 'none',
+          backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(`
+            <svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><g fill='none' stroke='#fff' stroke-width='1' opacity='0.4'>
+              <ellipse cx='200' cy='148' rx='158' ry='88'/><path d='M42 148 Q100 78 200 98 T358 138'/>
+            </g></svg>`)}")`,
+          backgroundSize: '130% auto', backgroundPosition: 'center 38%', backgroundRepeat: 'no-repeat',
+        }} />
+      );
+    }
+
+    function formatLatency(v) {
+      if (v == null) return '—';
+      if (v === 'timeout') return 'Timeout';
+      return `${v} ms`;
+    }
+
+    function latencyColor(v) {
+      if (v == null) return T.quiet;
+      if (v === 'timeout') return 'rgba(255,180,140,0.78)';
+      if (typeof v === 'number' && v < 80) return T.mint;
+      return T.secondary;
+    }
+
+    /**
+     * @param {{
+     *   interactive?: boolean,
+     *   preferredId?: string|null,
+     *   latencies?: object|null,
+     *   testing?: boolean,
+     *   empty?: boolean,
+     *   groupsData?: array,
+     *   activeGroupId?: string|null,
+     *   onBack?: function,
+     * }} props
+     */
+    function LocationScreen({
+      interactive = false,
+      preferredId: prefProp = 'jp-01',
+      latencies: latProp = null,
+      testing: testingProp = false,
+      empty = false,
+      groupsData = DEMO_GROUPS_MULTI,
+      activeGroupId: groupProp = null,
+      onBack,
+    }) {
+      const groups = empty ? [] : groupsData;
+      const showGroupStrip = groups.length > 1;
+
+      const initialGroup = groupProp || groupIdForNode(groups, prefProp) || (groups[0] && groups[0].id);
+
+      const [preferredId, setPreferredId] = useState(prefProp);
+      const [activeGroupId, setActiveGroupId] = useState(initialGroup);
+      const [latencies, setLatencies] = useState(latProp);
+      const [testing, setTesting] = useState(testingProp);
+      const [toast, setToast] = useState(null);
+      const testTimer = useRef(null);
+      const stripRef = useRef(null);
+      const chipRefs = useRef({});
+
+      useEffect(() => {
+        if (!interactive) {
+          setPreferredId(prefProp);
+          setLatencies(latProp);
+          setTesting(testingProp);
+          setActiveGroupId(groupProp || groupIdForNode(groups, prefProp) || (groups[0] && groups[0].id));
+        }
+      }, [interactive, prefProp, latProp, testingProp, groupProp, groupsData, empty]);
+
+      useEffect(() => () => {
+        if (testTimer.current) clearTimeout(testTimer.current);
+      }, []);
+
+      /* Keep selected chip in view when group changes */
+      useEffect(() => {
+        if (!showGroupStrip || !activeGroupId) return;
+        const el = chipRefs.current[activeGroupId];
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }, [activeGroupId, showGroupStrip]);
+
+      const activeGroup = useMemo(
+        () => groups.find((g) => g.id === activeGroupId) || groups[0],
+        [groups, activeGroupId],
+      );
+      const nodes = (activeGroup && activeGroup.nodes) || [];
+      const hasPreferred = preferredId != null;
+
+      function selectGroup(id) {
+        if (!interactive) return;
+        setActiveGroupId(id);
+      }
+
+      function selectNode(id) {
+        if (!interactive) return;
+        setPreferredId(id);
+        setToast('Node selected');
+        setTimeout(() => setToast(null), 1800);
+      }
+
+      function runTest() {
+        if (!interactive || testing || empty) return;
+        setTesting(true);
+        setLatencies(null);
+        if (testTimer.current) clearTimeout(testTimer.current);
+        testTimer.current = setTimeout(() => {
+          setLatencies({ ...DEMO_LATENCIES });
+          setTesting(false);
+        }, 1400);
+      }
+
+      function cancelTest() {
+        if (!interactive) return;
+        if (testTimer.current) clearTimeout(testTimer.current);
+        setTesting(false);
+      }
+
+      return (
+        <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
+          <div className="noise" aria-hidden="true" />
+          <MapWash />
+          <div className="halftone" aria-hidden="true" />
+
+          <div style={{
+            position: 'relative', zIndex: 2, height: '100%',
+            display: 'flex', flexDirection: 'column',
+            padding: `8px ${L.padX}px 26px`,
+          }}>
+            {/* Nav */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: L.navH, marginBottom: showGroupStrip ? 2 : 4, flexShrink: 0, gap: 8,
+            }}>
+              <div style={{ width: 40, display: 'flex', flexShrink: 0 }}>
+                <GlassOrb label="Back" onClick={onBack || (() => {})}>
+                  <IconBack />
+                </GlassOrb>
+              </div>
+              <div style={{
+                fontSize: 17, fontWeight: 600, letterSpacing: '-0.022em',
+                color: T.primary, fontFamily: TYPE.font, flex: 1, textAlign: 'center',
+              }}>
+                Location
+              </div>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+                minWidth: 40, flexShrink: 0,
+              }}>
+                {!empty && (
+                  <button
+                    type="button"
+                    onClick={testing ? cancelTest : runTest}
+                    disabled={!interactive && !testingProp}
+                    aria-label={testing ? 'Cancel latency test' : 'Test latency'}
+                    style={{
+                      border: 'none', cursor: interactive || testingProp ? 'pointer' : 'default',
+                      padding: '8px 12px', borderRadius: 999,
+                      background: testing
+                        ? 'rgba(127,217,176,0.18)'
+                        : 'linear-gradient(155deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 100%)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px rgba(0,0,0,0.22)',
+                      color: testing ? T.mint : T.primary,
+                      fontFamily: TYPE.font, fontSize: 14, fontWeight: 600,
+                      display: 'flex', alignItems: 'center', gap: 5,
+                    }}
+                  >
+                    {testing ? (
+                      <>
+                        <span style={{
+                          width: 12, height: 12, borderRadius: 999,
+                          border: '1.5px solid rgba(127,217,176,0.35)',
+                          borderTopColor: T.mint,
+                          animation: 'spin 0.7s linear infinite',
+                          display: 'inline-block',
+                        }} />
+                        Testing…
+                      </>
+                    ) : (
+                      <>
+                        <IconRefresh size={14} stroke={1.6} />
+                        Test
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Group strip — only when ≥ 2 groups */}
+            {showGroupStrip && (
+              <div
+                ref={stripRef}
+                className="group-strip"
+                role="tablist"
+                aria-label="Node groups"
+                style={{ flexShrink: 0 }}
+              >
+                {groups.map((g) => {
+                  const selected = g.id === activeGroupId;
+                  const hasPrefInGroup = preferredId && g.nodes.some((n) => n.id === preferredId);
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      ref={(el) => { chipRefs.current[g.id] = el; }}
+                      onClick={() => selectGroup(g.id)}
+                      style={{
+                        flex: '0 0 auto',
+                        border: selected
+                          ? `1px solid ${T.mintBorder}`
+                          : '1px solid rgba(255,255,255,0.12)',
+                        cursor: interactive ? 'pointer' : 'default',
+                        padding: '8px 14px',
+                        borderRadius: 999,
+                        background: selected
+                          ? T.mintSoft
+                          : 'linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)',
+                        boxShadow: selected
+                          ? 'inset 0 1px 0 rgba(255,255,255,0.12)'
+                          : 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                        color: selected ? T.mint : 'rgba(255,255,255,0.82)',
+                        fontFamily: TYPE.font,
+                        fontSize: 13,
+                        fontWeight: selected ? 650 : 550,
+                        letterSpacing: '-0.01em',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <span>{g.name}</span>
+                      {hasPrefInGroup && (
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: 6, height: 6, borderRadius: 999,
+                            background: T.mint,
+                            flexShrink: 0,
+                            opacity: selected ? 1 : 0.75,
+                          }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Node list for active group only */}
+            <div
+              className="scroll-fade"
+              style={{
+                flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden',
+                WebkitOverflowScrolling: 'touch',
+                position: 'relative',
+              }}
+            >
+              {empty ? (
+                <div style={{
+                  flex: 1, minHeight: 420,
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center',
+                  padding: '24px 12px', textAlign: 'center',
+                }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: 999, marginBottom: 16,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.06)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
+                    color: T.quiet,
+                  }}>
+                    <IconList size={26} />
+                  </div>
+                  <div style={{
+                    fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em',
+                    color: T.primary, marginBottom: 8, fontFamily: TYPE.font,
+                  }}>
+                    No nodes in this subscription
+                  </div>
+                  <div style={{
+                    fontSize: 14, fontWeight: 500, color: T.muted, lineHeight: 1.45,
+                    maxWidth: 260, marginBottom: 22, fontFamily: TYPE.font,
+                  }}>
+                    Update your subscription or pick another one with nodes.
+                  </div>
+                  <button
+                    type="button"
+                    style={{
+                      border: '1px solid rgba(255,255,255,0.14)', cursor: 'pointer',
+                      padding: '13px 20px', borderRadius: 16,
+                      background: 'rgba(255,255,255,0.06)',
+                      color: 'rgba(255,255,255,0.9)',
+                      fontFamily: TYPE.font, fontSize: 15, fontWeight: 600,
+                    }}
+                  >
+                    Update subscription
+                  </button>
+                </div>
+              ) : (
+                <div style={{
+                  borderRadius: L.groupR, overflow: 'hidden',
+                  background: T.card,
+                  border: `1px solid ${T.cardBorder}`,
+                  boxShadow: L.groupShadow,
+                  marginTop: showGroupStrip ? 2 : 6,
+                }}>
+                  {nodes.map((n, ni) => {
+                    const isPreferred = hasPreferred && preferredId === n.id;
+                    const lat = latencies ? latencies[n.id] : null;
+                    const last = ni === nodes.length - 1;
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => selectNode(n.id)}
+                        aria-current={isPreferred ? 'true' : undefined}
+                        aria-label={`${n.name}, ${n.protocol}${isPreferred ? ', selected' : ''}, latency ${formatLatency(lat)}`}
+                        style={{
+                          width: '100%',
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: `${L.rowPadY}px ${L.rowPadX}px`,
+                          border: 'none', cursor: interactive ? 'pointer' : 'default',
+                          background: isPreferred ? T.mintSoft : 'transparent',
+                          borderBottom: last ? 'none' : `1px solid ${T.hairline}`,
+                          fontFamily: TYPE.font, textAlign: 'left', color: T.primary,
+                        }}
+                      >
+                        <span style={{
+                          minWidth: 0, flex: 1,
+                          display: 'flex', flexDirection: 'column', gap: 4,
+                        }}>
+                          <span style={{
+                            fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {n.name}
+                          </span>
+                          <span style={{
+                            fontSize: 12, fontWeight: 500, color: T.quiet,
+                            letterSpacing: '-0.01em',
+                            display: 'flex', alignItems: 'center', gap: 6,
+                          }}>
+                            <span>{n.protocol}</span>
+                            <span aria-hidden="true" style={{ opacity: 0.5 }}>·</span>
+                            <span style={{ color: latencyColor(lat) }}>
+                              {/* During Test: keep dash — top bar already says Testing…; avoid "…" looking like truncated protocol */}
+                              {formatLatency(lat)}
+                            </span>
+                          </span>
+                        </span>
+                        <span style={{
+                          width: 22, height: 22, flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: isPreferred ? T.mint : 'transparent',
+                        }}>
+                          {isPreferred && <IconCheck color={T.mint} size={18} />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {toast && (
+            <div
+              role="status"
+              style={{
+                position: 'absolute', left: '50%', bottom: 36, zIndex: 40,
+                transform: 'translateX(-50%)',
+                padding: '10px 16px', borderRadius: 999,
+                background: 'rgba(18,22,26,0.92)',
+                border: `1px solid ${T.cardBorder}`,
+                boxShadow: '0 10px 28px rgba(0,0,0,0.4)',
+                color: T.primary, fontSize: 13, fontWeight: 600,
+                fontFamily: TYPE.font, whiteSpace: 'nowrap',
+              }}
+            >
+              {toast}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function Phone({ label, sub, children }) {
+      return (
+        <div className="phone-col">
+          <IosFrame>{children}</IosFrame>
+          <div className="lab">{label}{sub && <span>{sub}</span>}</div>
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <div className="row">
+          <Phone label="Interactive · multi-group" sub="Chips under nav · swipe · tap group · tap node">
+            <LocationScreen interactive preferredId="jp-01" latencies={null} />
+          </Phone>
+          <Phone label="1 · Multi · Japan tab" sub="Preferred Tokyo-01 · chip strip">
+            <LocationScreen preferredId="jp-01" activeGroupId="jp" latencies={null} />
+          </Phone>
+          <Phone label="2 · Multi · Streaming" sub="Switch group · preferred still in Japan">
+            <LocationScreen preferredId="jp-01" activeGroupId="stream" latencies={DEMO_LATENCIES} />
+          </Phone>
+          <Phone label="3 · Single group" sub="No chip strip · list only">
+            <LocationScreen
+              preferredId="n-02"
+              groupsData={DEMO_GROUPS_SINGLE}
+              latencies={DEMO_LATENCIES}
+            />
+          </Phone>
+          <Phone label="4 · Testing…" sub="Test applies to full pool; UI shows active group">
+            <LocationScreen preferredId="jp-01" activeGroupId="jp" testing latencies={null} />
+          </Phone>
+          <Phone label="5 · Empty" sub="0 nodes · no strip">
+            <LocationScreen empty preferredId={null} />
+          </Phone>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

@@ -139,6 +139,93 @@ strings:
     tier: shell
     surface: home
 
+  # ── Location Surface (ADR 0055 / 0056 · Preferred node · horizontal groups)
+  - key: location.title
+    en: Location
+    tier: shell
+    surface: location
+    notes: "Nav title · same word as home.location"
+
+  - key: location.groups.a11y
+    en: Node groups
+    tier: shell
+    surface: location
+    notes: "Horizontal group chip tablist · only when ≥2 groups"
+
+  - key: location.test
+    en: Test
+    tier: shell
+    surface: location
+    notes: "Latency Test · not ICMP Ping · ADR 0055"
+
+  - key: location.testing
+    en: Testing…
+    tier: shell
+    surface: location
+
+  - key: location.test.a11y
+    en: Test latency
+    tier: shell
+    surface: location
+
+  - key: location.test.cancel.a11y
+    en: Cancel latency test
+    tier: shell
+    surface: location
+
+  - key: location.row.a11y.selected
+    en: "{name}, {protocol}, selected, latency {latency}"
+    tier: shell
+    surface: location
+    notes: "Preferred row · check only · no Pinned badge · ADR 0056"
+
+  - key: location.row.a11y
+    en: "{name}, {protocol}, latency {latency}"
+    tier: shell
+    surface: location
+    notes: "Tap action = set preferred node · Failover still allowed"
+
+  - key: location.latency.dash
+    en: —
+    tier: shell
+    surface: location
+
+  - key: location.latency.timeout
+    en: Timeout
+    tier: shell
+    surface: location
+
+  - key: location.latency.ms
+    en: "{ms} ms"
+    tier: shell
+    surface: location
+
+  - key: location.empty.title
+    en: No nodes in this subscription
+    tier: shell
+    surface: location
+
+  - key: location.empty.body
+    en: Update your subscription or pick another one with nodes.
+    tier: shell
+    surface: location
+
+  - key: location.empty.update
+    en: Update subscription
+    tier: shell
+    surface: location
+    notes: "Secondary deep link to Subscriptions Update"
+
+  - key: location.toast.selected
+    en: Node selected
+    tier: shell
+    surface: location
+    notes: "After Location tap = Preferred · optional short toast · ADR 0056"
+
+  # Deprecated keys (hard Pin / clear-to-auto removed · ADR 0056 2026-08-06):
+  # location.more.a11y · location.use_automatic · location.pinned
+  # location.row.a11y.pinned · location.toast.pinned · location.toast.automatic
+
   - key: home.gesture.connect_hint
     en: Swipe down to connect
     tier: shell
@@ -329,9 +416,32 @@ strings:
     en: Update
     tier: shell
     surface: subscriptions
+    notes: "Active card · remote-refreshable only as primary CTA"
 
   - key: subs.updating
     en: Updating…
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.update.unavailable
+    en: Can’t update from a link
+    tier: shell
+    surface: subscriptions
+    notes: "ADR 0015 · Active has no remote URL (single-node URI / local file)"
+
+  - key: subs.update.unavailable.hint
+    en: Paste a fresh subscription link or QR if you need new nodes.
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.update.failed
+    en: Couldn’t update
+    tier: shell
+    surface: subscriptions
+    notes: "Manual Update failure only · auto-refresh stays silent"
+
+  - key: subs.update.failed.hint
+    en: Your current nodes stay as they are. Try again, or paste a fresh link from your provider.
     tier: shell
     surface: subscriptions
 
@@ -621,6 +731,18 @@ strings:
     surface: settings
     notes: "ADR 0054 · empty list only · weak empty-state line or toast · iOS only"
 
+  - key: settings.app.auto_update.title
+    en: Auto-update subscription
+    tier: shell
+    surface: settings
+    notes: "ADR 0015 · global toggle · default ON · Settings App row 1"
+
+  - key: settings.app.auto_update.subtitle
+    en: When you launch the app, refresh the active subscription about once a day
+    tier: shell
+    surface: settings
+    notes: "ADR 0015 · cold start only · T=24h · no connect-time / warm resume"
+
   - key: settings.app.subscriptions
     en: Subscriptions
     tier: shell
@@ -884,13 +1006,25 @@ strings:
     en: Connected
     tier: shell
     surface: repair
-    notes: "Success returns to Connection Success; copy may reuse home.connected"
+    notes: "Repair verified · aligns home.connected; hi-fi 07 frame 6"
+
+  - key: repair.success.body
+    en: Repair verified. You’re connected again.
+    tier: lock-en
+    surface: repair
+    notes: "Result card before / with Connection Success green field · hi-fi 07"
+
+  - key: repair.success.cta
+    en: Done
+    tier: shell
+    surface: repair
+    notes: "Dismiss result → Home Connected; may reuse chrome.done"
 
   - key: repair.rolled_back.title
     en: Rolled back
     tier: lock-en
     surface: repair
-    notes: "Shell label; body templates TBD with implementation"
+    notes: "hi-fi 07 frame 7 · lock-en honesty"
 
   - key: repair.rolled_back.body
     en: We restored your previous settings. Nothing unsafe was left half-applied.
@@ -898,6 +1032,11 @@ strings:
     surface: repair
     notes: "Product intent; refine with Craft if needed"
 
+  - key: repair.rolled_back.cta
+    en: Done
+    tier: shell
+    surface: repair
+    notes: "Dismiss rolled-back card; secondary Ask Help may reuse diag.cta.ask_help"
   # ── help / agent surface ────────────────────────────────────────────────
   - key: help.title
     en: Help

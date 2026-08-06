@@ -4,6 +4,6 @@ Settings **Overrides ›** 为规则列表 + Add sheet：目标 = 单个 **Domai
 
 **为何：** 对齐结构化 User Override；单域名覆盖例外路径；避免迷你规则编辑器。与 Agent 同一模型。
 
-> **目标形态：** 原「Service 或 Domain」收窄为 **Domain only**（**ADR 0049**）。
+> **目标形态：** 原「Service 或 Domain」收窄为 **Domain only**（**ADR 0057**；原误标 0049，已改号）。
 
 **后果：** 见 CONTEXT **User Override Rule**；空态文案 *one domain each*。

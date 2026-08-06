@@ -1,5 +1,7 @@
 # Settings 根页分组闭集
 
+**Slug：** `0022-settings-root-two-sections`（2026-08-06 自 `…-four-sections` **改名**——现行两段 Connection → App）
+
 Settings Surface 根列表定为**两段**（自上而下）：**Connection → App**（ADR **0051**）。不根底常驻 Advanced 段、不无分组扁平长列表。
 
 **沿革：** 原案四段含 Assistant → **0025** 去掉 Assistant；曾为 **Connection → History → App** → **0051** 去掉 History（Activity/Snapshots 入口下沉到失败路径 / Help）。

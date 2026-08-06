@@ -7,6 +7,6 @@ Settings 根页 **Connection** 段固定三行一级入口：**Routing mode ›*
 - DNS — *How names resolve on your connection*
 - Overrides — *Exceptions for specific domains*
 
-**为何：** 落实 Connection Policy 优先；副文回答「这一行是什么」，降低 jargon 成本；选项含义与触发场景放在二级页/Help。节点钉选主路径仍在 Home/Location。
+**为何：** 落实 Connection Policy 优先；副文回答「这一行是什么」，降低 jargon 成本；选项含义与触发场景放在二级页/Help。节点偏好 / 选节点主路径仍在 Home/Location。
 
 **后果：** 见 CONTEXT **Settings Surface** Connection 条；hi-fi `05-settings.html` Connection 行。

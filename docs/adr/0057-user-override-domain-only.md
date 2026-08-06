@@ -1,5 +1,8 @@
 # User Override：仅单域名，不做 Service 预设
 
+**Status：** accepted  
+**编号：** **0057**（2026-08-06 grill 从错误撞号的 `0049-user-override-domain-only` **改号**；**0049 仅保留 Dual-Native**）
+
 User Override 目标 **只允许单个 Domain** → `proxy | direct`。**不做** 产品维护的 Service / 站点预设表（如「ChatGPT」一键展开多域名）。
 
 **为何：** Service 预设需持续维护域名映射；上游 CDN/域名变更会导致例外 silently 失效或误伤，维护成本高且损害信任。单域名由用户显式声明，行为可预期、可解释。

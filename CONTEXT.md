@@ -127,8 +127,9 @@ _Avoid_: Empty 用 + 替换 Settings；顶栏四钮塞回 Activity；入口仅�
    - **Routing mode** — 副文 *How traffic uses your proxy*（进入后选 Auto / Global / Direct）。  
    - **DNS** — 副文 *How names resolve on your connection*（进入后选 Automatic / Privacy / Compatibility）。  
    - **Overrides** — 副文 *Exceptions for specific domains*（进入后管 Domain 例外列表）。  
-   **DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（钉节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
-2. **App** — 根页固定两行：**Subscriptions ›**（深链同一套 UI，含 Empty 时无顶栏入口的补偿）· **About ›**。**无** 根页 **Privacy ›**（与 About 内 Privacy Policy 重复）。**无 Appearance 行：** UI 光暗 **仅跟随系统**；**连接绿场仍仅 Connection Success**，不提供主题皮肤或「永远绿」。**Beta 不**在根页放 Restore Purchases / 付费墙 / 账号。  
+   **DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（偏好节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
+2. **App** — 根页固定三行（自上而下）：**Auto-update subscription**（Toggle，**默认开**；副文解释「冷启动时约每天刷新 Active」类意图，不写实现常数）· **Subscriptions ›**（深链同一套 UI，含 Empty 时无顶栏入口的补偿）· **About ›**。**无** 根页 **Privacy ›**（与 About 内 Privacy Policy 重复）。**无 Appearance 行：** UI 光暗 **仅跟随系统**；**连接绿场仍仅 Connection Success**，不提供主题皮肤或「永远绿」。**Beta 不**在根页放 Restore Purchases / 付费墙 / 账号。  
+   - **Auto-update subscription：** 全局总闸，控制是否走 **Subscription Refresh** 自动路径；**不** per-subscription。关则仅手动 Update / Repair 重载。详见 **Subscription Refresh** / ADR **0015**。  
    - **About › 闭集：** 名+版本 · **一句隐私承诺**（如 *Privacy first. Temporary help context only — and you can turn cloud assist off.*；**不**写绝对 never upload）· **iOS 一句 iCloud 披露**（Domain exceptions 可经用户 iCloud 备份以便重装/换机；**非**开关、**非**全量配置同步；Android **不**显示）· Links（均为系统浏览器，**非**应用内长文）：  
      - **Privacy Policy** → **`https://routeva.yilinglabs.com/privacy/`**（副文 *How we handle your data*）  
      - **Terms of Use** → **`https://routeva.yilinglabs.com/terms/`**（副文 *Rules for using Routeva*）  
@@ -137,16 +138,16 @@ _Avoid_: Empty 用 + 替换 Settings；顶栏四钮塞回 Activity；入口仅�
    - **Terms of Use（Web）：** 客户端非节点商 · 自备订阅 · 合法使用 · 权限/Repair 边界 · 无担保/责任限制 · IAP 若上线走 Apple。无第二套 Cloud 开关（管理在 Help）。  
 **无 History 段：** 不在根页放 **Activity ›** / **Snapshots ›**（及任何「事件浏览器 / 配置时光机」主入口）。  
 **Cloud AI 不进 Settings 根页：** 开关与披露仅在 **Help / Agent Surface**（默认开、可关；见 **Cloud AI**）。根页**无**独立 Assistant 段。  
-**不上根页：** History/Activity/Snapshots、Appearance/主题包、Cloud AI 开关、订阅 CRUD 副本、Run Diagnostic 主 CTA、协议/内核/规则编辑平铺、Beta 付费墙/Restore Purchases、账号/登录、整屏 Activity 日志、**Advanced / 高级模式入口**（Beta 正式 Settings 不露；内核/日志级别/实验项无用户入口）。Export 等残留挂诊断/About **次要动作**；订阅 Refresh 仅 Subscriptions Surface。日常连/断/选节点仍在 Home。Craft 整体属 P2。  
+**不上根页：** History/Activity/Snapshots、Appearance/主题包、Cloud AI 开关、订阅 CRUD 副本、Run Diagnostic 主 CTA、协议/内核/规则编辑平铺、Beta 付费墙/Restore Purchases、账号/登录、整屏 Activity 日志、**Advanced / 高级模式入口**（Beta 正式 Settings 不露；内核/日志级别/实验项无用户入口）。Export 等残留挂诊断/About **次要动作**。**手动**订阅 Update 仅 Subscriptions Surface；**自动刷新总闸**在 Settings › App（非第二套 CRUD）。日常连/断/选节点仍在 Home。Craft 整体属 P2。  
 _Avoid_: Settings 当第二连接台；Trust/History 占满根页主视觉；两套订阅管理；五段常驻 Advanced 坟场；无分组的一长串开关；Connection 段塞进节点管理或自由 DNS 编辑器；Settings 再挂一套 Cloud AI 开关与 Agent 双源；Beta 根页死挂 Restore Purchases；用 Advanced 再镜像一遍 Mode/DNS/Override/Activity；Appearance 劫持连接绿场；根页双模式（简单/高级）当主 IA；用 Shadowrocket 设置清单当 backlog
 
 **Settings Admission Gate**：
-新 Settings 项（尤其 Connection 策略）默认须同时满足：① 改变**流量/连接策略意图**；② **半专业**会主动找来改；③ **小白**在失败/Help 时能一句话引进**同一**页；④ 可用**短闭集 + 意图文案**表达；⑤ 与 Home / Repair / Help **同源**、不造第二真相。不满足则不进正式 Settings（自动化、实现常数、或以后再议）。**例外：** **About**（及合规说明）走**信任 / 合规**闸门，不要求「改流量意图」。**History / Activity / Snapshots 不进 Settings 根页**（ADR 0051）。有价值的是可审计策略意图，不是开放配置密度。详见 ADR **0045** / **0051**。  
+新 Settings 项（尤其 Connection 策略）默认须同时满足：① 改变**流量/连接策略意图**；② **半专业**会主动找来改；③ **小白**在失败/Help 时能一句话引进**同一**页；④ 可用**短闭集 + 意图文案**表达；⑤ 与 Home / Repair / Help **同源**、不造第二真相。不满足则不进正式 Settings（自动化、实现常数、或以后再议）。**例外：** **About**（及合规说明）走**信任 / 合规**闸门；**Auto-update subscription** 走**订阅新鲜度策略**闸门（非分流意图，但半专业须可关自动拉订阅）——均不要求「改流量意图」。**History / Activity / Snapshots 不进 Settings 根页**（ADR 0051）。有价值的是可审计策略意图，不是开放配置密度。详见 ADR **0045** / **0051** / **0015**。  
 _Avoid_: 竞品有则默认加；说不清就不进（误杀 Mode/DNS）；逐项无标准拍脑袋
 
 **Subscriptions Surface**：
-一级面（非 Settings 内嵌第二套管理）。**单列表**：一屏列出全部 Subscription；**Active** 行高亮（徽章 + 可选到期/流量 + **Update**）；非 Active 行可 **Set active**；底 **Add subscription**。**无**独立「All subscriptions」第二层。**可选 Rename**（非导入阻断）。**无**教学脚注。与 Empty/Add 流共用添加路径。Settings 最多 *Subscriptions ›* **深链到同一套 UI**，不复制 CRUD。  
-**列表元信息槽（有则显示、无则整槽省略）：** ① **节点数**（`N nodes`）② **到期**（状态词必显：未过期 *Expires {medium date}* / 已过期 *Expired {medium date}*，警示色；**禁止**裸日期与 nodes 用 `·` 粘连；列表**不到秒**）③ **Updated**（刷新新鲜度，relative 可；**不**冒充到期）。无 provider 字段时不写 *Not reported*。权威 hi-fi：`design/hi-fi/current/craft-p0/04-subscriptions.html`。详见 **Subscription Display Name** / ADR **0033**。  
+一级面（非 Settings 内嵌第二套管理）。**单列表**：一屏列出全部 Subscription；**Active** 行高亮（徽章 + 可选到期/流量 + **Update**）；非 Active 行可 **Set active**；底 **Add subscription**。**无**独立「All subscriptions」第二层。**可选 Rename**（非导入阻断）。**无**教学脚注。与 Empty/Add 流共用添加路径。Settings 最多 *Subscriptions ›* **深链到同一套 UI**，不复制 CRUD；**自动刷新总闸不在本面**（在 Settings › App）。  
+**列表元信息槽（有则显示、无则整槽省略）：** ① **节点数**（`N nodes`）② **到期**（状态词必显：未过期 *Expires {medium date}* / 已过期 *Expired {medium date}*，警示色；**禁止**裸日期与 nodes 用 `·` 粘连；列表**不到秒**）③ **Updated**（刷新新鲜度，relative 可；**不**冒充到期）。无 provider 字段时不写 *Not reported*。无远程源时 **Update** 可弱化/说明不可自动更新，**禁止**假装刷新成功。权威 hi-fi：`design/hi-fi/current/craft-p0/04-subscriptions.html`。详见 **Subscription Display Name** / ADR **0033** / **0015**。  
 _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表双页重复；假设每家都有流量仪表盘；无数据时伪造仪表或写 *Not reported* 解释句；`42 nodes · Sep 12, 2026` 无标签日期；列表主扫读用 `yyyy-mm-dd hh:mm:ss`；未过期写 *Expired*；用 *Renews*（多数代理订阅无法确认自动续费）
 
 **Home Mid Copy（闭集）**：
@@ -156,8 +157,8 @@ _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表�
 - **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；地区 · Connected · 节点+弱协议；三圈绿点  
 - 失败/弱连接：**Can’t connect** + Location；原因在诊断 sheet  
 - **仅当** 模式 ≠ Auto：弱提示 Global / Direct  
-**明确不出现：** provider rules、编号步骤墙、VERIFIED/probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章。  
-_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名
+**明确不出现：** provider rules、编号步骤墙、VERIFIED/probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章、**Home 上 *Pinned* / 偏好徽章**（偏好只在 **Location** 用 check 呈现；Home 只显示**当前会话**节点名）。  
+_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名；Home Connected/Idle 行叠 *Pinned* / Selected 徽章
 
 **First-Run Setup（闭集）**：
 首次安装：**Welcome（仅一次）→ Home Empty →（用户点 + / Add subscription）→ Add Subscription**。欢迎仅 **headline + 一句副文**（自备订阅 / 不卖节点）；**无** 1·2·3 列表，**无** 诊断/修复说教句。**无** 应用内 VPN 说明页：首次连接手势时出 **iOS 系统弹窗**；拒绝 → Home 回 Idle（*Swipe down to connect*）；同意 → 连接至 Connection Success。权威 hi-fi：`design/hi-fi/current/craft-p0/03-setup.html`。详见 ADR 0019。  
@@ -172,9 +173,19 @@ _Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳�
 _Avoid_: Idle 常驻点阵；未 Probe 成功就整屏染绿；点阵超过 3 圈
 
 **Routing Mode Entry**：
-Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：Cover Flow + Location 入口；Connected 节点行可点。  
+Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：Cover Flow + **Location Surface** 入口；Connected 节点行可点。  
 **Settings · Routing mode ›：** 单选三档 + 各一行副文（Auto = provider rules + best node choice；Global = all via proxy；Direct = no proxy）；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
 _Avoid_: Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器
+
+**Location Surface**：
+从 Home **Location ›**（及 Connected 节点行等）**全屏 push** 进入的节点浏览/选择面；标题 *Location*。只列 **Active Subscription** 下**可选出口节点**；分组来自订阅解析的 **服务商 group**（无 group 元数据 → 单段 *All nodes*）；**不**按客户端猜地区重分类。MVP **无**搜索/筛选、**无**进页自动测、**无**列表顶 *Auto* 行、**无**顶栏 `⋯`。  
+**分组切换（≥2 组）：** 导航栏下方 **固定横向 chip 条**（左→右；溢出可左右滑）；点 chip **只显示该组节点列表**（不再把所有组纵向叠成超长页）。**仅 1 组：** **不**显示 chip 条，直接节点列表。打开页时默认选中含 **Preferred** 的组（无偏好则第一组）。含偏好的组 chip 可带弱圆点提示。  
+**行（闭集）：** 主行节点名 + **Preferred** 时右侧 check（**无** *Pinned*/*Current* 文案徽章）；次行弱协议 · **Latency Test** 结果（`—` / `42 ms` / `Timeout`）。无偏好时列表不伪造选中态。  
+**点选 = Preferred node（偏好节点）：** 记住该出口为默认连接目标（ADR **0055**）；**允许 Node Failover** 为保活换走会话节点；静默预选**不得覆盖**偏好。已 Connected → **立即切节点**（非 Repair）；失败**保留偏好**，走诊断。返回 Home 时 Cover Flow 对齐偏好；若会话因 Failover 暂用他节点，Home 显示**当前会话**节点。  
+**清除偏好：** **无**显式回 Auto UI。仅当偏好节点离开 Active 列表时静默丢弃 → 下次 Auto 预选；改偏好 = 点选另一节点。  
+**Latency Test：** 仅顶栏 *Test* 批量测到节点入口的延迟/握手类信号（**非** ICMP 叙事、**非**完整 Connectivity Probe）；可取消；**不**改偏好、**不**自动切节点、**不**按 ms 重排列表（测的是整池标注，列表仍只渲染当前组）。  
+**空态：** 无订阅 → 引导添加；0 节点 → 说明 + 次要 Update subscription；加载中骨架/文案。权威 hi-fi：`design/hi-fi/current/craft-p0/08-location.html`。详见 ADR **0055** / **0056**。  
+_Avoid_: 硬 Pin 禁 Failover；*Pinned* 锁语义；`⋯` *Use automatic node selection*；所有 group 纵向堆叠成长卷当主浏览；列表当订阅管理；只按延迟排序/选节点；用户可见硬 *Ping* 却测 TCP；真·经节点全表 Probe 当列表测速；地区重分类；第二套 Auto 大按钮与 Settings 抢选节点；Cover Flow 横滑 alone 当 Preferred
 
 **Activity Log**：
 本机时间序事件记录，用于解释「系统刚做了什么」（连接、Node Failover、诊断、Repair、回滚、Global/Direct 或 Override 等）。Beta **必须记录**且在用户需要解释时**可触达**（能力 P0）；**不**以 Settings 根页/History 列表作主入口。用户触点优先：**Help / Agent 最近事件摘要**、诊断卡与 Repair 结果上下文。完整时间线 UI 属 Craft P1 / 可后补。不上传原始订阅/Token。  
@@ -197,9 +208,14 @@ _Avoid_: 粘贴后必填机场名；把单节点 URI 备注当成服务商品牌
 _Avoid_: 默认同池合并多机场；同时连多个订阅隧道
 
 **Subscription Refresh**：
-在用户打开 App（冷启动）或发起连接时，若 Active Subscription 距上次**成功**更新已超过间隔 **T**（默认 6h，实现常数），则尝试拉取更新。成功则安静刷新节点/规则并记 Activity（不弹打扰式成功提示）；失败则**不覆盖**已有可用配置，仅在影响连接或用户查看时说明。允许用户手动更新；Repair Allowlist #2 为失败路径上的重载。  
-**禁止**固定后台周期拉订阅（耗电、体验差、iOS 后台不可靠）。非 Active 订阅不自动刷，除非被切为 Active 或用户手动。  
-_Avoid_: 后台定时轮询订阅；失败覆盖旧配置；成功也 Toast 刷屏
+将远程可拉的订阅**整份再获取**并替换客户端可用配置：节点集合、可解析的服务商规则/策略组、有则更新的到期/流量等元数据，以及成功时间（*Updated*）。用户 **Rename** 过的 **Subscription Display Name** 不被服务商名覆盖。  
+**用户总闸：** Settings › App · **Auto-update subscription**（全局、**默认开**）。关则无自动路径，仅 Subscriptions **Update** 与 Repair 重载。  
+**自动路径（闸开时）：** 仅 **严格冷启动**（进程不在内存后的启动；**不含**热启动/回前台、**不含**点连接）；且仅 **Active**；且距上次**成功**更新 ≥ **T**（默认 **24h**，实现常数）；且该 Active **有可复访远程源**（订阅 URL 等）。无远程源（单节点 URI、无 URL 的文件等）→ 自动 **静默 no-op**。  
+**成功：** 整包安静落盘 + Activity；**Preferred** / 上次节点若已不在新列表 → **静默取消偏好**，下次连接走 Node Selection；**不**弹成功打扰。  
+**自动失败：** 完全安静、**不覆盖**旧可用配置、不强制诊断横幅；需要时由连接失败/诊断或用户手动 Update 暴露。  
+**手动 Update：** 用户随时可触发；失败可在 Subscriptions 内明确提示。Repair Allowlist #2 = 失败路径重载。非 Active 不自动刷，除非切为 Active 后满足自动条件或用户手动。  
+**禁止**固定后台周期拉订阅。详见 ADR **0015**。  
+_Avoid_: 连接前自动刷；热启动/回前台当自动触发；后台定时轮询；失败覆盖旧配置；成功 Toast 刷屏；不可刷新源假装成功；无总闸的强制自动
 
 **Diagnostic Engine**：
 确定性的分层故障判定（订阅 / 网络环境 / 节点 / 目标服务），产出结构化结果（原因、置信度、是否可自动修复、建议动作）。AI 只解释结构化结果，不凭空判定故障。
@@ -275,7 +291,7 @@ _Avoid_: Chat with AI 为唯一叙事；配置遥控器占满主职；对话次�
 
 **Agent Tool Allowlist（MVP 闭集）**：
 - **只读：** Active/订阅状态摘要；节点测试结果摘要；最近诊断结果；环境/DNS 结构化摘要；节点评分比较摘要；Activity 最近事件摘要；导出脱敏报告。  
-- **变更（须遵守 Snapshot / Consent / Active 等既有规则）：** 连接/断开；切换或钉节点；切换 Auto / Global / Direct；应用或清除少量 User Override；切换预设 DNS；触发诊断；Repair；回滚 Config Snapshot；切换 Active Subscription；手动 Subscription Refresh。  
+- **变更（须遵守 Snapshot / Consent / Active 等既有规则）：** 连接/断开；切换或设偏好节点；切换 Auto / Global / Direct；应用或清除少量 User Override；切换预设 DNS；触发诊断；Repair；回滚 Config Snapshot；切换 Active Subscription；手动 Subscription Refresh。  
 - **禁止入库：** 网页内容、完整浏览历史、Token/原始订阅上传、MITM/证书、自由写配置、推荐机场、静默改系统。未列出的工具不得调用；扩展须改文档/ADR。  
 _Avoid_: 开放式工具插件；模型自行注册新工具
 
@@ -318,7 +334,7 @@ _Avoid_: 以自建庞大域名库当主分流；规则社区；完整策略组�
 
 **User Override Rule**：
 用户或 Agent 发起的**结构化覆盖层**：每条为 **单个 Domain** → `proxy | direct`（含可关）。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。**Beta 不设条数上限**（不做「满 N 禁用 Add」）；产品意图仍是 **少数例外**，靠文案与 O3 呈现约束，不靠配额 UI。Global / Direct 总开关不计入 Override 列表。iOS 上该列表可经 **User Override iCloud Backup** 跨设备带走；其余连接策略不在此列。  
-**Settings 交互（Overrides › · O3 呈现，ADR 0045 / 0049 / 0050 / 0054）：** 列表（每条可开/关/删）+ **Add exception** sheet（输入 Domain → Proxy/Direct → Save）；**无** 预设 Service 名、**无** 正则/通配/一行速记语法；**无** 列表条数上限提示；**无** iCloud 主开关或常驻云状态条。Domain 为单主机名（如 `example.com`）。Agent 写同一模型，非只读旁路。  
+**Settings 交互（Overrides › · O3 呈现，ADR 0045 / **0057** / 0050 / 0054）：** 列表（每条可开/关/删）+ **Add exception** sheet（输入 Domain → Proxy/Direct → Save）；**无** 预设 Service 名、**无** 正则/通配/一行速记语法；**无** 列表条数上限提示；**无** iCloud 主开关或常驻云状态条。Domain 为单主机名（如 `example.com`）。Agent 写同一模型，非只读旁路。  
 **空态 English 源（闭集意图 · 排版双行）：** 标题 *No exceptions yet*；主文（怎么用）*Pin a domain to proxy or direct when Auto isn’t enough.*；边界句 *A few exceptions, not a full rule set.*；约束 chip *One domain each*。有列表时顶栏提示同样「非完整规则集」；根页计数写数字/None，**不**写 *rules*。空库且 iCloud 恢复失败时可有一行弱提示（见 Backup 术语）。  
 _Avoid_: 产品维护的 Service/站点预设表；手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；用「N of M」或硬上限把 Overrides 做成规则引擎配额；Overrides 仅 Agent 可写、Settings 不能 Add；空态/根页用 *rules* 暗示 Clash 式规则引擎；把 Override 页做成云同步控制台
 
@@ -331,12 +347,34 @@ _Avoid_: 产品维护的 Service/站点预设表；手写正则、远程 Rule Se
 _Avoid_: 全量配置/订阅 Token 上云；自建账号同步；「多设备一直一致」承诺；Settings iCloud 开关；Android 假装已有等价能力；用 Activity 刷 iCloud 事件
 
 **Node Selection**：
-在可用节点集合内，按延迟、握手、实际访问成功率（含 Connectivity Probe）、近期失败与稳定性等加权评分，选出当前节点；不能只按 Ping 排序。属客户端主智能之一。
-_Avoid_: 只按延迟排序；把「解锁某站」当选节点的唯一标准（除非诊断如此表明）
+在可用节点集合内，按延迟、握手、实际访问成功率（含 Connectivity Probe）、近期失败与稳定性等加权评分，选出当前节点；不能只按 Ping 排序。属客户端主智能之一。  
+**地区/出口国不进默认评分：** Auto 不根据系统 locale、时区、语言或「大陆用户常选香港」等先验猜地区；评分只服务 **可达与稳定**（导向 Connection Success）。用户若要特定地区出口：Cover Flow / Location 手动选，或 **Preferred node**（Location 点选记住；**允许** Node Failover 为保活换会话节点）。  
+**静默测信号（轻量分层，非完整成功判定）：**  
+1. **快速层：** 节点入口延迟 / 协议握手类信号，排除明显死节点。  
+2. **加深层（抽样）：** 仅对快速层前列与当前预选候选，做更重的经节点可达检测；可与 **Connectivity Probe 同目标、同成功定义** 的轻量同源探针，**不是**对全表做完整出网验收。  
+预选 = 加权分（导向「大概率连得上且不慢」）。**Connection Success 真值不变：** 仅用户连接后「隧道就绪 + 完整 Connectivity Probe」；静默测分 **不得** 把 Home 染成 Connected / 绿场。  
+**测分未完成亦可连：** 静默测不是连接闸门。用户可在测分进行中 / 仅有部分分时，对 **当前 Cover Flow 焦点**（订阅默认序、已出的临时最高分、或 Preferred）发起连接手势；连接路径做短确认 + 完整 Connectivity Probe，**不**等待全表测完。后台测可继续；**已进入 Connecting / Connected 的会话** 不得被后续预选刷新从脚下换节点（无 Preferred 时 Idle 临时横滑仍可被预选拉回，见下）。  
+**测速时机（预选、不连）：** Active 订阅导入成功、节点列表可用后，客户端 **静默** 对可用节点做可达/评分，并把 Home Cover Flow **预停**在当前评分最高节点（若已有 Preferred 则预停偏好）；**仍不**自动发起连接（不替代用户连接手势 / 系统 VPN 同意）。**禁止**把「全表测分」主要压在用户下滑连接的关键路径上（连接时应尽量复用已有评分，必要时仅对目标节点做短确认/Probe）。节点过多时允许分层抽样等实现常数，语义仍是「尽早有可用分、Idle 已预选」。  
+**静默重测触发（闭集）：**  
+1. **节点集合变化：** 首次导入 Active 成功；Subscription Refresh **成功且节点列表有实质变化**；用户切换 Active Subscription。集合未变 → 不为「再新鲜一点」默认全表重测。  
+2. **弱缓存过期（长间隔 S，实现常数）：** 距上次成功有效测分超过 S，且用户打开 App / 回前台时，**安静**重测并更新预选（**无** Preferred 时可覆盖 Cover Flow 临时焦点；**有** Preferred 时不覆盖偏好）。  
+3. **失败 / Failover 路径：** 连接失败或 Node Failover 时对候选做 **定向重测**（不必全表），服务换节点与诊断/Repair 同源，非 Idle 预选主叙事。  
+4. **用户显式测速：** **Location Surface** 顶栏 *Test*（**Latency Test**）— 刷新列表 ms 标注；可与静默快速层信号同源，**不**单独定义第三套成功标准。  
+**禁止默认：** 仅因 Wi‑Fi↔蜂窝等网络切换就自动全表重测（网络变化靠连接短确认 + 失败后定向测）。  
+**预选 vs 浏览焦点 vs Preferred（两档）：**  
+- **Auto 预选** = 静默测分后的当前最高分节点（可被后续重测更新）——仅当**无** Preferred。  
+- **Cover Flow 浏览焦点** = 在 Home 横滑时的**临时** UI 焦点；**无** Preferred 时重测完成**可以**把 Cover Flow 拉回新的最高分预选；横滑 alone **不**构成 Preferred。  
+- **Preferred node** = 用户在 **Location** **点选**后的持久偏好：列表 check；默认连接目标；**静默重测不得覆盖**；**允许** Node Failover 为保活换走**会话**节点（偏好不因 Failover 改写）。**无**显式清回 Auto UI；节点离开列表则静默丢弃偏好。  
+**不设**硬 **Pin**（禁 Failover 的锁死态）。  
+_Avoid_: 只按延迟排序；把「解锁某站」或猜测的出口国当选节点的唯一/默认标准；用 locale=zh-Hans 等静默偏置香港节点；连接手势阻塞等全表测完才建隧道；导入成功后自动连上；把 Cover Flow 临时滑选与 Preferred 混成一种却说不清；硬 Pin 禁 Failover；静默重测覆盖 Preferred；网络切换必全表测；短间隔狂刷静默测速；静默阶段对全部节点做完整经节点 Probe；静默只 Ping 却当唯一预选依据；未连时宣称已验证出网；测分未完就禁用/弱化连接手势；Connecting/Connected 时被预选刷新换节点
+
+**Latency Test**：
+用户在 **Location Surface** 触发的、到**节点入口**的延迟/握手类探测；结果展示为 **ms** 或 Timeout。用于扫表快慢标注，**不是** Connection Success，也**不是** ICMP *Ping* 承诺；**不得**作为 Node Selection 的唯一依据。批量 *Test* **不**改偏好、不自动切节点、不按结果重排分组列表。  
+_Avoid_: 用户可见硬说 Ping 却测 TCP；用列表 Test 替代完整 Connectivity Probe；测完自动连上最快节点
 
 **Node Failover**：
-在用户已启用自动选节点（Auto 或等价）且**未钉死节点**时，为维持 Connection Success 而在连接过程中**自动**改选可用节点或短重连。属连接保活，**不是** Repair：不走 Repair Consent / 诊断卡确认。须记入 Activity；连续失败仍按 Diagnostic Trigger 自动诊断。用户关闭自动选节点或手动钉节点时，不得静默 Failover。  
-_Avoid_: 把 Failover 叫成 Repair；钉节点后仍偷偷换节点
+在用户已启用自动选节点（Auto 或等价）时，为维持 Connection Success 而在连接过程中**自动**改选可用节点或短重连。**有 Preferred 时仍允许 Failover**（会话可暂离偏好；偏好保留）。属连接保活，**不是** Repair：不走 Repair Consent / 诊断卡确认。须记入 Activity；连续失败仍按 Diagnostic Trigger 自动诊断。用户**关闭**自动选节点时，不得静默 Failover。  
+_Avoid_: 把 Failover 叫成 Repair；把 Preferred 做成禁 Failover 的硬 Pin
 
 **P0 Interop Surface（瘦身）**：
 首发以「美国区常见机场订阅能导入并稳定连接」为宽度目标，不以协议数量为卖点。  
