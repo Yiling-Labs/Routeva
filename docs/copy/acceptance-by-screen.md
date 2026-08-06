@@ -75,7 +75,7 @@
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 Welcome** | 品牌 · 双行 headline · 副文 · CTA | `setup.welcome.brand` S · `setup.welcome.headline_line1` S · `setup.welcome.headline_line2` S · `setup.welcome.subtitle` **L** · `setup.welcome.cta` S | [x] |
+| **1 Welcome** | 双行 headline · 副文（产品闭环）· CTA · **无**左上品牌字 | `setup.welcome.headline_line1` S · `setup.welcome.headline_line2` S · `setup.welcome.subtitle` **L** · `setup.welcome.cta` S（`setup.welcome.brand` 不再上屏） | [x] |
 | **2 Home Empty** | 与 Home Empty 同源 | `home.empty.*` · `home.chrome.help` · `home.chrome.settings` | [x] |
 | **3 Add subscription** | 引导（含 file）· Paste / QR / File · no-sell 脚 | `setup.add.title` S · `setup.add.lead` S · `setup.add.paste` S · `setup.add.scan_qr` S · `setup.add.import_file` S · `setup.add.footer_no_sell` **L** | [x] |
 | **4 Parsing** | 模态（clipboard / QR / file） | `setup.add.parsing.clipboard` S · `setup.add.parsing.qr` S · `setup.add.parsing.file` S（*Reading file…*） | [x] |
@@ -86,7 +86,7 @@
 
 | 项 | 结论 |
 |---|---|
-| Welcome 副文 | JSX 拼装 `Use a link…` + `COPY.noSell` = `setup.welcome.subtitle` **逐字** |
+| Welcome 副文 | `setup.welcome.subtitle`：*No technical setup. Connects first—and explains itself when it doesn’t.*；**不**拼 no-sell；no-sell 仅 `setup.add.footer_no_sell` |
 | Parsing 4c | *Reading file…* 已挂 |
 | Success toast | 演示实例 *Apex Transit · 42 nodes* 符合 `setup.add.success_toast` 模板 |
 | 禁止项 | 无 1·2·3 · 无 VPN 说明页 · 失败无协议格式清单 |
@@ -251,5 +251,5 @@ hi-fi 文案已对齐；**产品代码实现**另勾。
 - [x] §6 Diagnostic 帧勾完（含 **6 Success · 7 Rolled back**）  
 - [x] §2–§5 文案/hi-fi 勾完（2026-08-06；含 Settings **4d/4e** iCloud restore）  
 - [ ] §7 chrome 跟宿主实现时勾  
-- [x] 本轮 **L** 键抽检：诊断 / Repair CTA / About MT / Welcome no-sell 与 CONTEXT/ADR 一致  
+- [x] 本轮 **L** 键抽检：诊断 / Repair CTA / About MT / Welcome 产品闭环副文 / Add no-sell 与 CONTEXT/ADR 一致  
 - [ ] 实现绑定 key 名与本表一致（Android：`.` → `_`）——**编码阶段**  

@@ -313,10 +313,10 @@ strings:
     surface: setup
 
   - key: setup.welcome.subtitle
-    en: Use a link you already have. We don’t sell or recommend providers.
+    en: No technical setup. Connects first—and explains itself when it doesn’t.
     tier: lock-en
     surface: setup
-    notes: "no-sell is product trust; COPY.noSell in hi-fi"
+    notes: "Welcome = easy for non-tech + connect-first/honest-fail philosophy. no-sell only on setup.add.footer_no_sell. Avoid ‘VPN’ category pitch on this screen."
 
   - key: setup.welcome.cta
     en: Get started
