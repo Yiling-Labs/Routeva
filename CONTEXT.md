@@ -156,7 +156,7 @@ _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表�
 - **无订阅（Home Empty）：** 顶栏 **仅 Help + Settings**（无 Subscriptions；用户可见 **Help**，内部可称 Agent）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA（及同一 Add 流）
 - **Idle / Can’t connect（黑场）：** 上部 **国旗 Cover Flow**；选中项下为 **节点名 + 弱协议 + 弱 ›**（**可点** → **Location Surface**；可见文案**不**出现 *Location* 词；a11y *Choose location* + 当前节点）；中部 **仅** 主状态 *Not Connected* / *Can’t connect*（**无** 中部 *Location ›* glass pill）；**Idle 无点阵**  
 - **Swipe / Connecting（黑场）：** Cover Flow 与节点名行仍可见，但 **节点名行不可点**（无 ›、弱化）——避免手势误触；中部 *Not Connected*（Swipe）或 *Connecting…*；Connecting 三圈点全亮（未染绿场）  
-- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；地区 · Connected · **节点行**（旗 + 节点名 + 弱协议 soft-glass chip）；三圈绿点。**不**恢复 Cover Flow。**节点行可点** → 同一 **Location Surface**（设 Preferred / 已连立即切节点）。  
+- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；中部 **仅** *Connected* + **节点行**（节点名 + 弱协议 soft-glass chip，可点 → Location；名内可含服务商 emoji）；**无** 状态上方单独「国家/地区名」行（如 *Taiwan* / *Hong Kong*）——身份只在节点行一次呈现。三圈绿点。**不**恢复 Cover Flow。  
 - 失败/弱连接：主状态 *Can’t connect*；原因在诊断 sheet；进 Location 走 Cover Flow 下节点名行（同上）  
 - **仅当** 模式 ≠ Auto：弱提示 Global / Direct  
 **两套选节点语义（ADR 0055/0056）：** Cover Flow **横滑 alone** = 临时 UI 焦点（可被预选/重测覆盖）；**Location 点选** = **Preferred**。Home **不**展示 Preferred/临时差异徽章。  
@@ -182,7 +182,7 @@ _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表�
 订阅**节点显示名原文**可含服务商自带 emoji（不强制改写字符串）；**客户端自绘旗**不得用 `tw`。解析若得 `tw` / Taiwan，显示层 **映射为 `cn`**。  
 _Avoid_: Cover Flow / chip 出现 🇹🇼；实现里 `flagcdn.com/.../tw.png`；把台湾节点画成日本旗  
 **明确不出现：** provider rules、编号步骤墙、VERIFIED/probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章、**黑场中部空 *Location ›* pill**、**Home 上 *Pinned* / 偏好徽章**（偏好只在 **Location** 用 check 呈现；Home 只显示**当前焦点或会话**节点名）。  
-_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名；Home Connected/Idle 行叠 *Pinned* / Selected 徽章；绿场把节点行做成只读装饰、用户只能断连再进 Location；Idle 中部再挂与节点名重复的空 Location 按钮；Home 写 Hy2、Location 写 Hysteria2；客户端重写节点短名；Home 节点名双行/跑马灯；截断协议或 ›
+_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名；绿场 Connected 上方再叠国家/地区名（与节点行重复）；Home Connected/Idle 行叠 *Pinned* / Selected 徽章；绿场把节点行做成只读装饰、用户只能断连再进 Location；Idle 中部再挂与节点名重复的空 Location 按钮；Home 写 Hy2、Location 写 Hysteria2；客户端重写节点短名；Home 节点名双行/跑马灯；截断协议或 ›
 
 **First-Run Setup（闭集）**：
 首次安装：**Welcome（仅一次）→ Home Empty →（用户点 + / Add subscription）→ Add Subscription**。欢迎仅 **headline + 一句副文**（自备订阅 / 不卖节点）；**无** 1·2·3 列表，**无** 诊断/修复说教句。**无** 应用内 VPN 说明页：首次连接手势时出 **iOS 系统弹窗**；拒绝 → Home 回 Idle（*Swipe down to connect*）；同意 → 连接至 Connection Success。权威 hi-fi：`design/hi-fi/current/craft-p0/03-setup.html`。详见 ADR 0019。  

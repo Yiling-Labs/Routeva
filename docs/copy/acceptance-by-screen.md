@@ -29,7 +29,7 @@
 | **2 Swipe ~⅓** | 仍 Idle 状态文案；节点名**锁定**；SWIPE | 同上（无 location a11y 可点）+ `home.gesture.swipe_label` | [x] |
 | **3 Swipe ~⅔** | 同上 | 同上 | [x] |
 | **4 Connecting** | Connecting… · 节点名锁定 · a11y | `home.connecting.status` S · `home.gesture.a11y.connecting` S · 胶囊下 hint 亦为 *Connecting…* | [x] |
-| **5 Connected** | Connected · STOP · 断开提示 · Mb/s · **节点行 glass chip 可点 → Location**（`home.location.a11y`） | `home.connected.status` S · `home.gesture.stop` S · `home.gesture.disconnect_hint` S · `home.gesture.a11y.disconnect` S · `home.speed.unit_mbs` S · `home.location.a11y` S | [x] |
+| **5 Connected** | Connected · STOP · 断开提示 · Mb/s · **节点行 glass chip 可点 → Location** · **无**国家/地区名行 | `home.connected.status` S · `home.gesture.stop` S · `home.gesture.disconnect_hint` S · `home.gesture.a11y.disconnect` S · `home.speed.unit_mbs` S · `home.location.a11y` S | [x] |
 | **Can't connect**（副帧） | 失败主状态 · 节点名+› 可点（sheet 见 §6） | `home.cant_connect.status` S · `home.location.a11y` S | [x] |
 | **Empty / setup 态** | 无订阅中部 | `home.empty.cta` S · `home.empty.subtitle` S · 顶栏仅 Help+Settings（无 Subscriptions 键展示） | [x] |
 | **Mode ≠ Auto** | 弱提示 | `home.mode.hint.global` S · `home.mode.hint.direct` S | [x] |

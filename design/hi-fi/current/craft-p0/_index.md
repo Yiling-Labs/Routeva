@@ -22,7 +22,7 @@
 | 2 | Swipe ~⅓ | 1 圈 | ~1/3 | 节点名行锁定 |
 | 3 | Swipe ~⅔ | 2 圈 | ~2/3 | 节点名行锁定 |
 | 4 | Connecting | 3 圈 | 底 | Connecting…；节点名锁定；仍黑场 |
-| 5 | Connected | 3 圈绿 | STOP 底 | 绿场 + 时长/速率；**节点行 soft-glass chip 可点 → Location** |
+| 5 | Connected | 3 圈绿 | STOP 底 | 绿场 + 时长/速率；**仅 Connected + 节点行 chip → Location**（无国家名行） |
 | — | Interactive | 全流程 | 可拖 | |
 
 ## 文档同步

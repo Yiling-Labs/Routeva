@@ -1576,18 +1576,7 @@
               textAlign: 'center', padding: '0 28px', zIndex: 2,
               transform: 'translateY(-50%)',
             }}>
-              {showSession && (
-                <div style={{
-                  marginBottom: 6,
-                  fontFamily: TYPE.font,
-                  fontSize: TYPE.secondary.size,
-                  fontWeight: TYPE.secondary.weight,
-                  color: sk.secondary,
-                }}>
-                  {node.name}
-                </div>
-              )}
-
+              {/* Connected mid: status only — no region/country line (identity lives in node chip) */}
               <div style={{
                 fontFamily: TYPE.font,
                 fontSize: TYPE.status.size,
@@ -1638,7 +1627,7 @@
                     boxSizing: 'border-box',
                   }}
                 >
-                  <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }} aria-hidden="true">{node.flag}</span>
+                  {/* Identity once: provider name (may include emoji) + protocol; no extra country line / second flag */}
                   <NodeLabel node={node} size="sm" />
                   <span style={{ opacity: 0.55, display: 'flex', marginLeft: 2, flexShrink: 0 }} aria-hidden="true">
                     <IconChevron size={12} stroke={ICON_STROKE.cta} />
