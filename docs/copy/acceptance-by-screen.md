@@ -29,7 +29,7 @@
 | **2 Swipe ~⅓** | 仍 Idle 文案；SWIPE | 同上 + `home.gesture.swipe_label` | [x] |
 | **3 Swipe ~⅔** | 同上 | 同上 | [x] |
 | **4 Connecting** | Connecting… · a11y | `home.connecting.status` S · `home.gesture.a11y.connecting` S · 胶囊下 hint 亦为 *Connecting…* | [x] |
-| **5 Connected** | Connected · STOP · 断开提示 · Mb/s | `home.connected.status` S · `home.gesture.stop` S · `home.gesture.disconnect_hint` S · `home.gesture.a11y.disconnect` S · `home.speed.unit_mbs` S | [x] |
+| **5 Connected** | Connected · STOP · 断开提示 · Mb/s · **节点行 glass chip 可点 → Location**（`home.location.a11y`） | `home.connected.status` S · `home.gesture.stop` S · `home.gesture.disconnect_hint` S · `home.gesture.a11y.disconnect` S · `home.speed.unit_mbs` S · `home.location.a11y` S | [x] |
 | **Can't connect**（副帧） | 失败主状态（sheet 见 §6） | `home.cant_connect.status` S · `home.location` S | [x] |
 | **Empty / setup 态** | 无订阅中部 | `home.empty.cta` S · `home.empty.subtitle` S · 顶栏仅 Help+Settings（无 Subscriptions 键展示） | [x] |
 | **Mode ≠ Auto** | 弱提示 | `home.mode.hint.global` S · `home.mode.hint.direct` S | [x] |
@@ -46,7 +46,7 @@
 | Mode ≠ Auto | 源码 `modeHint` 插槽；**故事板默认帧未演示**；key 与 CONTEXT 闭集一致，实现按非 Auto 显示 |
 | 禁止项 | 未见 provider rules 墙 / VERIFIED / *Needs attention* / 顶栏 Activity |
 
-**不应出现：** provider rules 教学墙 · VERIFIED/probe 叠词 · 主状态 *Needs attention* · 顶栏 Activity · Home 上 *Pinned* / 偏好徽章（偏好仅 Location check）。
+**不应出现：** provider rules 教学墙 · VERIFIED/probe 叠词 · 主状态 *Needs attention* · 顶栏 Activity · Home 上 *Pinned* / 偏好徽章（偏好仅 Location check）· 绿场 Cover Flow / Location › pill（进 Location = 中部可点节点行）。
 
 ---
 
@@ -64,20 +64,32 @@
 | **4 Testing** | 顶栏 busy | `location.testing` S | [ ] |
 | **5 Empty** | 0 节点 · 无 strip | `location.empty.title` S · `.body` S · `.update` S | [ ] |
 
-**不应出现：** 全部 group 纵向长卷主路径 · 搜索框 · 列表顶 *Auto* 行 · *Pinned* / *Current* 徽章 · 顶栏 `⋯` · *Use automatic* · 硬 *Ping* · 按延迟重排 · 订阅 CRUD 主路径 · 硬 Pin 禁 Failover 叙事。
+**不应出现：** 全部 group 纵向长卷主路径 · 搜索框 · **客户端伪造**的列表顶 *Auto* 行（订阅 group 真名 *Auto* 允许原样展示）· *Pinned* / *Current* 徽章 · 顶栏 `⋯` · *Use automatic* · 硬 *Ping* · 按延迟重排 · 订阅 CRUD 主路径 · 硬 Pin 禁 Failover 叙事 · 协议全称 *Hysteria2*/*Shadowsocks*（UI 短名 **Hy2**/**SS**，与 Home 同源）。  
+**Demo 约定：** craft-p0 示例组名避免用 *Auto*，降低误读（政策仍允许真实订阅）。
 
 ---
 
 ## 2 · Setup · [`03-setup.html`](../../design/hi-fi/current/craft-p0/03-setup.html)
 
+> **走查 2026-08-06：** Welcome → Empty → Add → Parsing 4/4b/4c → fail → toast。结果 **pass（附注）**。
+
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 Welcome** | 品牌 · 双行 headline · 副文 · CTA | `setup.welcome.brand` S · `setup.welcome.headline_line1` S · `setup.welcome.headline_line2` S · `setup.welcome.subtitle` **L** · `setup.welcome.cta` S | [ ] |
-| **2 Home Empty** | 与 Home Empty 同源 | `home.empty.*` · `home.chrome.help` · `home.chrome.settings` | [ ] |
-| **3 Add subscription** | 引导 · Paste / QR / File · no-sell 脚 | `setup.add.title` S · `setup.add.lead` S · `setup.add.paste` S · `setup.add.scan_qr` S · `setup.add.import_file` S · `setup.add.footer_no_sell` **L** | [ ] |
-| **4 Parsing** | 模态 | `setup.add.parsing.clipboard` S · `setup.add.parsing.qr` S | [ ] |
-| **5 Couldn’t add** | 失败态 | `setup.add.fail.title` S · `setup.add.fail.body` S · `setup.add.fail.footer` **L** · `setup.add.paste_again` S | [ ] |
-| **6 Success toast** | 导入成功 | `setup.add.success_title` S · `setup.add.success_toast` S (`{displayName}` · `{count}`) | [ ] |
+| **1 Welcome** | 品牌 · 双行 headline · 副文 · CTA | `setup.welcome.brand` S · `setup.welcome.headline_line1` S · `setup.welcome.headline_line2` S · `setup.welcome.subtitle` **L** · `setup.welcome.cta` S | [x] |
+| **2 Home Empty** | 与 Home Empty 同源 | `home.empty.*` · `home.chrome.help` · `home.chrome.settings` | [x] |
+| **3 Add subscription** | 引导（含 file）· Paste / QR / File · no-sell 脚 | `setup.add.title` S · `setup.add.lead` S · `setup.add.paste` S · `setup.add.scan_qr` S · `setup.add.import_file` S · `setup.add.footer_no_sell` **L** | [x] |
+| **4 Parsing** | 模态（clipboard / QR / file） | `setup.add.parsing.clipboard` S · `setup.add.parsing.qr` S · `setup.add.parsing.file` S（*Reading file…*） | [x] |
+| **5 Couldn’t add** | 失败态（body 含 file） | `setup.add.fail.title` S · `setup.add.fail.body` S · `setup.add.fail.footer` **L** · `setup.add.paste_again` S | [x] |
+| **6 Success toast** | 导入成功 | `setup.add.success_title` S · `setup.add.success_toast` S (`{displayName}` · `{count}`) | [x] |
+
+**走查附注（Setup）**
+
+| 项 | 结论 |
+|---|---|
+| Welcome 副文 | JSX 拼装 `Use a link…` + `COPY.noSell` = `setup.welcome.subtitle` **逐字** |
+| Parsing 4c | *Reading file…* 已挂 |
+| Success toast | 演示实例 *Apex Transit · 42 nodes* 符合 `setup.add.success_toast` 模板 |
+| 禁止项 | 无 1·2·3 · 无 VPN 说明页 · 失败无协议格式清单 |
 
 **不应出现：** 欢迎页 1·2·3 列表 · 自建 VPN 说明页 · 失败文案堆协议格式清单。
 
@@ -85,39 +97,52 @@
 
 ## 3 · Subscriptions · [`04-subscriptions.html`](../../design/hi-fi/current/craft-p0/04-subscriptions.html)
 
+> **走查 2026-08-06：** 1–1e · 1f Rename · 2 深链。**文案/hi-fi pass**；1d/1e **实现**仍 open。
+
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 List · Active rich** | 标题 · Active · meta · Update · Add | `subs.title` S · `subs.active.badge` S · `subs.meta.nodes` S · `subs.meta.expires` S · `subs.meta.updated` S · `subs.update` S · `subs.add` S · `subs.data_label` S（有流量时） | [ ] |
-| **1b List · sparse** | 无到期/流量整槽省略 | 同上；**不**出现 *Not reported* | [ ] |
-| **1c Updating** | busy | `subs.updating` S | [ ] |
-| **1d Not remote-refreshable** | 无 URL 的 Active：无主 Update CTA；说明 | `subs.update.unavailable` S · `subs.update.unavailable.hint` S；**不**出现可点 *Update* 假装成功 | [ ] → **实现任务** [IMPL-SUB-1d](../prd/features/subscription-refresh-ui-states.md#impl-sub-1d--not-remote-refreshable无远程源) |
-| **1e Manual Update failed** | 列表内错误（仅手动） | `subs.update.failed` S · `subs.update.failed.hint` S · `subs.update` S 可重试 | [ ] → **实现任务** [IMPL-SUB-1e](../prd/features/subscription-refresh-ui-states.md#impl-sub-1e--manual-update-failed仅手动失败) |
-| **非 Active 行** | Set active | `subs.set_active` S | [ ] |
-| **Expired** | 警示标签 | `subs.meta.expired` S | [ ] |
-| **Rename / 默认名** | 可选 | `subs.rename` S · `subs.default_name` S · `subs.default_name_n` S | [ ] |
-| **2 Settings deep link** | 同一套 UI 标题；App 含 Auto-update | `subs.title`（门：`settings.app.subscriptions`）；深链示意应含 `settings.app.auto_update.*` | [ ] |
+| **1 List · Active rich** | 标题 · Active · meta · Update · Add | `subs.title` S · `subs.active.badge` S · `subs.meta.nodes` S · `subs.meta.expires` S · `subs.meta.updated` S · `subs.update` S · `subs.add` S · `subs.data_label` S（有流量时） | [x] |
+| **1b List · sparse** | 无到期/流量整槽省略 | 同上；**不**出现 *Not reported* | [x] |
+| **1c Updating** | busy | `subs.updating` S | [x] |
+| **1d Not remote-refreshable** | 无 URL 的 Active：无主 Update CTA；说明 | `subs.update.unavailable` S（*Can’t update automatically*）· `subs.update.unavailable.hint` S；**不**出现可点 *Update* 假装成功 | [x] hi-fi · **实现** [IMPL-SUB-1d](../prd/features/subscription-refresh-ui-states.md#impl-sub-1d--not-remote-refreshable无远程源) |
+| **1e Manual Update failed** | 列表内错误（仅手动） | `subs.update.failed` S · `subs.update.failed.hint` S · `subs.update` S 可重试 | [x] hi-fi · **实现** [IMPL-SUB-1e](../prd/features/subscription-refresh-ui-states.md#impl-sub-1e--manual-update-failed仅手动失败) |
+| **非 Active 行** | Set active | `subs.set_active` S | [x] |
+| **Expired** | 警示标签 | `subs.meta.expired` S | [x] |
+| **Rename / 默认名** | 可选轻交互（long-press / 右键 → sheet；非主 CTA） | `subs.rename` S · `subs.rename.hint` S · `chrome.cancel` S · `chrome.save` S · `subs.default_name` S · `subs.default_name_n` S | [x] Interactive + 1f |
+| **2 Settings deep link** | 同一套 UI 标题；App 含 Auto-update | `subs.title`（门：`settings.app.subscriptions`）；深链示意应含 `settings.app.auto_update.*` | [x] |
 
 **不应出现：** 裸日期贴 nodes · *Renews* · All subscriptions 第二层 · 自动刷新失败 Toast · 无远程源却 *Update* 成功。
 
-**实现任务（1d / 1e）：** 编码 DoD、双端勾选与顺序见  
-[`docs/prd/features/subscription-refresh-ui-states.md`](../prd/features/subscription-refresh-ui-states.md)  
-（**IMPL-SUB-1d** · **IMPL-SUB-1e**）。文案 ☑ 在实现走查通过后勾；勿仅因 hi-fi 有帧就勾实现完成。
+**实现任务（1d / 1e）：** 编码 DoD 见  
+[`docs/prd/features/subscription-refresh-ui-states.md`](../prd/features/subscription-refresh-ui-states.md)。  
+hi-fi 文案已对齐；**产品代码实现**另勾。
 
 ---
 
 ## 4 · Settings · [`05-settings.html`](../../design/hi-fi/current/craft-p0/05-settings.html)
 
+> **走查 2026-08-06：** Root · Mode · DNS · Overrides 空/列表/Add · About（含 MT）。结果 **pass（附注）**。
+
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 Root** | 段 · Connection 三行+副文 · App 三行（Auto-update Toggle 默认开 · Subscriptions · About）· Close | `settings.title` S · `settings.section.connection` S · `settings.section.app` S · `settings.routing.title`+`.subtitle` S · `settings.dns.title`+`.subtitle` S · `settings.overrides.title`+`.subtitle` S · `settings.app.auto_update.title`+`.subtitle` S · `settings.app.subscriptions` S · `settings.app.about` S · `chrome.close` S · 计数 `chrome.none` / 数字 | [ ] |
-| **2 Routing mode** | 三档 | `settings.routing.{auto,global,direct}.{title,sub}` S · `chrome.back` S | [ ] |
-| **3 DNS** | 三档 | `settings.dns.{automatic,privacy,compatibility}.{title,sub}` S | [ ] |
-| **4 Overrides empty** | O3 空态 | `settings.overrides.empty.title` S · `.howto` S · `.boundary` **L** · `.chip` S · `settings.overrides.add` S | [ ] |
-| **4 · iCloud restore fail** | 空库恢复失败弱提示（iOS） | `settings.overrides.icloud.restore_failed` S（空态一行或 toast；非常驻云状态） | [ ] |
-| **4 · iCloud restore ok** | 成功恢复 toast（iOS） | `settings.overrides.icloud.restored_one` S · `restored_other` S（`{count}`） | [ ] |
-| **4b Overrides list** | 列表 · 动作标签 | `settings.overrides.list.hint` **L** · `settings.overrides.action.proxy` S · `.direct` S · `chrome.remove` S · `settings.overrides.add` S | [ ] |
-| **4c Add exception** | sheet 全套 | `settings.overrides.field.domain` S · `.domain_placeholder` S · `.domain_hint` S · `.domain_error` S · `.constraint` S · `.domain_error_format` S · `.action` S · `settings.overrides.action.proxy_option` S · `.direct` S · `settings.overrides.consequence.{proxy,direct,proxy_compact,direct_compact}` S · `settings.overrides.save` S · `chrome.cancel` S | [ ] |
-| **5 About** | 承诺 · iCloud 披露 · Links · Export | `settings.about.title` S · `settings.about.privacy_promise` **L** · `settings.about.icloud_exceptions` **L**（iOS；Android 省略） · `settings.about.links` S · `settings.about.privacy_policy`+`.sub` S · `settings.about.terms`+`.sub` S · `settings.about.support` S · `settings.about.export_report` S · `settings.about.mt_disclosure` **L**（次要，可后显） | [ ] |
+| **1 Root** | 段 · Connection 三行+副文 · App 三行（Auto-update Toggle 默认开 · Subscriptions · About）· Close | `settings.title` S · `settings.section.connection` S · `settings.section.app` S · `settings.routing.title`+`.subtitle` S · `settings.dns.title`+`.subtitle` S · `settings.overrides.title`+`.subtitle` S · `settings.app.auto_update.title`+`.subtitle` S · `settings.app.subscriptions` S · `settings.app.about` S · `chrome.close` S · 计数 `chrome.none` / 数字 | [x] |
+| **2 Routing mode** | 三档 | `settings.routing.{auto,global,direct}.{title,sub}` S · `chrome.back` S | [x] |
+| **3 DNS** | 三档 | `settings.dns.{automatic,privacy,compatibility}.{title,sub}` S | [x] |
+| **4 Overrides empty** | O3 空态 | `settings.overrides.empty.title` S · `.howto` S · `.boundary` **L** · `.chip` S · `settings.overrides.add` S | [x] |
+| **4d iCloud restore fail** | 空库恢复失败弱提示（iOS） | `settings.overrides.icloud.restore_failed` S · 帧 **4d** 空态弱行；非常驻云状态 | [x] |
+| **4e iCloud restore ok** | 成功恢复 toast（iOS） | `settings.overrides.icloud.restored_one` S · `restored_other` S（`{count}`）· 帧 **4e** 短 toast | [x] |
+| **4b Overrides list** | 列表 · 动作标签 | `settings.overrides.list.hint` **L** · `settings.overrides.action.proxy` S · `.direct` S · `chrome.remove` S · `settings.overrides.add` S | [x] |
+| **4c Add exception** | sheet 全套 | `settings.overrides.field.domain` S · `.domain_placeholder` S · `.domain_hint` S · `.domain_error` S · `.constraint` S · `.domain_error_format` S · `.action` S · `settings.overrides.action.proxy_option` S · `.direct` S · `settings.overrides.consequence.{proxy,direct,proxy_compact,direct_compact}` S · `settings.overrides.save` S · `chrome.cancel` S | [x] |
+| **5 About** | 承诺 · iCloud 披露 · Links · **MT 次要行** · Export | `settings.about.title` S · `settings.about.privacy_promise` **L** · `settings.about.icloud_exceptions` **L**（iOS；Android 省略） · `settings.about.links` S · `settings.about.privacy_policy`+`.sub` S · `settings.about.terms`+`.sub` S · `settings.about.support` S · `settings.about.mt_disclosure` **L** · `settings.about.export_report` S | [x] |
+
+**走查附注（Settings）**
+
+| 项 | 结论 |
+|---|---|
+| Root | Connection 三行释义副文 + App 含 Auto-update · **无** History |
+| About | MT 行 *Some interface text may be machine-translated…* 在 Links 与 Export 之间 |
+| iCloud restore | **4d** 空库失败弱行 · **4e** 成功 toast（演示 *Restored 2 exceptions*）；无常驻 *Backed up with iCloud* |
+| 禁止项 | 无 History/Appearance/根页 Cloud / 规则引擎暗示 |
 
 **不应出现：** History/Activity/Snapshots 根行 · Appearance · 根页 Cloud AI · *rules* 暗示规则引擎 · Overrides 常驻 *Backed up with iCloud* 状态条 · Settings iCloud 开关。
 
@@ -125,16 +150,18 @@
 
 ## 5 · Help · [`06-agent.html`](../../design/hi-fi/current/craft-p0/06-agent.html)
 
+> **走查 2026-08-06：** 空态双态 · Chat · Cloud off · Bounds · How we use data。结果 **pass**。
+
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **0a/0b Home pill** | 用户标签 Help | `home.chrome.help` S（= `help.title` 语义） | [ ] |
-| **1a Empty · down** | 故障空态 | `help.title` S · `help.empty.down.headline` S · `.sub` S · chips: `help.chip.why_cant_connect` · `provider_or_app` · `switch_dns` S · `help.bounds.link` S · 信任条 on：`help.trust.eyebrow.cloud_on` **L** · `help.trust.cloud_on` **L** · `help.input.placeholder` S | [ ] |
-| **1b Empty · up** | 已连空态 | `help.empty.up.headline` S · `.sub` S · chips: `why_slow` · `try_global` · `switch_dns` · `what_can_help` S | [ ] |
-| **2 Chat + tool** | 过程卡 · 同意修 | `help.process.what_we_found` **L** · `help.process.same_checks` **L** · `diag.bucket.app_can_fix` **L** · `diag.confidence.high` **L** · `diag.cta.repair` **L** · `diag.example.fix.why` **L**（chat 气泡复用） · `help.chat.example.next` **L**（样例） · `help.bounds.link` S | [ ] |
-| **3 Cloud off strip** | opt-out 后 | `help.trust.eyebrow.cloud_off` **L** · `help.trust.cloud_off` **L** | [ ] |
-| **4 What Help can do** | 4+4 | `help.bounds.can_heading` **L** · `cant_heading` **L** · `help.bounds.can.1–4` **L** · `help.bounds.cant.1–4` **L** | [ ] |
-| **5 How we use data** | 四段 + 开关 | `help.trust.how_we_use_data` **L** · `help.privacy.default_on.{title,body}` **L** · `what_we_may_send.{title,body}` **L** · `not_kept.{title,body}` **L** · `no_files.{title,body}` **L** · `help.cloud_assist.title` S · `.sub` **L** · `chrome.back` S | [ ] |
-| **Composer a11y** | | `help.input.a11y` S · `chrome.send` S | [ ] |
+| **0a/0b Home pill** | 用户标签 Help | `home.chrome.help` S（= `help.title` 语义） | [x] |
+| **1a Empty · down** | 故障空态 | `help.title` S · `help.empty.down.headline` S · `.sub` S · chips: `help.chip.why_cant_connect` · `provider_or_app` · `switch_dns` S · `help.bounds.link` S · 信任条 on：`help.trust.eyebrow.cloud_on` **L** · `help.trust.cloud_on` **L** · `help.input.placeholder` S | [x] |
+| **1b Empty · up** | 已连空态 | `help.empty.up.headline` S · `.sub` S · chips: `why_slow` · `try_global` · `switch_dns` · `what_can_help` S | [x] |
+| **2 Chat + tool** | 过程卡 · 同意修 | `help.process.what_we_found` **L** · `help.process.same_checks` **L** · `diag.bucket.app_can_fix` **L** · `diag.confidence.high` **L** · `diag.cta.repair` **L** · `diag.example.fix.why` **L**（chat 气泡复用） · `help.chat.example.next` **L**（样例） · `help.bounds.link` S | [x] |
+| **3 Cloud off strip** | opt-out 后 | `help.trust.eyebrow.cloud_off` **L** · `help.trust.cloud_off` **L** | [x] |
+| **4 What Help can do** | 4+4 | `help.bounds.can_heading` **L** · `cant_heading` **L** · `help.bounds.can.1–4` **L** · `help.bounds.cant.1–4` **L** | [x] |
+| **5 How we use data** | 四段 + 开关 | `help.trust.how_we_use_data` **L** · `help.privacy.default_on.{title,body}` **L** · `what_we_may_send.{title,body}` **L** · `not_kept.{title,body}` **L** · `no_files.{title,body}` **L** · `help.cloud_assist.title` S · `.sub` **L** · `chrome.back` S | [x] |
+| **Composer a11y** | | `help.input.a11y` S · `chrome.send` S | [x] |
 
 **不应出现：** 空态 *Try a safe repair* 捷径 chip · 用户主标签 *Agent* · 内部名 Diagnostic Engine / Client-Fixable。
 
@@ -194,18 +221,21 @@
 | 日期 | 范围 | 结果 | 备注 |
 |---|---|---|---|
 | 2026-08-06 | **§1 Home** + **§6 Diagnostic** | **pass（附注）** | 结果态曾 `[~]`；同日补 **6/7** 后结果键可勾 |
-| 2026-08-06 | **§6 续 · Repair 结果帧** | **pass** | hi-fi 6 Success · 7 Rolled back；`repair.success.body` / `.cta` / `rolled_back.cta` 入键表 |
-| | §2–§5 · §7–§8 | 未走 | 下一轮 |
+| 2026-08-06 | **§6 续 · Repair 结果帧** | **pass** | hi-fi 6 Success · 7 Rolled back |
+| 2026-08-06 | **§2 Setup · §3 Subs · §4 Settings · §5 Help** | **pass（附注）** | 1d/1e 实现仍 open |
+| 2026-08-06 | **hi-fi polish** | — | 绿场节点行 glass chip；Rename sheet；Settings **4d/4e** iCloud |
 
 ### 本轮 gap / follow-up（非 blocker）
 
 | ID | 说明 | 建议 |
 |---|---|---|
-| H-1 | 02-home 故事板未挂 `cant` / `setup` 静态帧 | **决议（2026-08-06 grill）：跨屏验收即可** — Empty → `03-setup`；Can’t connect → `07` underlay + 源码 `state="cant"`；不强制本轮补 02 静态帧 |
-| H-2 | `modeHint` 故事板未演示 Global/Direct | **同上：** key 已齐；实现按非 Auto 显示；可选加帧非 blocker |
-| B-1 | Auto-update 副文 *When you launch…* vs 严格冷启动 | **决议（2026-08-06 grill）：保留现副文**；政策真源 ADR 0015；不写冷启动 jargon；误解再迭代 |
-| D-1 | ~~无 Repair 成功/回滚专用 hi-fi~~ | **已补** 帧 6/7（2026-08-06） |
-| D-2 | `repair.progress.step_example` 为 DNS Compatibility 演示步 | 实现用动态步文案，勿写死唯一样例 |
+| H-1 | 02-home 故事板未挂 `cant` / `setup` 静态帧 | **决议：** 跨屏验收即可 |
+| H-2 | `modeHint` 故事板未演示 Global/Direct | key 已齐；可选加帧非 blocker |
+| B-1 | Auto-update 副文 vs 严格冷启动 | 保留现副文；真源 ADR 0015 |
+| D-2 | `repair.progress.step_example` 演示步 | 实现用动态步文案 |
+| M-1 / M-2 | 官网 diagnostic / home-connected | 已重导对齐 |
+| S-1 | ~~Overrides iCloud restore 无 hi-fi 帧~~ | **已补** 4d fail 弱行 · 4e success toast（2026-08-06） |
+| S-2 | 1d/1e | hi-fi 文案 pass；**实现**仍见 IMPL-SUB |
 
 **已知样例/草稿（不算实现 blocker）：**
 
@@ -219,6 +249,7 @@
 
 - [x] §1 Home 帧勾完（2026-08-06）  
 - [x] §6 Diagnostic 帧勾完（含 **6 Success · 7 Rolled back**）  
-- [ ] §2–§5 · §7 全部帧勾完  
-- [ ] 所有 **L** 键与 CONTEXT/ADR 无冲突（本轮抽检：诊断锁 en / Repair CTA 与 0047·0010·0041 一致）  
-- [ ] 实现绑定 key 名与本表一致（Android：`.` → `_`）  
+- [x] §2–§5 文案/hi-fi 勾完（2026-08-06；含 Settings **4d/4e** iCloud restore）  
+- [ ] §7 chrome 跟宿主实现时勾  
+- [x] 本轮 **L** 键抽检：诊断 / Repair CTA / About MT / Welcome no-sell 与 CONTEXT/ADR 一致  
+- [ ] 实现绑定 key 名与本表一致（Android：`.` → `_`）——**编码阶段**  

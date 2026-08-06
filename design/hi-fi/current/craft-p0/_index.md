@@ -18,11 +18,11 @@
 
 | # | 状态 | 点阵 | 拇指 | 备注 |
 |---|---|---|---|---|
-| 1 | Idle | 无 | START 顶 | Cover Flow + 节点名+弱协议 + Location |
+| 1 | Idle | 无 | START 顶 | Cover Flow + 节点名+弱协议 + Location › |
 | 2 | Swipe ~⅓ | 1 圈 | ~1/3 | |
 | 3 | Swipe ~⅔ | 2 圈 | ~2/3 | |
 | 4 | Connecting | 3 圈 | 底 | Connecting…；仍黑场 |
-| 5 | Connected | 3 圈绿 | STOP 底 | 绿场 + 时长/速率 |
+| 5 | Connected | 3 圈绿 | STOP 底 | 绿场 + 时长/速率；**节点行 soft-glass chip 可点 → Location** |
 | — | Interactive | 全流程 | 可拖 | |
 
 ## 文档同步
@@ -47,6 +47,8 @@
 | 1c | Updating | Active 卡上 Update busy |
 | 1d | Not remote-refreshable | 无远程 URL：说明、无假 Update（ADR 0015） |
 | 1e | Manual Update failed | 卡内错误 + 可重试 Update |
+| Interactive | Long-press 显示名 → Rename sheet |
+| 1f | Rename（轻交互） | 短 sheet · hint · Cancel/Save；**非**主 CTA（ADR **0033** · `subs.rename.hint`） |
 | 2 | Settings deep link | App 含 Auto-update Toggle；权威 Settings 见 05 |
 
 ## Settings 故事板
@@ -60,7 +62,9 @@
 | 4 | Overrides empty | O3：*No exceptions yet* · not a full rule set |
 | 4b | Overrides list | 顶提示 + toggle + remove + *Add exception* |
 | 4c | Add exception | **键盘打开态**：单 Domain 输入 + 压缩 sheet；Domain only（ADR **0057**） |
-| 5 | About | 隐私承诺 · **iCloud 披露（iOS）** · Privacy / Terms / **Support** 外链 · Export（`/privacy/` · `/terms/` · `#contact`） |
+| 4d | iCloud restore failed | iOS · **空库**弱行 *Couldn’t restore from iCloud*（ADR **0054**） |
+| 4e | iCloud restored | iOS · 短 toast *Restored N exceptions* · **非常驻**云状态条 |
+| 5 | About | 隐私承诺 · **iCloud 披露（iOS）** · Privacy / Terms / Support · **MT 披露** · Export（`/privacy/` · `/terms/` · `#contact`） |
 
 ## Help / Agent 故事板
 

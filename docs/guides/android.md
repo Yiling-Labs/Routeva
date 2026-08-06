@@ -10,7 +10,7 @@
 
 ## 工程与合规（原则级）
 
-- [ ] 工程与源码在 `app/android/`（Dual-Native；**设计定稿后再填入**；此前仅占位）  
+- [ ] 工程与源码在 `app/android/`（Dual-Native；**当前仅占位**；实现 checklist 见 `docs/prd/implementation-checklist.md`，编码须用户再开）  
 - [ ] 签名密钥与 keystore **不入库**  
 - [ ] 商店权限/数据安全表单与实现一致（上架阶段自检）  
 

@@ -27,7 +27,7 @@
 
 ### 验收 DoD
 
-- [ ] **iOS / Android：** 导入仅单节点 URI（或等价无 URL）并设为 Active → 列表 **无** 可点 *Update*；可见 *Can’t update from a link* + hint  
+- [ ] **iOS / Android：** 导入仅单节点 URI（或等价无 URL）并设为 Active → 列表 **无** 可点 *Update*；可见 *Can’t update automatically* + hint  
 - [ ] **iOS / Android：** 有远程 URL 的 Active → 仍显示 *Update*（与帧 1 / 1c 一致）  
 - [ ] 文案来自 `en.yaml` 灌入（无硬编码英文字面漂移）  
 - [ ] 自动刷新（闸开 + 冷启动）对该 Active **不发起** 拉取；可静默 skip（ADR 0015）  

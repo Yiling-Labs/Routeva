@@ -132,15 +132,9 @@
     };
 
     /** Multi-group demo — enough chips to need horizontal scroll */
+    /** Group names = provider metadata as-is. Demo avoids a group literally named "Auto"
+     *  so reviewers don’t confuse it with a client-forged “Auto select” row (ADR 0056). */
     const DEMO_GROUPS_MULTI = [
-      {
-        id: 'auto',
-        name: 'Auto',
-        nodes: [
-          { id: 'auto-01', name: 'Smart Select', protocol: 'VLESS' },
-          { id: 'auto-02', name: 'Fallback Pool', protocol: 'VMess' },
-        ],
-      },
       {
         id: 'hk',
         name: 'Hong Kong',
@@ -155,7 +149,7 @@
         name: 'Japan',
         nodes: [
           { id: 'jp-01', name: 'Tokyo-01', protocol: 'VLESS' },
-          { id: 'jp-02', name: 'Osaka-02', protocol: 'Hysteria2' },
+          { id: 'jp-02', name: 'Osaka-02', protocol: 'Hy2' },
           { id: 'jp-03', name: 'Tokyo-03 Relay', protocol: 'VMess' },
         ],
       },
@@ -164,7 +158,7 @@
         name: 'Singapore',
         nodes: [
           { id: 'sg-01', name: 'SG-01', protocol: 'VLESS' },
-          { id: 'sg-02', name: 'SG-02 Fast', protocol: 'Hysteria2' },
+          { id: 'sg-02', name: 'SG-02 Fast', protocol: 'Hy2' },
         ],
       },
       {
@@ -187,7 +181,7 @@
         id: 'game',
         name: 'Gaming',
         nodes: [
-          { id: 'gm-01', name: 'JP Game Lowping', protocol: 'Hysteria2' },
+          { id: 'gm-01', name: 'JP Game Lowping', protocol: 'Hy2' },
           { id: 'gm-02', name: 'TW Game', protocol: 'VLESS' },
         ],
       },
@@ -202,13 +196,12 @@
           { id: 'n-01', name: 'Node Alpha', protocol: 'VLESS' },
           { id: 'n-02', name: 'Node Beta', protocol: 'VMess' },
           { id: 'n-03', name: 'Node Gamma', protocol: 'Trojan' },
-          { id: 'n-04', name: 'Node Delta', protocol: 'Hysteria2' },
+          { id: 'n-04', name: 'Node Delta', protocol: 'Hy2' },
         ],
       },
     ];
 
     const DEMO_LATENCIES = {
-      'auto-01': 45, 'auto-02': 88,
       'hk-01': 38, 'hk-02': 52, 'hk-03': 'timeout',
       'jp-01': 64, 'jp-02': 71, 'jp-03': 89,
       'sg-01': 55, 'sg-02': 48,

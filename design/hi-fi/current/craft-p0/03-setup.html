@@ -453,8 +453,12 @@
     /* —— 3–5 Add Subscription + optional Parsing modal / fail —— */
     function AddSub({ fail, parsing }) {
       const { useEffect, useRef } = React;
-      const parseLabel = parsing === 'qr' ? 'Reading QR code…' : 'Reading from Clipboard…';
-      // Unique per source so storyboard frames 4 + 4b never collide
+      const parseLabel = parsing === 'qr'
+        ? 'Reading QR code…'
+        : parsing === 'file'
+          ? 'Reading file…'
+          : 'Reading from Clipboard…';
+      // Unique per source so storyboard frames 4 / 4b / 4c never collide
       const parseId = parsing ? `parse-status-label-${parsing}` : 'parse-status-label';
       const statusRef = useRef(null);
 
@@ -487,7 +491,7 @@
                     margin: '12px 0 0', fontSize: 15, fontWeight: 500, lineHeight: 1.5,
                     color: T.secondary, maxWidth: 320, fontFamily: TYPE.font,
                   }}>
-                    Get a subscription link or QR from your provider, then paste or scan it here.
+                    Get a subscription link, QR, or file from your provider, then paste, scan, or import it here.
                   </p>
                 </div>
               )}
@@ -519,7 +523,7 @@
                     margin: '12px auto 0', fontSize: 15, fontWeight: 500, lineHeight: 1.45,
                     color: T.secondary, maxWidth: 280, fontFamily: TYPE.font,
                   }}>
-                    Copy a fresh link or QR from your provider, then try again.
+                    Copy a fresh link, QR, or file from your provider, then try again.
                   </p>
                 </div>
               )}
@@ -796,6 +800,10 @@
           <div className="phone-col">
             <div className="lab">4b · Parsing (QR)<span>Same modal · QR source</span></div>
             <AddSub parsing="qr" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">4c · Parsing (file)<span>Same modal · Import file</span></div>
+            <AddSub parsing="file" />
           </div>
           <div className="phone-col">
             <div className="lab">5 · Couldn’t add<span>Error is sole title · try again</span></div>

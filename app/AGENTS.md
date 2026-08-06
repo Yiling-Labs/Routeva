@@ -6,8 +6,12 @@
 
 ## 当前状态
 
-**设计定稿前：不在此目录写应用代码。**  
-Craft / hi-fi 在 `design/` 收敛前，保持本目录仅占位；实现启动须用户明确确认。
+**实现暂停 · 继续产品与设计打磨（2026-08-06 用户指令）。**
+
+- **本阶段禁止**在 `app/ios/` · `app/android/` 写入可运行工程、业务源码或框架脚手架。  
+- 仅保留占位（`.gitkeep`）与本规则文件。  
+- 实现清单仍在文档侧：[`docs/prd/implementation-checklist.md`](../docs/prd/implementation-checklist.md)。  
+- **恢复编码**须用户再次明确确认（例如「开始写 app 代码」）。
 
 ## 通用（L0）
 
@@ -34,17 +38,17 @@ Craft / hi-fi 在 `design/` 收敛前，保持本目录仅占位；实现启动�
 - **双端**（ios + android，Dual-Native）：iOS 仅在 `app/ios/`；不得 import / 编译 `app/android/`。  
 - App Store 截图与元数据在 `gtm/stores/app_store/`。  
 - 证书与配置描述文件不入库。  
-- **设计定稿后再加入** Xcode 工程。
+- **当前阶段仅占位**；实现启动后 Xcode 工程进本目录。
 
 ### android
 
 - **双端**（ios + android，Dual-Native）：Android 仅在 `app/android/`；不得 import / 编译 `app/ios/`。  
 - Play 素材在 `gtm/stores/play_store/`。  
 - keystore / 签名密钥不入库。  
-- **设计定稿后再加入** Android 工程。
+- **当前阶段仅占位**；实现启动后 Gradle 工程进本目录。
 
 ## 指南链接
 
-- [common.md](../docs/guides/common.md) — 通用
-- [ios.md](../docs/guides/ios.md) — iOS
-- [android.md](../docs/guides/android.md) — Android
+- [common.md](../docs/guides/common.md) — 通用  
+- [ios.md](../docs/guides/ios.md) — iOS  
+- [android.md](../docs/guides/android.md) — Android  

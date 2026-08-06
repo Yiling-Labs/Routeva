@@ -22,7 +22,7 @@
 | Root | **仅 Home** |
 | Help / Subscriptions / Settings | 顶栏：**Help** glass pill + Subscriptions/Settings orbs（Empty 无 Subscriptions · ADR 0036） |
 | Activity | **不**进顶栏、**不**进 Settings 根页（ADR **0051**）；Help / 诊断·Repair 上下文 |
-| Location | Not Connected 下 **图标 + Location ›** |
+| Location | 黑场：**图标 + Location ›**；绿场：**中部节点行可点**（无 Location pill / 无 Cover Flow） |
 | 禁止 | 底部 Tab；Go Premium |
 
 ## 双皮肤
@@ -40,7 +40,7 @@
 | 2 | **Swipe ~⅓** | ~1/3 | **第 1 圈** | 同上 | Not Connected + Location | 黑 |
 | 3 | **Swipe ~⅔** | ~2/3 | **1–2 圈** | 同上 | Not Connected + Location | 黑 |
 | 4 | **Connecting** | 底 | **3 圈全亮** | Cover Flow | **Connecting…** | 黑 |
-| 5 | **Connected** | 底 STOP | 3 圈绿 + 脉冲 | **时长 + ↓↑ Mb/s** | 地区 · Connected · 节点+弱协议 | **绿** |
+| 5 | **Connected** | 底 STOP | 3 圈绿 + 脉冲 | **时长 + ↓↑ Mb/s** | 地区 · Connected · **可点节点行**（→ Location） | **绿** |
 
 Interactive 列可拖/点完整流程。
 

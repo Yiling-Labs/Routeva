@@ -93,7 +93,7 @@
 
 | 状态 | 说明 |
 |---|---|
-| 已完成 | 工作区 init；GitHub；CONTEXT + ADR；Craft P0 hi-fi；**Dual-Native 双端轨道**（ADR 0049） |
-| 下一步 | **先收敛设计定稿**（hi-fi / IA）；**定稿前 `app/ios` / `app/android` 不写代码**；之后并行搭两端工程与 VPN/Probe 等 |
+| 已完成 | 工作区 init；GitHub；CONTEXT + ADR；Craft P0 hi-fi；**Dual-Native 双端轨道**（ADR 0049）；grill 文档↔hi-fi 收口；实现 checklist 已备 |
+| 下一步 | **继续产品 / 设计打磨**（`design/` · PRD · copy · acceptance）；**`app/` 暂不写代码**。实现表见 [`docs/prd/implementation-checklist.md`](./docs/prd/implementation-checklist.md)（用户再开编码时用） |
 
 开放项（实现期可短 grill）：双端内核选型、Probe 目标、分析事件表、隐私营养标签 / Play 数据安全表、TestFlight + 内测轨道、**商业化时机与是否沿用 0001**、Android minSdk 终稿等。

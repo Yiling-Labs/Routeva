@@ -64,9 +64,17 @@
       mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
       -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
     }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .toast-enter {
+      animation: toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
       button:active:not(:disabled) { transform: none; }
+      .toast-enter { animation: none; }
     }
   </style>
 </head>
@@ -74,10 +82,11 @@
   <div class="meta">
     <h1>Settings · Connection Policy first</h1>
     <p>
-      ADR 0021–0032 · <strong>0015</strong> · <strong>0045</strong> · <strong>0051</strong> (no History on root).
+      ADR 0021–0032 · <strong>0015</strong> · <strong>0045</strong> · <strong>0051</strong> (no History) · <strong>0054</strong> (iOS iCloud overrides).
       Root: <strong>Connection → App</strong> only.
       App: <strong>Auto-update subscription</strong> (default on) · Subscriptions · About.
       Overrides <strong>O3</strong>: domain exceptions, not a rule-engine empty state.
+      iCloud: <strong>4d</strong> empty-fail weak line · <strong>4e</strong> success toast — never a permanent “Backed up” bar.
       No History/Activity/Snapshots rows, Appearance, Advanced, or Cloud AI toggle.
     </p>
     <div class="tags">
@@ -85,6 +94,7 @@
       <span class="tag">POLICY FIRST</span>
       <span class="tag">O3 OVERRIDES</span>
       <span class="tag">ADR 0051</span>
+      <span class="tag">ADR 0054 · iCLOUD</span>
     </div>
   </div>
   <div id="root"></div>
@@ -555,7 +565,47 @@
       );
     }
 
-    function OverridesScreen({ items, onBack, onAdd, onToggle, onRemove }) {
+    /** ADR 0054 — iOS only. Success = short toast; fail = weak empty-state line only (no permanent cloud status). */
+    function ICloudToast({ text }) {
+      return (
+        <div
+          role="status"
+          aria-live="polite"
+          className="toast-enter"
+          style={{
+            position: 'absolute',
+            left: 20, right: 20, top: 62, zIndex: 25,
+            display: 'flex', justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{
+            maxWidth: 320,
+            padding: '12px 16px',
+            borderRadius: 16,
+            background: 'linear-gradient(155deg, rgba(40,48,56,0.96) 0%, rgba(18,22,28,0.98) 100%)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            fontFamily: TYPE.font,
+            fontSize: 14, fontWeight: 600,
+            color: T.primary,
+            letterSpacing: '-0.01em',
+            lineHeight: 1.35,
+            textAlign: 'center',
+          }}>
+            {text}
+          </div>
+        </div>
+      );
+    }
+
+    function OverridesScreen({
+      items, onBack, onAdd, onToggle, onRemove,
+      /** iOS only: empty-library restore failed — weak line, not a permanent cloud status */
+      icloudRestoreFailed = false,
+    }) {
       return (
         <Shell
           title="Overrides"
@@ -626,6 +676,22 @@
                 }}>
                   One domain each
                 </div>
+                {/* settings.overrides.icloud.restore_failed · empty library only · weak · iOS */}
+                {icloudRestoreFailed && (
+                  <p
+                    role="status"
+                    style={{
+                      margin: '20px 0 0',
+                      fontSize: 13, fontWeight: 500,
+                      color: 'rgba(255,176,120,0.88)',
+                      lineHeight: 1.4,
+                      maxWidth: '26ch',
+                      textWrap: 'pretty',
+                    }}
+                  >
+                    Couldn’t restore from iCloud
+                  </p>
+                )}
               </div>
             </div>
           ) : (
@@ -1151,7 +1217,8 @@
 
     /**
      * About 闭集（CONTEXT / ADR 0031 / 0054 / en.yaml）：
-     * 名+版本 · 隐私承诺 · iOS iCloud 披露 · Links(Privacy · Terms · Support) · Export 次要。
+     * 名+版本 · 隐私承诺 · iOS iCloud 披露 · Links(Privacy · Terms · Support) ·
+     * MT 次要披露（settings.about.mt_disclosure）· Export 次要。
      * craft-p0 以 iPhone 为主验收 → 展示 iCloud 句；Android 实现须省略该行。
      */
     function AboutScreen({ onBack }) {
@@ -1204,7 +1271,17 @@
             />
           </Group>
 
-          <div style={{ marginTop: 18 }}>
+          {/* settings.about.mt_disclosure · secondary · Localization Policy · no per-screen banner */}
+          <p style={{
+            margin: '16px 8px 0',
+            fontSize: 12, fontWeight: 500, color: T.quiet, lineHeight: 1.4,
+            textAlign: 'center', maxWidth: '36ch', alignSelf: 'center',
+            fontFamily: TYPE.font,
+          }}>
+            Some interface text may be machine-translated. Critical explanations stay in English.
+          </p>
+
+          <div style={{ marginTop: 14 }}>
             <Ghost>Export diagnostic report</Ghost>
           </div>
         </Shell>
@@ -1426,7 +1503,34 @@
               )}
             </div>
             <div className="phone-col">
-              <div className="lab">5 · About<span>promise · iCloud (iOS) · Privacy · Terms · Support · Export</span></div>
+              <div className="lab">4d · iCloud restore failed<span>iOS · empty only · weak line · ADR 0054</span></div>
+              {frame(
+                <OverridesScreen
+                  items={[]}
+                  icloudRestoreFailed
+                  onBack={() => {}}
+                  onAdd={() => {}}
+                  onToggle={() => {}}
+                />
+              )}
+            </div>
+            <div className="phone-col">
+              <div className="lab">4e · iCloud restored<span>iOS · short toast · not a status bar</span></div>
+              {frame(
+                <div style={{ height: '100%', position: 'relative' }}>
+                  <OverridesScreen
+                    items={OVERRIDE_DEMO}
+                    onBack={() => {}}
+                    onAdd={() => {}}
+                    onToggle={() => {}}
+                    onRemove={() => {}}
+                  />
+                  <ICloudToast text="Restored 2 exceptions" />
+                </div>
+              )}
+            </div>
+            <div className="phone-col">
+              <div className="lab">5 · About<span>promise · iCloud · Links · MT line · Export</span></div>
               {frame(<AboutScreen onBack={() => {}} />)}
             </div>
           </div>

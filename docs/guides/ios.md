@@ -10,7 +10,7 @@
 
 ## 工程与合规（原则级）
 
-- [ ] 工程与源码在 `app/ios/`（Dual-Native；**设计定稿后再填入**；此前仅占位）  
+- [ ] 工程与源码在 `app/ios/`（Dual-Native；**当前仅占位**；实现 checklist 见 `docs/prd/implementation-checklist.md`，编码须用户再开）  
 - [ ] 隐私营养标签 / 隐私政策链接等材料有文档或 gtm 文案落点（实现/上架阶段补齐）  
 - [ ] 密钥、证书、`.p12` 不入库  
 

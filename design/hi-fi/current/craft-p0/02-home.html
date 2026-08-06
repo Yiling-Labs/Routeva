@@ -79,7 +79,8 @@
     <p>
       Sequence: <strong>Idle</strong> (no dots) → <strong>Swipe ⅓</strong> (1 ring) →
       <strong>Swipe ⅔</strong> (2 rings) → <strong>Connecting</strong> (3 rings) →
-      <strong>Connected</strong> (green field).
+      <strong>Connected</strong> (green field · <strong>tappable node row → Location</strong>).
+      Black: <strong>Location ›</strong> pill. Green: no pill / no Cover Flow — mid node row is the entry.
       <strong>Auto demo</strong> loops START↓ connect → STOP↑ disconnect;
       <strong>Interactive</strong> is drag/tap.
     </p>
@@ -1545,18 +1546,45 @@
                 </div>
               )}
 
+              {/* Connected: mid node row is the only Location entry (no Location › pill).
+                  Soft glass chip = tappable affordance (same family as black-field Location ›). */}
               {showSession && (
-                <div style={{
-                  marginTop: 10,
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  fontFamily: TYPE.font,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: 'rgba(255,255,255,0.78)',
-                }}>
-                  <span style={{ fontSize: 13, lineHeight: 1 }}>{node.flag}</span>
+                <button
+                  type="button"
+                  className="press"
+                  aria-label="Choose location"
+                  title="Location"
+                  onClick={() => {
+                    /* Storyboard affordance — product: full-screen Location push */
+                  }}
+                  style={{
+                    marginTop: 12,
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    fontFamily: TYPE.font,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    letterSpacing: '0.01em',
+                    color: 'rgba(255,255,255,0.90)',
+                    background: 'linear-gradient(160deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)',
+                    border: '1px solid rgba(255,255,255,0.20)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22), 0 8px 20px rgba(0,0,0,0.18)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    padding: '9px 14px 9px 12px',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    borderRadius: 999,
+                    cursor: 'pointer',
+                    WebkitTapHighlightColor: 'transparent',
+                    minHeight: 40,
+                  }}
+                >
+                  <span style={{ fontSize: 14, lineHeight: 1 }} aria-hidden="true">{node.flag}</span>
                   <NodeLabel node={node} size="sm" />
-                </div>
+                  <span style={{ opacity: 0.55, display: 'flex', marginLeft: 2 }} aria-hidden="true">
+                    <IconChevron size={12} stroke={ICON_STROKE.cta} />
+                  </span>
+                </button>
               )}
 
               {modeHint && s !== 'setup' && (
@@ -1651,7 +1679,7 @@
               <HomeScreen state="connecting" />
             </div>
             <div className="phone-col">
-              <div className="lab">5 · Connected<span>Green field · session + speeds</span></div>
+              <div className="lab">5 · Connected<span>Green field · node row → Location</span></div>
               <HomeScreen state="connected" />
             </div>
           </div>

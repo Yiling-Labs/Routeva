@@ -84,7 +84,7 @@
 
 - **First-Run（ADR 0019）：** Welcome（仅一次：headline + 一句副文，自备订阅 / 不卖节点）→ Home Empty → 用户主动 Add subscription。**无** 1·2·3 卡片墙；**无** 应用内 VPN 说明页。
 - **VPN 权限（Platform Realization）：** 首次真正连接手势时出 **系统 VPN 授权**（iOS：系统 VPN 弹窗；Android：VpnService / 系统 VPN 权限流）；拒绝 → 回 Home Idle；同意 → 连接至 Connection Success。用途说明放商店/隐私文案，不单独做应用内说明屏。不要求注册/邮箱。
-- **Add Subscription：** Paste from Clipboard 为主，Scan QR / Import file 为辅；**无**手填主 UI、**无**「剪贴板已发现」独立页。解析为叠在 Add 上的 **Parsing 模态**。失败：页内短句 + Paste again；**不覆盖**已有配置。
+- **Add Subscription：** Paste from Clipboard 为主，Scan QR / Import file 为辅；**无**手填主 UI、**无**「剪贴板已发现」独立页。解析为叠在 Add 上的 **Parsing 模态**（源相关文案：*Reading from Clipboard…* / *Reading QR code…* / *Reading file…*）。失败：页内短句 + Paste again；**不覆盖**已有配置。
 - **导入成功：** 直接回 **Home Idle（同壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s** 自动消失）；设 Active；**不**自动连；**不**强制命名（自动取名 + Subscriptions 内可选 Rename，见 ADR 0033）。详细字段（到期/流量/更新时间等）进订阅详情，不挡首次路径。
 - **多订阅模型（Active Subscription）：** 可保存多份 Subscription；同一时间仅 **1 个 Active** 用于连接 / 选节点 / Probe / 诊断 / Repair / Failover。切换 Active 须用户明确操作，记入 Activity；不默认合并多订阅节点池；不做多隧道并行。首次导入的订阅自动成为 Active。
 - **Subscription Refresh（少打扰 · ADR 0015）：**
@@ -149,12 +149,12 @@
 
 **Location Surface**
 
-- 从 Home **Location ›**（及 Connected 节点行等）全屏 push；标题 *Location*。
-- 只列 **Active** 订阅可选出口节点；分组来自订阅 **服务商 group**（无 group → *All nodes*）；**不**按客户端猜地区重分类。
+- 从 Home **Location ›**（黑场）或 **Connected 中部节点行**（绿场，可点；**不**恢复 Cover Flow / Location pill）全屏 push；标题 *Location*。
+- 只列 **Active** 订阅可选出口节点；分组来自订阅 **服务商 group**（无 group → *All nodes*）；**不**按客户端猜地区重分类；group 名原样展示（含订阅真名 *Auto*——≠ 客户端伪造 Auto 行）。
 - **分组 UI：** **≥2 组** → 导航下固定 **横向 chip**（可左右滑），点选后列表**仅显示该组**；**1 组** → **不**显示 chip，直接列表。默认打开含 Preferred 的组。
-- **行：** 主行节点名 + Preferred 时 check（**无** *Pinned* 文案）；次行弱协议 · Latency（`—` / `{ms} ms` / `Timeout`）。
+- **行：** 主行节点名 + Preferred 时 check（**无** *Pinned* 文案）；次行弱协议短名（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· Latency（`—` / `{ms} ms` / `Timeout`）。
 - **Latency Test：** 顶栏 *Test* 批量入口延迟/握手标注（非 ICMP *Ping* 叙事、非完整 Probe）；可取消；**不**改偏好、**不**自动切、**不**按 ms 重排。
-- MVP：**无**搜索/筛选、**无**进页自动测、**无**列表顶 *Auto* 行、**无**顶栏 `⋯`、**无**订阅 CRUD 主路径、**无**全部组纵向长卷主路径。
+- MVP：**无**搜索/筛选、**无**进页自动测、**无**客户端伪造的列表顶 *Auto* 行、**无**顶栏 `⋯`、**无**订阅 CRUD 主路径、**无**全部组纵向长卷主路径。
 - 权威 hi-fi：`design/hi-fi/current/craft-p0/08-location.html`。
 
 ### 4.4 诊断与 Failure Bucket
@@ -277,7 +277,7 @@
 
 | 面 | 内容 |
 |---|---|
-| **Home** | 选节点（Cover Flow）+ **竖直滑动胶囊**（START 顶下滑连 / STOP 底上滑断）+ 连接真值（Not Connected / Connecting… / Connected）+ Location ›；黑/绿双皮肤（绿场 **仅** Connection Success）。顶栏出口：**Help** pill · **Subscriptions**（有订阅时）· **Settings**。**不**常驻策略切换、健康仪表、流量/到期、Active 订阅 chip、Auto 字样。权威 hi-fi：`02-home.html` |
+| **Home** | 选节点（Cover Flow）+ **竖直滑动胶囊**（START 顶下滑连 / STOP 底上滑断）+ 连接真值（Not Connected / Connecting… / Connected）+ 黑场 **Location ›** / 绿场 **可点节点行 → Location**；黑/绿双皮肤（绿场 **仅** Connection Success）。顶栏出口：**Help** pill · **Subscriptions**（有订阅时）· **Settings**。**不**常驻策略切换、健康仪表、流量/到期、Active 订阅 chip、Auto 字样。权威 hi-fi：`02-home.html` |
 | **Location** | 全屏节点列表（ADR **0055**/**0056**）：服务商分组 · **点选 = Preferred**（记住偏好，Failover 仍允许）· 顶栏 Latency *Test* · **无** `⋯` / 清回 Auto；返回同步 Cover Flow。权威 hi-fi：`08-location.html` |
 | **Help（Agent Surface）** | 用户可见 **Help**；信任条 + 空态 chips（随连/断双态）+ 聊天 + *What Help can do* + *How we use data*；Cloud 默认开可关。能力接通；过程展示 Craft P1。权威：`06-agent.html` |
 | **Subscriptions** | 一级面单列表：全部订阅 + Active 高亮（有则流量/带标签 Expires·Expired + Update）；Set active；底 Add；可选 Rename。权威：`04-subscriptions.html` |
@@ -323,6 +323,7 @@
 - Active Subscription：同时仅一份参与连接与自愈；切换显式；不合并节点池、不并行多隧道。
 - Subscription Refresh（ADR 0015）：Settings › App 全局 Auto-update 默认开；开时仅严格冷启动 + T=24h 刷可远程刷新的 Active；无连接前/后台周期；整包替换；自动失败安静不覆盖；手动 Update 在 Subscriptions。
 - **UI 态实现任务（open）：** 无远程源 Active **1d**、手动 Update 失败 **1e** — 见 [`features/subscription-refresh-ui-states.md`](./features/subscription-refresh-ui-states.md)（IMPL-SUB-1d / 1e）。
+- **实现勾选总表：** [`implementation-checklist.md`](./implementation-checklist.md)（双端 · 屏 · 文案 · 门槛 · 建议顺序）。
 - Subscription Display Name：导入静默自动取名（配置名 → 元数据/文件名 → host 弱名 → 中性默认）；可选 Rename；不承诺服务商品牌名（ADR 0033）。
 - User Override：仅**单域名** → proxy|direct；Beta **无**条数硬上限；无 Service 预设、无正则/规则市场；Global/Direct 另计（ADR **0057** / 0050）。
 - User Override iCloud Backup（iOS · ADR 0054）：换机/重装后空库可恢复例外列表；非空可合并；无 iCloud 时本机可用；Android 不假装已有。订阅等其余配置仍须本机重导。

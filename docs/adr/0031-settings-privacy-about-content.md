@@ -1,6 +1,6 @@
 # Privacy / About 内容闭集（修订：隐私不进根页）
 
-**Status：** accepted（2026-08-06 修订：About 闭集补 **iOS iCloud 披露** + Links 含 Support；与 CONTEXT / ADR **0054** / hi-fi `05-settings` About 对齐）
+**Status：** accepted（2026-08-06 修订：About 闭集补 **iOS iCloud 披露** + Links 含 Support + **MT 次要披露**；与 CONTEXT / ADR **0054** / hi-fi `05-settings` About 对齐）
 
 **About ›（根页 App 入口）闭集（自上而下）：**
 
@@ -13,12 +13,13 @@
    - **Privacy Policy** → **`https://routeva.yilinglabs.com/privacy/`**（副文 *How we handle your data*）  
    - **Terms of Use** → **`https://routeva.yilinglabs.com/terms/`**（副文 *Rules for using Routeva*）  
    - **Support** → 外链发现性（hi-fi：同源站点 Contact，如 `/privacy/#contact`；实现可换正式 support 入口）  
-5. **次要：Export diagnostic report**（脱敏）  
+5. **次要：机翻披露**（`settings.about.mt_disclosure` · lock-en）—*Some interface text may be machine-translated. Critical explanations stay in English.* 字阶弱于承诺句；**无**每屏 MT 横幅。见 CONTEXT **Localization Policy**。  
+6. **次要：Export diagnostic report**（脱敏）  
 
 **明确不做：** 连点 Advanced；Beta 不强制 Rate/Share；根页独立 **Privacy ›**（见 **0034**）；Overrides 页 iCloud 主开关或常驻云状态条。
 
 **Privacy Policy / Terms：** 权威正文在 **website/**（`/privacy/` · `/terms/`），与 Cloudflare Pages 站点同源。
 
-**为何：** 根页不挂 Privacy/Terms 长文；Web 单一权威源便于审核与更新；About 保留承诺 + **iOS 备份边界** + 外链发现性，与 0054 同源、与 hi-fi 单源。
+**为何：** 根页不挂 Privacy/Terms 长文；Web 单一权威源便于审核与更新；About 保留承诺 + **iOS 备份边界** + 外链发现性 + **壳层机翻边界**，与 0054 / Localization Policy 同源、与 hi-fi 单源。
 
-**后果：** CONTEXT **Settings Surface** About 条；ADR **0034** / **0054**；copy `settings.about.*`；hi-fi `05-settings.html` About 帧。
+**后果：** CONTEXT **Settings Surface** About 条 · Localization Policy；ADR **0034** / **0054**；copy `settings.about.*`；hi-fi `05-settings.html` About 帧。

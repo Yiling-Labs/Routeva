@@ -329,7 +329,7 @@ strings:
     surface: setup
 
   - key: setup.add.lead
-    en: Get a subscription link or QR from your provider, then paste or scan it here.
+    en: Get a subscription link, QR, or file from your provider, then paste, scan, or import it here.
     tier: shell
     surface: setup
 
@@ -368,13 +368,19 @@ strings:
     tier: shell
     surface: setup
 
+  - key: setup.add.parsing.file
+    en: Reading file…
+    tier: shell
+    surface: setup
+    notes: "Import file path · same Parsing modal shell as clipboard/QR"
+
   - key: setup.add.fail.title
     en: Couldn’t add this
     tier: shell
     surface: setup
 
   - key: setup.add.fail.body
-    en: Copy a fresh link or QR from your provider, then try again.
+    en: Copy a fresh link, QR, or file from your provider, then try again.
     tier: shell
     surface: setup
 
@@ -424,13 +430,13 @@ strings:
     surface: subscriptions
 
   - key: subs.update.unavailable
-    en: Can’t update from a link
+    en: Can’t update automatically
     tier: shell
     surface: subscriptions
-    notes: "ADR 0015 · Active has no remote URL (single-node URI / local file)"
+    notes: "ADR 0015 · Active has no remote URL (single-node URI / local file) · not ‘from a link’ only"
 
   - key: subs.update.unavailable.hint
-    en: Paste a fresh subscription link or QR if you need new nodes.
+    en: Paste, scan, or import a fresh subscription link, QR, or file if you need new nodes.
     tier: shell
     surface: subscriptions
 
@@ -441,7 +447,7 @@ strings:
     notes: "Manual Update failure only · auto-refresh stays silent"
 
   - key: subs.update.failed.hint
-    en: Your current nodes stay as they are. Try again, or paste a fresh link from your provider.
+    en: Your current nodes stay as they are. Try again, or paste, scan, or import a fresh subscription from your provider.
     tier: shell
     surface: subscriptions
 
@@ -475,6 +481,12 @@ strings:
     en: Rename
     tier: shell
     surface: subscriptions
+
+  - key: subs.rename.hint
+    en: Display name only — doesn’t change your provider subscription.
+    tier: shell
+    surface: subscriptions
+    notes: "Rename sheet secondary · craft-p0/04 · ADR 0033"
 
   - key: subs.default_name
     en: Subscription
@@ -809,7 +821,7 @@ strings:
     en: Some interface text may be machine-translated. Critical explanations stay in English.
     tier: lock-en
     surface: settings
-    notes: "CONTEXT Localization Policy · optional secondary About line; no per-screen MT banner"
+    notes: "CONTEXT Localization Policy · required secondary About line (craft-p0 About); no per-screen MT banner"
 
   # ── diagnostic sheet ────────────────────────────────────────────────────
   # User-visible bucket labels — never internal Client-Fixable etc. (ADR 0041)

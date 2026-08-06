@@ -50,7 +50,7 @@ _Avoid_: 15+ 语言假覆盖；Hans/Hant 混用同一串无分 locale；用上�
 - **选择（U1）：** 仅跟随系统首选语言（iOS / Android 各自系统设置）；**无** Settings「Language」行（与无 Appearance 一致）。  
 - **机翻范围（T1 · 壳层）：** 导航、Settings 行名、按钮、空态、列表壳等可对闭集内非 en locale **机翻**（无人审）。  
 - **锁 English：** 诊断四桶与失败主文案、Repair 确认/进度/回滚、隐私关键句、付费墙。高风险键无合格译文时 **显式回落 en**，优于错误机翻。  
-- **披露：** About 可有一句次要说明——部分界面为机翻，关键说明以 English 为准；**无**每屏 MT 横幅、无首次强选语言。  
+- **披露：** About **须有**一句次要说明（`settings.about.mt_disclosure`）——部分界面为机翻，关键说明以 English 为准；**无**每屏 MT 横幅、无首次强选语言。权威 hi-fi：`05-settings` About。  
 - **Help：** 用户输入可跟界面/系统语言；结构化诊断卡仍 English（同 T1）。  
 - **GTM 语言（与 App 脱钩计数）：** 见 **GTM Language Set**。  
 _Avoid_: 全 UI 含诊断/同意无人审机翻；运行时 LLM 译 UI 字符串；Settings 语言双轨；每屏 Machine translated 条；8 套完整 GTM 截图与 App 同日齐发
@@ -133,7 +133,9 @@ _Avoid_: Empty 用 + 替换 Settings；顶栏四钮塞回 Activity；入口仅�
    - **About › 闭集：** 名+版本 · **一句隐私承诺**（如 *Privacy first. Temporary help context only — and you can turn cloud assist off.*；**不**写绝对 never upload）· **iOS 一句 iCloud 披露**（Domain exceptions 可经用户 iCloud 备份以便重装/换机；**非**开关、**非**全量配置同步；Android **不**显示）· Links（均为系统浏览器，**非**应用内长文）：  
      - **Privacy Policy** → **`https://routeva.yilinglabs.com/privacy/`**（副文 *How we handle your data*）  
      - **Terms of Use** → **`https://routeva.yilinglabs.com/terms/`**（副文 *Rules for using Routeva*）  
-     - **Support** · **Export diagnostic report**（脱敏，次要）。**无** 连点 Advanced、无 Rate/Share 必达。  
+     - **Support**  
+     - **次要机翻披露**（`settings.about.mt_disclosure` · lock-en；Links 与 Export 之间）  
+     - **Export diagnostic report**（脱敏，次要）。**无** 连点 Advanced、无 Rate/Share 必达。  
    - **Privacy Policy（Web）：** 权威正文在 **website/**；本机数据 · 默认不收集 · Help 云辅助可关 · **iOS User Override 经用户 iCloud 备份（非 Routeva 服务器）** · 诊断明示。  
    - **Terms of Use（Web）：** 客户端非节点商 · 自备订阅 · 合法使用 · 权限/Repair 边界 · 无担保/责任限制 · IAP 若上线走 Apple。无第二套 Cloud 开关（管理在 Help）。  
 **无 History 段：** 不在根页放 **Activity ›** / **Snapshots ›**（及任何「事件浏览器 / 配置时光机」主入口）。  
@@ -146,26 +148,27 @@ _Avoid_: Settings 当第二连接台；Trust/History 占满根页主视觉；两
 _Avoid_: 竞品有则默认加；说不清就不进（误杀 Mode/DNS）；逐项无标准拍脑袋
 
 **Subscriptions Surface**：
-一级面（非 Settings 内嵌第二套管理）。**单列表**：一屏列出全部 Subscription；**Active** 行高亮（徽章 + 可选到期/流量 + **Update**）；非 Active 行可 **Set active**；底 **Add subscription**。**无**独立「All subscriptions」第二层。**可选 Rename**（非导入阻断）。**无**教学脚注。与 Empty/Add 流共用添加路径。Settings 最多 *Subscriptions ›* **深链到同一套 UI**，不复制 CRUD；**自动刷新总闸不在本面**（在 Settings › App）。  
+一级面（非 Settings 内嵌第二套管理）。**单列表**：一屏列出全部 Subscription；**Active** 行高亮（徽章 + 可选到期/流量 + **Update**）；非 Active 行可 **Set active**；底 **Add subscription**。**无**独立「All subscriptions」第二层。**Rename（能力 P0 · Craft 轻交互）：** 导入**不**阻断命名；用户可对显示名 **可选改名**——入口为 **次要**（如显示名 long-press / 行菜单 → 短 sheet），**非**列表常驻主 CTA、**非**独立全屏。**无**教学脚注。与 Empty/Add 流共用添加路径。Settings 最多 *Subscriptions ›* **深链到同一套 UI**，不复制 CRUD；**自动刷新总闸不在本面**（在 Settings › App）。  
 **列表元信息槽（有则显示、无则整槽省略）：** ① **节点数**（`N nodes`）② **到期**（状态词必显：未过期 *Expires {medium date}* / 已过期 *Expired {medium date}*，警示色；**禁止**裸日期与 nodes 用 `·` 粘连；列表**不到秒**）③ **Updated**（刷新新鲜度，relative 可；**不**冒充到期）。无 provider 字段时不写 *Not reported*。无远程源时 **Update** 可弱化/说明不可自动更新，**禁止**假装刷新成功。权威 hi-fi：`design/hi-fi/current/craft-p0/04-subscriptions.html`。详见 **Subscription Display Name** / ADR **0033** / **0015**。  
-_Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表双页重复；假设每家都有流量仪表盘；无数据时伪造仪表或写 *Not reported* 解释句；`42 nodes · Sep 12, 2026` 无标签日期；列表主扫读用 `yyyy-mm-dd hh:mm:ss`；未过期写 *Expired*；用 *Renews*（多数代理订阅无法确认自动续费）
+_Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表双页重复；假设每家都有流量仪表盘；无数据时伪造仪表或写 *Not reported* 解释句；`42 nodes · Sep 12, 2026` 无标签日期；列表主扫读用 `yyyy-mm-dd hh:mm:ss`；未过期写 *Expired*；用 *Renews*（多数代理订阅无法确认自动续费）；Rename 做成导入强制步骤或列表主按钮墙
 
 **Home Mid Copy（闭集）**：
-- **无订阅（Home Empty）：** 顶栏 **仅 Agent + Settings**（无 Subscriptions）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA（及同一 Add 流）
+- **无订阅（Home Empty）：** 顶栏 **仅 Help + Settings**（无 Subscriptions；用户可见 **Help**，内部可称 Agent）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA（及同一 Add 流）
 - **Idle / 手势中（黑场）：** 上部 **国旗 Cover Flow**（选中项下为 **节点名** + 弱协议）；中部 **Not Connected** + **Location ›**；**Idle 无点阵**  
 - **Connecting（黑场）：** Cover Flow 可保留；**Connecting…**；三圈点全亮（未染绿场）  
-- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；地区 · Connected · 节点+弱协议；三圈绿点  
+- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；地区 · Connected · **节点行**（旗 + 节点名 + 弱协议）；三圈绿点。**不**恢复 Cover Flow；**不**再挂 Idle 式 *Location ›* pill。**节点行可点** → 全屏 **Location Surface**（设 Preferred / 已连立即切节点）。  
 - 失败/弱连接：**Can’t connect** + Location；原因在诊断 sheet  
 - **仅当** 模式 ≠ Auto：弱提示 Global / Direct  
+**弱协议短名（全 app UI 闭集）：** 用户可见次要协议标签统一为 **`SS` · `VMess` · `VLESS` · `Trojan` · `Hy2`**（Home Cover Flow / 绿场节点行 / Location 行次行同源）。**不**在列表主扫读用 *Hysteria2* / *Shadowsocks* 等全称（a11y 可读 full name）。  
 **明确不出现：** provider rules、编号步骤墙、VERIFIED/probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章、**Home 上 *Pinned* / 偏好徽章**（偏好只在 **Location** 用 check 呈现；Home 只显示**当前会话**节点名）。  
-_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名；Home Connected/Idle 行叠 *Pinned* / Selected 徽章
+_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名；Home Connected/Idle 行叠 *Pinned* / Selected 徽章；绿场把节点行做成只读装饰、用户只能断连再进 Location；Home 写 Hy2、Location 写 Hysteria2
 
 **First-Run Setup（闭集）**：
 首次安装：**Welcome（仅一次）→ Home Empty →（用户点 + / Add subscription）→ Add Subscription**。欢迎仅 **headline + 一句副文**（自备订阅 / 不卖节点）；**无** 1·2·3 列表，**无** 诊断/修复说教句。**无** 应用内 VPN 说明页：首次连接手势时出 **iOS 系统弹窗**；拒绝 → Home 回 Idle（*Swipe down to connect*）；同意 → 连接至 Connection Success。权威 hi-fi：`design/hi-fi/current/craft-p0/03-setup.html`。详见 ADR 0019。  
 _Avoid_: Welcome→Import→VPN 三连轰炸；自建「Allow VPN」页；欢迎页编号卡片；欢迎页堆叠第三段能力说明
 
 **Add Subscription（交互）**：
-主路径 **Paste from Clipboard**；次要 **Scan QR**、**Import file**（剪贴板与扫码本质相同：取内容 → 解析）。顶部 **一句** 引导去服务商取链接/二维码。**无** 手填大输入框；**无** 独立「剪贴板已发现」确认页。点 Paste/扫码后在 **Add Subscription 上弹出 Parsing 模态**（*Reading from Clipboard…* / *Reading QR code…*；**非**独立全屏）。成功：直接回 **Home Idle（同一壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s 自动消失**）；设 Active；**不**自动连；**不**打断命名。失败：回 Add 页失败态——短句 *Couldn’t add this* + *Copy a fresh link or QR…*；主 CTA Paste again；次要 Scan/File；**不**列协议/格式清单；**不覆盖**已有配置。  
+主路径 **Paste from Clipboard**；次要 **Scan QR**、**Import file**（剪贴板与扫码本质相同：取内容 → 解析）。顶部 **一句** 引导去服务商取链接/二维码。**无** 手填大输入框；**无** 独立「剪贴板已发现」确认页。点 Paste / 扫码 / Import file 后在 **Add Subscription 上弹出 Parsing 模态**（*Reading from Clipboard…* / *Reading QR code…* / *Reading file…*；**非**独立全屏）。成功：直接回 **Home Idle（同一壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s 自动消失**）；设 Active；**不**自动连；**不**打断命名。失败：回 Add 页失败态——短句 *Couldn’t add this* + *Copy a fresh link, QR, or file…*；主 CTA Paste again；次要 Scan/File；**不**列协议/格式清单；**不覆盖**已有配置。  
 _Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳不一致；失败文案堆 Clash/YAML 等格式科普
 
 **Connect Gesture**：
@@ -173,19 +176,19 @@ _Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳�
 _Avoid_: Idle 常驻点阵；未 Probe 成功就整屏染绿；点阵超过 3 圈
 
 **Routing Mode Entry**：
-Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：Cover Flow + **Location Surface** 入口；Connected 节点行可点。  
+Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：黑场 = Cover Flow + **Location ›**；绿场 = **Connected 中部节点行可点**（进同一 **Location Surface**；**不**回 Cover Flow / Location pill）。  
 **Settings · Routing mode ›：** 单选三档 + 各一行副文（Auto = provider rules + best node choice；Global = all via proxy；Direct = no proxy）；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
-_Avoid_: Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器
+_Avoid_: Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器；绿场无入口只能先断连再选节点
 
 **Location Surface**：
-从 Home **Location ›**（及 Connected 节点行等）**全屏 push** 进入的节点浏览/选择面；标题 *Location*。只列 **Active Subscription** 下**可选出口节点**；分组来自订阅解析的 **服务商 group**（无 group 元数据 → 单段 *All nodes*）；**不**按客户端猜地区重分类。MVP **无**搜索/筛选、**无**进页自动测、**无**列表顶 *Auto* 行、**无**顶栏 `⋯`。  
+从 Home **Location ›**（黑场）或 **Connected 节点行**（绿场）**全屏 push** 进入的节点浏览/选择面；标题 *Location*。只列 **Active Subscription** 下**可选出口节点**；分组来自订阅解析的 **服务商 group**（无 group 元数据 → 单段 *All nodes*）；**不**按客户端猜地区重分类。**服务商 group 名原样展示**（若订阅里真有名为 *Auto* 的 group，chip 可显示 *Auto*——那是**订阅元数据**，**不是**客户端「Auto 预选 / 回 Auto」行）。MVP **无**搜索/筛选、**无**进页自动测、**无**客户端伪造的列表顶 *Auto* 行、**无**顶栏 `⋯`。  
 **分组切换（≥2 组）：** 导航栏下方 **固定横向 chip 条**（左→右；溢出可左右滑）；点 chip **只显示该组节点列表**（不再把所有组纵向叠成超长页）。**仅 1 组：** **不**显示 chip 条，直接节点列表。打开页时默认选中含 **Preferred** 的组（无偏好则第一组）。含偏好的组 chip 可带弱圆点提示。  
-**行（闭集）：** 主行节点名 + **Preferred** 时右侧 check（**无** *Pinned*/*Current* 文案徽章）；次行弱协议 · **Latency Test** 结果（`—` / `42 ms` / `Timeout`）。无偏好时列表不伪造选中态。  
+**行（闭集）：** 主行节点名 + **Preferred** 时右侧 check（**无** *Pinned*/*Current* 文案徽章）；次行 **弱协议短名**（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· **Latency Test** 结果（`—` / `42 ms` / `Timeout`）。无偏好时列表不伪造选中态。  
 **点选 = Preferred node（偏好节点）：** 记住该出口为默认连接目标（ADR **0055**）；**允许 Node Failover** 为保活换走会话节点；静默预选**不得覆盖**偏好。已 Connected → **立即切节点**（非 Repair）；失败**保留偏好**，走诊断。返回 Home 时 Cover Flow 对齐偏好；若会话因 Failover 暂用他节点，Home 显示**当前会话**节点。  
 **清除偏好：** **无**显式回 Auto UI。仅当偏好节点离开 Active 列表时静默丢弃 → 下次 Auto 预选；改偏好 = 点选另一节点。  
 **Latency Test：** 仅顶栏 *Test* 批量测到节点入口的延迟/握手类信号（**非** ICMP 叙事、**非**完整 Connectivity Probe）；可取消；**不**改偏好、**不**自动切节点、**不**按 ms 重排列表（测的是整池标注，列表仍只渲染当前组）。  
 **空态：** 无订阅 → 引导添加；0 节点 → 说明 + 次要 Update subscription；加载中骨架/文案。权威 hi-fi：`design/hi-fi/current/craft-p0/08-location.html`。详见 ADR **0055** / **0056**。  
-_Avoid_: 硬 Pin 禁 Failover；*Pinned* 锁语义；`⋯` *Use automatic node selection*；所有 group 纵向堆叠成长卷当主浏览；列表当订阅管理；只按延迟排序/选节点；用户可见硬 *Ping* 却测 TCP；真·经节点全表 Probe 当列表测速；地区重分类；第二套 Auto 大按钮与 Settings 抢选节点；Cover Flow 横滑 alone 当 Preferred
+_Avoid_: 硬 Pin 禁 Failover；*Pinned* 锁语义；`⋯` *Use automatic node selection*；所有 group 纵向堆叠成长卷当主浏览；列表当订阅管理；只按延迟排序/选节点；用户可见硬 *Ping* 却测 TCP；真·经节点全表 Probe 当列表测速；地区重分类；第二套 Auto 大按钮与 Settings 抢选节点；Cover Flow 横滑 alone 当 Preferred；**客户端**在列表顶伪造 *Auto* 行（与订阅 group 真名 *Auto* 不同）
 
 **Activity Log**：
 本机时间序事件记录，用于解释「系统刚做了什么」（连接、Node Failover、诊断、Repair、回滚、Global/Direct 或 Override 等）。Beta **必须记录**且在用户需要解释时**可触达**（能力 P0）；**不**以 Settings 根页/History 列表作主入口。用户触点优先：**Help / Agent 最近事件摘要**、诊断卡与 Repair 结果上下文。完整时间线 UI 属 Craft P1 / 可后补。不上传原始订阅/Token。  

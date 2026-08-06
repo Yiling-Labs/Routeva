@@ -63,6 +63,10 @@
       mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
       -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
     }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
       .spin-ring { animation: none; border-top-color: rgba(127,217,176,0.55) !important; border-right-color: rgba(127,217,176,0.55) !important; }
@@ -77,11 +81,13 @@
       One screen: all subscriptions listed; <strong>Active</strong> marked on the row in use.
       No separate “All subscriptions” layer. Update sits on the Active card; Add at the bottom.
       Meta slots: <strong>nodes</strong> · labeled <strong>Expires / Expired</strong> (omit if unknown) · <strong>Updated</strong> — never a bare date next to node count.
+      <strong>Rename</strong> = light path (long-press display name → sheet); not a primary list CTA (ADR 0033).
     </p>
     <div class="tags">
       <span class="tag">ADR 0020</span>
       <span class="tag">SINGLE LIST</span>
       <span class="tag">ADR 0033 · DISPLAY NAME</span>
+      <span class="tag">RENAME LIGHT</span>
       <span class="tag">EXPIRY LABELED</span>
       <span class="tag">VISUAL SYSTEM</span>
     </div>
@@ -364,7 +370,7 @@
           <div style={{
             height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.08)',
             overflow: 'hidden',
-          }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Data used">
+          }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Data">
             <div style={{
               width: `${pct}%`, height: '100%', borderRadius: 999,
               background: 'linear-gradient(90deg, rgba(127,217,176,0.55) 0%, rgba(79,185,138,0.95) 100%)',
@@ -374,10 +380,29 @@
       );
     }
 
-    function SubRow({ sub, refreshing, updateFailed }) {
+    function SubRow({ sub, refreshing, updateFailed, onRenameRequest }) {
       const isActive = !!sub.active;
       const remote = sub.remote !== false;
       const expiry = formatExpiry(sub.expiresAt);
+      const pressTimer = React.useRef(null);
+      const longPressFired = React.useRef(false);
+
+      const clearPress = () => {
+        if (pressTimer.current) {
+          clearTimeout(pressTimer.current);
+          pressTimer.current = null;
+        }
+      };
+
+      const startPress = () => {
+        longPressFired.current = false;
+        clearPress();
+        pressTimer.current = setTimeout(() => {
+          longPressFired.current = true;
+          onRenameRequest && onRenameRequest(sub);
+        }, 480);
+      };
+
       return (
         <div
           role="listitem"
@@ -403,14 +428,45 @@
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{
-                fontSize: isActive ? 20 : 17,
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: T.primary,
-              }}>
+              {/* Display name: long-press → Rename (light, not a primary CTA) */}
+              <button
+                type="button"
+                aria-label={`${sub.name}. Rename`}
+                aria-haspopup="dialog"
+                onPointerDown={startPress}
+                onPointerUp={clearPress}
+                onPointerLeave={clearPress}
+                onPointerCancel={clearPress}
+                onClick={(e) => {
+                  /* Short tap does nothing — rename is long-press only */
+                  if (longPressFired.current) e.preventDefault();
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  onRenameRequest && onRenameRequest(sub);
+                }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  border: 'none',
+                  background: 'transparent',
+                  padding: '2px 0',
+                  margin: 0,
+                  marginLeft: -2,
+                  paddingLeft: 2,
+                  borderRadius: 8,
+                  cursor: onRenameRequest ? 'pointer' : 'default',
+                  fontFamily: TYPE.font,
+                  fontSize: isActive ? 20 : 17,
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  color: T.primary,
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none',
+                  transition: 'background 0.2s ease, transform 0.2s ease',
+                }}
+              >
                 {sub.name}
-              </div>
+              </button>
               {/* Meta slots: nodes → Expires/Expired (optional) → Updated — never bare date · nodes */}
               <div style={{
                 marginTop: 6, fontSize: 13, fontWeight: 500, color: T.secondary, lineHeight: 1.35,
@@ -478,7 +534,7 @@
                         marginTop: 4, fontSize: 13, fontWeight: 500, color: T.muted,
                         lineHeight: 1.35, fontFamily: TYPE.font,
                       }}>
-                        Your current nodes stay as they are. Try again, or paste a fresh link from your provider.
+                        Your current nodes stay as they are. Try again, or paste, scan, or import a fresh subscription from your provider.
                       </div>
                     </div>
                   )}
@@ -512,13 +568,13 @@
                     fontSize: 14, fontWeight: 650, color: T.secondary,
                     fontFamily: TYPE.font, letterSpacing: '-0.01em',
                   }}>
-                    Can’t update from a link
+                    Can’t update automatically
                   </div>
                   <div style={{
                     marginTop: 4, fontSize: 13, fontWeight: 500, color: T.quiet,
                     lineHeight: 1.35, fontFamily: TYPE.font,
                   }}>
-                    Paste a fresh subscription link or QR if you need new nodes.
+                    Paste, scan, or import a fresh subscription link, QR, or file if you need new nodes.
                   </div>
                 </div>
               )}
@@ -552,33 +608,201 @@
       },
     ];
 
+    /** Rename sheet — light path (ADR 0033); not a full-screen import step */
+    function RenameSheet({ name, draft, onDraft, onCancel, onSave }) {
+      const inputRef = React.useRef(null);
+      React.useEffect(() => {
+        const el = inputRef.current;
+        if (!el) return;
+        el.focus();
+        el.select();
+      }, []);
+      const canSave = !!(draft && draft.trim());
+      return (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Rename"
+          style={{
+            position: 'absolute', inset: 0, zIndex: 30,
+            display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+            background: 'rgba(0,0,0,0.52)',
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) onCancel && onCancel(); }}
+        >
+          <div
+            style={{
+              margin: '0 12px 28px',
+              borderRadius: 22,
+              padding: '10px 16px 16px',
+              background: 'linear-gradient(168deg, #2a3036 0%, #161b20 100%)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 24px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
+              fontFamily: TYPE.font,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              width: 36, height: 4, borderRadius: 999,
+              background: 'rgba(255,255,255,0.2)', margin: '0 auto 14px',
+            }} aria-hidden="true" />
+            <div style={{
+              fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em', color: T.primary,
+              marginBottom: 4,
+            }}>
+              Rename
+            </div>
+            <p style={{
+              margin: '0 0 12px', fontSize: 13, fontWeight: 500, color: T.muted, lineHeight: 1.35,
+            }}>
+              Display name only — doesn’t change your provider subscription.
+            </p>
+            <label style={{ display: 'block' }}>
+              <span className="sr-only">Display name</span>
+              <input
+                ref={inputRef}
+                type="text"
+                value={draft}
+                onChange={(e) => onDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && canSave) { e.preventDefault(); onSave && onSave(); }
+                  if (e.key === 'Escape') { e.preventDefault(); onCancel && onCancel(); }
+                }}
+                enterKeyHint="done"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 14,
+                  padding: '14px 14px',
+                  background: 'rgba(255,255,255,0.07)',
+                  color: T.primary,
+                  fontFamily: TYPE.font,
+                  fontSize: 16, fontWeight: 600,
+                  outline: 'none',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+                }}
+              />
+            </label>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={onCancel}
+                style={{
+                  flex: 1, border: '1px solid rgba(255,255,255,0.14)', borderRadius: 14,
+                  padding: '14px 12px', background: 'rgba(255,255,255,0.06)',
+                  color: T.primary, fontFamily: TYPE.font, fontSize: 16, fontWeight: 650,
+                  cursor: 'pointer', minHeight: 48,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={!canSave}
+                style={{
+                  flex: 1, border: 'none', borderRadius: 14, padding: '14px 12px',
+                  background: CTA, boxShadow: canSave ? CTA_SH : 'none',
+                  color: '#0a1f18', fontFamily: TYPE.font, fontSize: 16, fontWeight: 750,
+                  cursor: canSave ? 'pointer' : 'default',
+                  opacity: canSave ? 1 : 0.45,
+                  minHeight: 48,
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     /* —— Single Subscriptions list (no second “All” page) —— */
-    function SubscriptionsList({ variant }) {
-      // variant: 'full' | 'sparse' | 'refreshing' | 'local' | 'failed'
-      let items = SUBS_FULL;
-      if (variant === 'sparse') items = SUBS_SPARSE;
-      if (variant === 'local') items = SUBS_LOCAL;
+    function SubscriptionsList({ variant, renameOpen = false, interactive = false }) {
+      // variant: 'full' | 'sparse' | 'refreshing' | 'local' | 'failed' | 'rename'
+      const seed = React.useMemo(() => {
+        if (variant === 'sparse') return SUBS_SPARSE.map((s) => ({ ...s }));
+        if (variant === 'local') return SUBS_LOCAL.map((s) => ({ ...s }));
+        return SUBS_FULL.map((s) => ({ ...s }));
+      }, [variant]);
+
+      const [items, setItems] = React.useState(seed);
+      const [renaming, setRenaming] = React.useState(
+        renameOpen || variant === 'rename'
+          ? (seed.find((s) => s.active) || seed[0])
+          : null,
+      );
+      const [draft, setDraft] = React.useState(renaming ? renaming.name : '');
+
+      React.useEffect(() => {
+        setItems(seed);
+        if (renameOpen || variant === 'rename') {
+          const target = seed.find((s) => s.active) || seed[0];
+          setRenaming(target);
+          setDraft(target ? target.name : '');
+        } else {
+          setRenaming(null);
+        }
+      }, [seed, renameOpen, variant]);
+
       const refreshing = variant === 'refreshing';
       const updateFailed = variant === 'failed';
+      const canRename = interactive || variant === 'rename' || renameOpen;
+
+      const openRename = (sub) => {
+        if (!canRename) return;
+        setRenaming(sub);
+        setDraft(sub.name);
+      };
+
+      const saveRename = () => {
+        const next = (draft || '').trim();
+        if (!next || !renaming) return;
+        setItems((list) => list.map((s) => (s.id === renaming.id ? { ...s, name: next } : s)));
+        setRenaming(null);
+      };
 
       return (
         <IosFrame>
-          <Shell
-            title="Subscriptions"
-            left={<GlassOrb label="Close"><IconClose /></GlassOrb>}
-            footer={<Secondary wide>Add subscription</Secondary>}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4, paddingBottom: 8 }} role="list">
-              {items.map((s) => (
-                <SubRow
-                  key={s.id}
-                  sub={s}
-                  refreshing={refreshing && s.active}
-                  updateFailed={updateFailed && s.active}
-                />
-              ))}
-            </div>
-          </Shell>
+          <div style={{ position: 'relative', height: '100%' }}>
+            <Shell
+              title="Subscriptions"
+              left={<GlassOrb label="Close"><IconClose /></GlassOrb>}
+              footer={<Secondary wide>Add subscription</Secondary>}
+            >
+              {interactive && (
+                <p style={{
+                  margin: '0 0 10px', fontSize: 12, fontWeight: 500, color: T.quiet,
+                  lineHeight: 1.35,
+                }}>
+                  Long-press a name to rename
+                </p>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4, paddingBottom: 8 }} role="list">
+                {items.map((s) => (
+                  <SubRow
+                    key={s.id}
+                    sub={s}
+                    refreshing={refreshing && s.active}
+                    updateFailed={updateFailed && s.active}
+                    onRenameRequest={canRename ? openRename : undefined}
+                  />
+                ))}
+              </div>
+            </Shell>
+            {renaming && (
+              <RenameSheet
+                name={renaming.name}
+                draft={draft}
+                onDraft={setDraft}
+                onCancel={() => setRenaming(null)}
+                onSave={saveRename}
+              />
+            )}
+          </div>
         </IosFrame>
       );
     }
@@ -707,6 +931,10 @@
       return (
         <div className="row">
           <div className="phone-col">
+            <div className="lab">Interactive<span>Long-press name → Rename sheet</span></div>
+            <SubscriptionsList variant="full" interactive />
+          </div>
+          <div className="phone-col">
             <div className="lab">1 · List (Active rich)<span>Expires labeled · Expired warn on Orbit</span></div>
             <SubscriptionsList variant="full" />
           </div>
@@ -725,6 +953,10 @@
           <div className="phone-col">
             <div className="lab">1e · Manual Update failed<span>In-card error · retry CTA</span></div>
             <SubscriptionsList variant="failed" />
+          </div>
+          <div className="phone-col">
+            <div className="lab">1f · Rename<span>Light sheet · not a primary CTA</span></div>
+            <SubscriptionsList variant="rename" />
           </div>
           <div className="phone-col">
             <div className="lab">2 · Settings deep link<span>App: Auto-update · Subscriptions · About</span></div>
