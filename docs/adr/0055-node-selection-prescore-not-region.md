@@ -10,6 +10,12 @@
 4. **静默重测闭集：** ① 节点集合实质变化（导入 Active、Refresh 改列表、切换 Active）；② 长间隔缓存过期 S 且打开/回前台（弱）；③ 失败 / Failover **定向**重测；④ 用户显式测速。**禁止**仅因网络切换就全表重测。
 5. **静默测信号 = 轻量分层。** 快速层（入口延迟/握手）+ 对前列候选的加深层（可与 Connectivity Probe 同源轻量探针）。**不得**静默全表完整出网 Probe；**不得**只按 Ping；静默测分**不得**把 Home 标成 Connection Success。
 6. **测分未完成亦可连。** 静默测不是闸门；Connecting/Connected 会话不被后续预选刷新换节点。
+7. **Cover Flow = 有界快选条，不是全量列表（2026-08-06）。** 服务商 **group 只在 Location** 浏览。Home Cover Flow 数据源为有序 **`strip[]`，长度 ≤ N（默认 N=15）**：  
+   - 成员 = **Preferred（有则强制入条）** ∪ **预评分可用性 Top** 填满至 N（去重）。评分 = 可达+稳定加权，**非**单次 ms 唯一键。  
+   - 节点总数 &lt; N → 条含全部（仍按分序）。测分未完：有分在前，无分按订阅原序接后。  
+   - 初始预停 = Preferred 下标，否则 Top#1；横滑 = 临时焦点。**不做**对称「高分居中」。  
+   - Failover 会话暂用条外节点：Home 显示会话名；回 Idle **重算 strip**，不为会话永久扩条。  
+   - **否决：** Cover Flow flatten 全表；Cover Flow 按 group 当主列表。
 
 **Considered Options（否决摘要）**
 
@@ -18,11 +24,14 @@
 - **硬 Pin 禁 Failover** → 过锁；用户要记住偏好但仍需保活换节点（2026-08-06 产品改判）。
 - 静默全表完整 Probe → 成本与权限不现实；只 Ping 预选 → 假活节点多，失败叙事变差。
 - 测完前禁用连接 → 把预评分做成闸门，削弱 Table Stakes。
+- Cover Flow 显示全部节点 → 机场常见几十～几百节点，滑不动且与 Location 全量浏览重复。
+- Cover Flow 按 group 切换 → 与 Location chip 抢语义，Home 负担过重。
 
 **Consequences**
 
 - 地区意图靠 **Preferred**（及临时 Cover Flow），不靠评分猜。**Location 点选 = Preferred**（列表 check，无 *Pinned* 锁语义）；**无** `⋯` 清钉。Cover Flow 横滑 alone **不**构成 Preferred。
+- Cover Flow 是 **Top-N + Preferred 锚定** 的快选；**全量 + 分组 = Location only**。
 - Idle 是否露出测速进度属呈现层，须服从 Home 主状态闭集；默认宜安静。
-- 实现常数（S、分层抽样额度、加深层并发）可调，不改变本 ADR 语义。
+- 实现常数（S、N=15、分层抽样额度、加深层并发）可调，不改变本 ADR 语义。
 - Location 面交互细则见 **ADR 0056**（点选 = Preferred · Failover 允许）。
-- 术语权威：`CONTEXT.md` → **Node Selection** · **Location Surface** · **Preferred node** · **Latency Test** · **Node Failover**；规格：`docs/prd/PRD.md` §4.3；hi-fi：`08-location.html`。
+- 术语权威：`CONTEXT.md` → **Node Selection** · **Cover Flow 条** · **Location Surface** · **Preferred node** · **Latency Test** · **Node Failover**；规格：`docs/prd/PRD.md` §4.3；hi-fi：`02-home.html` / `08-location.html`。

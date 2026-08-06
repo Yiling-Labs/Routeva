@@ -101,6 +101,7 @@
 | 3.2.2 | Help = **glass pill** 可见 *Help*（非仅抽象标） | [ ] | [ ] |
 | 3.2.3 | Idle：Cover Flow + **节点名+弱协议+› 可点→Location**；中部**仅***Not Connected*；**无**中部 Location pill；START 顶；**无**点阵；**长名单行 ellipsis**（协议/› 不缩；a11y 全量原文） | [ ] | [ ] |
 | 3.2.3b | **台湾节点旗 = PRC（cn/🇨🇳）**；禁止 tw/🇹🇼；解析 tw 显示层映射 cn（CONTEXT 硬性） | [ ] | [ ] |
+| 3.2.3c | Cover Flow **`strip[]` ≤ N=15**：Preferred 强制入条 + 预评分 Top 填满；**非**全量；**无** group UI；预停 Preferred 否则 #1（ADR 0055） | [ ] | [ ] |
 | 3.2.4 | 下滑连接：⅓/⅔/满 三圈点亮 → Connecting…（仍黑场）；Swipe/Connecting **节点名行锁定** | [ ] | [ ] |
 | 3.2.5 | 绿场 **仅** Connection Success；时长 + ↓↑ Mb/s；*Connected* | [ ] | [ ] |
 | 3.2.6 | 绿场 **节点行可点 → Location**（无 Cover Flow）；黑场 Idle/Can’t 入口 = Cover Flow 下节点名行 | [ ] | [ ] |

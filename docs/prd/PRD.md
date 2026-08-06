@@ -130,6 +130,7 @@
 | 测分未完 | **可连**；连接路径短确认 + 完整 Probe；Connecting/Connected **不被**后续预选换脚 |
 | 重测触发 | ① 节点集合实质变化 ② 长间隔缓存过期 S + 打开/回前台（弱）③ 失败/Failover **定向**重测 ④ 用户 Location *Test*；**禁止**仅网络切换就全表重测 |
 | 状态机 | **两档：** **Auto 预选** vs **Preferred node**。Cover Flow 横滑 = **临时浏览焦点**（无 Preferred 时可被预选覆盖）。**不设**硬 Pin（禁 Failover） |
+| Cover Flow 条 | **有界快选** `strip[]` ≤ **N=15**（默认）：**Preferred 强制入条** + 预评分可用性 Top 填满（去重）。**非**全量 flatten；**无** group UI（分组仅 Location）。总数 &lt;N → 全进条。测分未完：有分在前、无分订阅原序。初始预停 Preferred 否则 Top#1。Failover 不永久扩条 |
 
 **Preferred node（偏好节点）**
 
