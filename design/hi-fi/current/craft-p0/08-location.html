@@ -86,7 +86,7 @@
     <h1>Location · Node list</h1>
     <p>
       ADR <strong>0055</strong> / <strong>0056</strong> · CONTEXT <strong>Location Surface</strong> · <strong>Preferred node</strong>.
-      Full-screen from Home <strong>Location ›</strong>.
+      Full-screen from Home <strong>node caption ›</strong> (Idle/Can’t) or <strong>Connected node row</strong>.
       <strong>Groups ≥ 2:</strong> sticky horizontal chips under nav · tap chip → that group’s nodes only · overflow scrolls sideways.
       <strong>Groups = 1:</strong> no chip strip · list only.
       Tap node = <strong>preferred</strong> (Failover still ok) · top <strong>Test</strong> = Latency · no ⋯ · no search.
@@ -145,12 +145,12 @@
         ],
       },
       {
-        id: 'jp',
-        name: 'Japan',
+        id: 'tw',
+        name: 'Taiwan',
         nodes: [
-          { id: 'jp-01', name: 'Tokyo-01', protocol: 'VLESS' },
-          { id: 'jp-02', name: 'Osaka-02', protocol: 'Hy2' },
-          { id: 'jp-03', name: 'Tokyo-03 Relay', protocol: 'VMess' },
+          { id: 'tw-01', name: '🇨🇳 台湾A01 | IEPL | x2', protocol: 'VLESS' },
+          { id: 'tw-02', name: 'Taipei-02', protocol: 'Hy2' },
+          { id: 'tw-03', name: '[流媒体]美国奈飞专线-IEPL-x99-备用', protocol: 'VMess' },
         ],
       },
       {
@@ -203,7 +203,7 @@
 
     const DEMO_LATENCIES = {
       'hk-01': 38, 'hk-02': 52, 'hk-03': 'timeout',
-      'jp-01': 64, 'jp-02': 71, 'jp-03': 89,
+      'tw-01': 64, 'tw-02': 71, 'tw-03': 89,
       'sg-01': 55, 'sg-02': 48,
       'us-01': 168, 'us-02': 155,
       'st-01': 142, 'st-02': 98,
@@ -323,7 +323,7 @@
      */
     function LocationScreen({
       interactive = false,
-      preferredId: prefProp = 'jp-01',
+      preferredId: prefProp = 'tw-01',
       latencies: latProp = null,
       testing: testingProp = false,
       empty = false,
@@ -688,13 +688,13 @@
       return (
         <div className="row">
           <Phone label="Interactive · multi-group" sub="Chips under nav · swipe · tap group · tap node">
-            <LocationScreen interactive preferredId="jp-01" latencies={null} />
+            <LocationScreen interactive preferredId="tw-01" latencies={null} />
           </Phone>
-          <Phone label="1 · Multi · Japan tab" sub="Preferred Tokyo-01 · chip strip">
-            <LocationScreen preferredId="jp-01" activeGroupId="jp" latencies={null} />
+          <Phone label="1 · Multi · Taiwan tab" sub="Preferred 🇨🇳 台湾A01… · chip strip">
+            <LocationScreen preferredId="tw-01" activeGroupId="tw" latencies={null} />
           </Phone>
-          <Phone label="2 · Multi · Streaming" sub="Switch group · preferred still in Japan">
-            <LocationScreen preferredId="jp-01" activeGroupId="stream" latencies={DEMO_LATENCIES} />
+          <Phone label="2 · Multi · Streaming" sub="Switch group · preferred still in Taiwan">
+            <LocationScreen preferredId="tw-01" activeGroupId="stream" latencies={DEMO_LATENCIES} />
           </Phone>
           <Phone label="3 · Single group" sub="No chip strip · list only">
             <LocationScreen
@@ -704,7 +704,7 @@
             />
           </Phone>
           <Phone label="4 · Testing…" sub="Test applies to full pool; UI shows active group">
-            <LocationScreen preferredId="jp-01" activeGroupId="jp" testing latencies={null} />
+            <LocationScreen preferredId="tw-01" activeGroupId="tw" testing latencies={null} />
           </Phone>
           <Phone label="5 · Empty" sub="0 nodes · no strip">
             <LocationScreen empty preferredId={null} />

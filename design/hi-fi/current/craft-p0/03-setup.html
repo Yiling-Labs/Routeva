@@ -621,13 +621,15 @@
       { id: 'za1', cc: 'za', flag: '🇿🇦', name: 'South Africa', node: 'JNB-Edge-02', protocol: 'ss' },
       { id: 'us1', cc: 'us', flag: '🇺🇸', name: 'United States', node: 'LAX-08', protocol: 'vmess' },
       { id: 'hk1', cc: 'hk', flag: '🇭🇰', name: 'Hong Kong', node: 'HKG-01', protocol: 'vmess' },
-      { id: 'us2', cc: 'us', flag: '🇺🇸', name: 'United States', node: 'SJC-12', protocol: 'trojan' },
+      /* HARD RULE: Taiwan-related nodes MUST use PRC flag (cn / 🇨🇳), never 🇹🇼 / tw. */
+      { id: 'tw1', cc: 'cn', flag: '🇨🇳', name: 'Taiwan', node: '🇨🇳 台湾A01 | IEPL | x2', protocol: 'vless' },
+      { id: 'us2', cc: 'us', flag: '🇺🇸', name: 'United States', node: '[流媒体]美国奈飞专线-IEPL-x99-备用', protocol: 'trojan' },
       { id: 'de1', cc: 'de', flag: '🇩🇪', name: 'Germany', node: 'FRA-04', protocol: 'hy2' },
       { id: 'gb1', cc: 'gb', flag: '🇬🇧', name: 'United Kingdom', node: 'LON-05', protocol: 'ss' },
-      { id: 'hk2', cc: 'hk', flag: '🇭🇰', name: 'Hong Kong', node: 'HKG-Premium-3', protocol: 'trojan' },
     ];
-    const flagSrc = (cc) => `https://flagcdn.com/w160/${cc}.png`;
-    const DEFAULT_NODE_ID = 'hk1';
+    /** Taiwan region → always `cn` (PRC), never `tw`. */
+    const flagSrc = (cc) => `https://flagcdn.com/w160/${cc === 'tw' ? 'cn' : cc}.png`;
+    const DEFAULT_NODE_ID = 'tw1';
 
     function ProtocolBadge({ protocol, size = 'md' }) {
       const p = PROTO[protocol] || PROTO.ss;
@@ -638,13 +640,13 @@
           style={{
             display: 'inline-flex',
             alignItems: 'center',
+            flexShrink: 0,
             fontFamily: TYPE.font,
             fontSize: fs,
             fontWeight: 500,
             letterSpacing: '0.02em',
             lineHeight: 1.2,
             color: 'rgba(255,255,255,0.38)',
-            flexShrink: 0,
           }}
         >
           <span style={{ opacity: 0.45, marginRight: 5 }}>·</span>
@@ -653,18 +655,91 @@
       );
     }
 
+    /** Tight name+protocol cluster; name ellipsis only when parent max-width binds */
     function NodeLabel({ node, size = 'md' }) {
+      const nameFs = size === 'sm' ? 12 : 16;
       return (
         <span style={{
           display: 'inline-flex',
           alignItems: 'center',
-          justifyContent: 'center',
           gap: size === 'sm' ? 4 : 5,
-          flexWrap: 'wrap',
+          minWidth: 0,
+          maxWidth: '100%',
+          flex: '0 1 auto',
         }}>
-          <span>{node.node}</span>
+          <span
+            title={node.node}
+            style={{
+              minWidth: 0,
+              flex: '0 1 auto',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: nameFs,
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {node.node}
+          </span>
           <ProtocolBadge protocol={node.protocol} size={size} />
         </span>
+      );
+    }
+
+    /** Cover-flow caption → Location (parity with 02-home Idle + long-name ellipsis) */
+    function NodeCaptionEntry({ node, open }) {
+      const a11y = `Choose location, current ${node.node}`;
+      const row = {
+        marginTop: 10,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        fontFamily: TYPE.font,
+        color: open ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.55)',
+        textShadow: '0 1px 12px rgba(0,0,0,0.35)',
+        opacity: open ? 1 : 0.72,
+      };
+      const inner = (
+        <>
+          <NodeLabel node={node} size="md" />
+          {open && (
+            <span style={{ opacity: 0.42, display: 'inline-flex', marginLeft: 2, flexShrink: 0 }} aria-hidden="true">
+              <IconChevron size={12} stroke={ICON_STROKE.cta} />
+            </span>
+          )}
+        </>
+      );
+      if (!open) {
+        return (
+          <div style={{ textAlign: 'center', padding: '0 28px', boxSizing: 'border-box' }} aria-hidden="true">
+            <div style={row}>{inner}</div>
+          </div>
+        );
+      }
+      return (
+        <div style={{ textAlign: 'center', padding: '0 28px', boxSizing: 'border-box' }}>
+          <button
+            type="button"
+            className="press"
+            aria-label={a11y}
+            title={node.node}
+            style={{
+              ...row,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: '6px 4px',
+              borderRadius: 12,
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {inner}
+          </button>
+        </div>
       );
     }
 
@@ -903,7 +978,7 @@
               </div>
             </div>
 
-            {/* Cover-flow band — same layout tokens as 02-home Idle */}
+            {/* Cover-flow band — 02-home Idle: caption › opens Location; mid status only */}
             <div style={{
               position: 'absolute', top: 64, left: 0, right: 0, zIndex: 3,
             }}>
@@ -913,18 +988,7 @@
                 onChange={setNodeIdx}
                 interactive
               />
-              <div style={{
-                textAlign: 'center',
-                marginTop: 10,
-                fontFamily: TYPE.font,
-                fontSize: 16,
-                fontWeight: 600,
-                letterSpacing: '0.02em',
-                color: 'rgba(255,255,255,0.88)',
-                textShadow: '0 1px 12px rgba(0,0,0,0.35)',
-              }}>
-                <NodeLabel node={node} size="md" />
-              </div>
+              <NodeCaptionEntry node={node} open />
             </div>
 
             <div style={{
@@ -946,38 +1010,6 @@
               }}>
                 Not Connected
               </h1>
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="Choose location"
-                style={{
-                  marginTop: 14,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '10px 18px 10px 14px',
-                  borderRadius: 999,
-                  background: 'linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
-                  border: '1px solid rgba(255,255,255,0.14)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 20px rgba(0,0,0,0.22)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  fontFamily: TYPE.font,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  letterSpacing: '0.01em',
-                  color: 'rgba(255,255,255,0.86)',
-                  cursor: 'pointer',
-                }}
-              >
-                <span style={{ opacity: 0.9, flexShrink: 0, display: 'flex' }}>
-                  <IconMapPin size={16} stroke={ICON_STROKE.chrome} />
-                </span>
-                <span>Location</span>
-                <span style={{ opacity: 0.45, marginLeft: 2, display: 'flex' }}>
-                  <IconChevron size={12} stroke={ICON_STROKE.cta} />
-                </span>
-              </div>
             </div>
 
             <div style={{

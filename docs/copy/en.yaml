@@ -133,18 +133,20 @@ strings:
     en: Location
     tier: shell
     surface: home
+    notes: "Legacy key · no longer a visible Idle mid pill. Surface title = location.title. Prefer home.location.a11y for entry."
 
   - key: home.location.a11y
-    en: Choose location
+    en: "Choose location, current {node}"
     tier: shell
     surface: home
+    notes: "Black Idle/Can’t: Cover Flow caption. Green: mid node row. {node} = full provider original (never truncated for a11y; UI may ellipsis)"
 
   # ── Location Surface (ADR 0055 / 0056 · Preferred node · horizontal groups)
   - key: location.title
     en: Location
     tier: shell
     surface: location
-    notes: "Nav title · same word as home.location"
+    notes: "Nav title · not shown as Home mid pill"
 
   - key: location.groups.a11y
     en: Node groups

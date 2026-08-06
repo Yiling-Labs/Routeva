@@ -24,7 +24,7 @@
 | 控件 | 规则 |
 |---|---|
 | **Glass orb / chip** | 圆或大圆角；半透明白叠层 + 内高光 + 轻外阴影；`backdrop-filter` 模糊 |
-| **Pill（Location 等）** | 同上，`border-radius: 999`；字 14 / 600 |
+| **Pill / chip** | glass `border-radius: 999`；字 14 / 600（绿场节点行等）；**黑场 Idle 不**用中部 Location pill |
 | **Sheet / 卡片** | 深底半透明玻璃板，大圆角 ~20–28；上沿细高光；可作底 sheet |
 | **主按钮** | 薄荷绿实心渐变（与胶囊 STOP 同族）或 ghost 边框 |
 | **次按钮** | 幽灵玻璃 / 细描边 |
@@ -52,7 +52,7 @@
 - **胶囊：** 主连接控件；圆角满圆  
 - **Sheet 圆角：** ~24  
 - **留白：** 中部信息区疏朗；底部主操作区给足呼吸  
-- **Cover Flow：** 水平为主、**浅弧**（约 `y ∝ d²×2`）；item 间距适中  
+- **Cover Flow：** 水平为主、**浅弧**（约 `y ∝ d²×2`）；item 间距适中；选中项下 **节点名+弱协议**；Idle/Can’t **+弱 › 可点→Location**；Swipe/Connecting 锁定；**长名 tail ellipsis**（协议/› 不缩；a11y 全量） 
 
 ## 6. 动效气质
 

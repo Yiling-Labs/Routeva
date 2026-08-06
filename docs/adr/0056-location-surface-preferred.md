@@ -2,7 +2,13 @@
 
 **Slug：** `0056-location-surface-preferred`（2026-08-06 自 `…-pin` **改名**——产品语义是 Preferred，非硬 Pin）
 
-Home **Location ›** 进入全屏 **Location Surface**（标题 *Location*）：浏览 Active 订阅出口节点、**设偏好节点**、批量 Latency 标注。选节点主路径在 Home/Location，不进 Settings。与 **ADR 0055**（Node Selection 预评分 / 不猜地区 / Preferred vs Auto）配套。
+从 Home 进入全屏 **Location Surface**（标题 *Location*）：浏览 Active 订阅出口节点、**设偏好节点**、批量 Latency 标注。选节点主路径在 Home/Location，不进 Settings。与 **ADR 0055**（Node Selection 预评分 / 不猜地区 / Preferred vs Auto）配套。
+
+**Home 入口（2026-08-06 收口）：**  
+- **黑场 Idle / Can’t connect：** Cover Flow 下 **节点名 + 弱协议 + 弱 ›** 可点进 Location（可见**无** *Location* 词；a11y *Choose location* + 当前节点）。**无**中部空 *Location ›* glass pill；中部仅主状态。  
+- **黑场 Swipe / Connecting：** 节点名行 **锁定**（无 ›），避免手势误触。  
+- **绿场 Connected：** 中部 soft-glass **节点行**可点（不变）。  
+- **两套语义不变：** Cover Flow 横滑 alone = 临时焦点；Location 点选 = Preferred；Home **不**标 Preferred。
 
 **列表与分组浏览：** 节点按服务商 **group** 组织（无则单段 *All nodes*）。**≥2 组：** 导航下 **横向 chip 条**（固定、可左右滑）切换当前组，主列表**只渲染该组**节点——避免多组纵向长卷。**恰 1 组：** **隐藏** chip 条，直接列表。默认打开含 Preferred 的组（无则第一组）。行 = 节点名 · check（仅偏好）· 次行协议 · Latency ms。MVP 无搜索、无进页自动测、**无客户端伪造的列表顶 Auto 行**、无顶栏 `⋯`、不按客户端猜地区重分类、不按延迟重排。**服务商 group 名原样展示**（订阅里真有 *Auto* group → chip 可显示 *Auto*；≠ 客户端 Auto 预选控件）。hi-fi demo 宜避免用 *Auto* 作示例组名，降低误读。
 

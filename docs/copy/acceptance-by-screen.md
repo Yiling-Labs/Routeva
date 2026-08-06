@@ -25,12 +25,12 @@
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 Idle** | 状态 · Location · START · 手势提示 · 顶栏 | `home.idle.status` S · `home.location` S · `home.location.a11y` S · `home.gesture.start` S · `home.gesture.swipe_label` S · `home.gesture.connect_hint` S · `home.chrome.help` S · `home.chrome.subscriptions` S · `home.chrome.settings` S | [x] |
-| **2 Swipe ~⅓** | 仍 Idle 文案；SWIPE | 同上 + `home.gesture.swipe_label` | [x] |
+| **1 Idle** | Cover Flow 节点名+› 可点 · 中部仅状态 · START · 手势提示 · 顶栏 · **无**中部 Location pill · **长名 ellipsis**（协议/› 完整） | `home.idle.status` S · `home.location.a11y` S（`{node}` **全量**）· `home.gesture.start` S · `home.gesture.swipe_label` S · `home.gesture.connect_hint` S · `home.chrome.help` S · `home.chrome.subscriptions` S · `home.chrome.settings` S | [x] |
+| **2 Swipe ~⅓** | 仍 Idle 状态文案；节点名**锁定**；SWIPE | 同上（无 location a11y 可点）+ `home.gesture.swipe_label` | [x] |
 | **3 Swipe ~⅔** | 同上 | 同上 | [x] |
-| **4 Connecting** | Connecting… · a11y | `home.connecting.status` S · `home.gesture.a11y.connecting` S · 胶囊下 hint 亦为 *Connecting…* | [x] |
+| **4 Connecting** | Connecting… · 节点名锁定 · a11y | `home.connecting.status` S · `home.gesture.a11y.connecting` S · 胶囊下 hint 亦为 *Connecting…* | [x] |
 | **5 Connected** | Connected · STOP · 断开提示 · Mb/s · **节点行 glass chip 可点 → Location**（`home.location.a11y`） | `home.connected.status` S · `home.gesture.stop` S · `home.gesture.disconnect_hint` S · `home.gesture.a11y.disconnect` S · `home.speed.unit_mbs` S · `home.location.a11y` S | [x] |
-| **Can't connect**（副帧） | 失败主状态（sheet 见 §6） | `home.cant_connect.status` S · `home.location` S | [x] |
+| **Can't connect**（副帧） | 失败主状态 · 节点名+› 可点（sheet 见 §6） | `home.cant_connect.status` S · `home.location.a11y` S | [x] |
 | **Empty / setup 态** | 无订阅中部 | `home.empty.cta` S · `home.empty.subtitle` S · 顶栏仅 Help+Settings（无 Subscriptions 键展示） | [x] |
 | **Mode ≠ Auto** | 弱提示 | `home.mode.hint.global` S · `home.mode.hint.direct` S | [x] |
 | **Interactive** | 手势 a11y 全集 | `home.gesture.a11y.connect` S · disconnect · connecting | [x] |
@@ -46,7 +46,7 @@
 | Mode ≠ Auto | 源码 `modeHint` 插槽；**故事板默认帧未演示**；key 与 CONTEXT 闭集一致，实现按非 Auto 显示 |
 | 禁止项 | 未见 provider rules 墙 / VERIFIED / *Needs attention* / 顶栏 Activity |
 
-**不应出现：** provider rules 教学墙 · VERIFIED/probe 叠词 · 主状态 *Needs attention* · 顶栏 Activity · Home 上 *Pinned* / 偏好徽章（偏好仅 Location check）· 绿场 Cover Flow / Location › pill（进 Location = 中部可点节点行）。
+**不应出现：** provider rules 教学墙 · VERIFIED/probe 叠词 · 主状态 *Needs attention* · 顶栏 Activity · Home 上 *Pinned* / 偏好徽章（偏好仅 Location check）· 黑场中部空 *Location ›* pill · 绿场 Cover Flow（进 Location = 绿场中部可点节点行 / 黑场 Cover Flow 下节点名行）· **台湾节点出现 🇹🇼 / tw 旗**（须 PRC / cn）。
 
 ---
 

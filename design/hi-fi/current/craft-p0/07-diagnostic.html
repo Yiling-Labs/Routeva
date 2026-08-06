@@ -312,27 +312,21 @@
             <GlassOrb><IconGear size={16} color={ICON_COLOR} /></GlassOrb>
           </div>
           <div style={{
-            position: 'relative', zIndex: 2, marginTop: 48, textAlign: 'center', padding: '0 24px',
+            position: 'relative', zIndex: 2, marginTop: 36, textAlign: 'center', padding: '0 24px',
           }}>
+            {/* Simplified Home Can’t — node caption › is Location entry (no mid Location pill) */}
             <div style={{
-              fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em',
+              fontSize: 16, fontWeight: 600, letterSpacing: '0.02em',
+              color: 'rgba(255,255,255,0.88)', fontFamily: TYPE.font,
+            }}>
+              HKG-01 <span style={{ color: T.quiet, fontWeight: 500 }}>· VMess</span>
+              <span style={{ color: T.quiet, marginLeft: 4 }}>›</span>
+            </div>
+            <div style={{
+              marginTop: 28, fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em',
               color: T.primary, fontFamily: TYPE.font,
             }}>
               Can’t connect
-            </div>
-            <div style={{
-              marginTop: 10, fontSize: 15, fontWeight: 500, color: T.secondary,
-            }}>
-              HKG-01 <span style={{ color: T.quiet }}>· VMess</span>
-            </div>
-            <div style={{
-              marginTop: 18, display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '10px 16px', borderRadius: 999,
-              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
-              fontSize: 14, fontWeight: 600, color: T.icon,
-            }}>
-              Location
-              <span style={{ color: T.quiet }}>›</span>
             </div>
           </div>
           {/* dim scrim for sheet — click outside the sheet dismisses it */}

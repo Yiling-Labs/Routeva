@@ -22,7 +22,7 @@
 | Root | **仅 Home** |
 | Help / Subscriptions / Settings | 顶栏：**Help** glass pill + Subscriptions/Settings orbs（Empty 无 Subscriptions · ADR 0036） |
 | Activity | **不**进顶栏、**不**进 Settings 根页（ADR **0051**）；Help / 诊断·Repair 上下文 |
-| Location | 黑场：**图标 + Location ›**；绿场：**中部节点行可点**（无 Location pill / 无 Cover Flow） |
+| Location | 黑场 Idle/Can’t：**Cover Flow 下节点名+弱协议+› 可点**（无中部 Location pill）；Swipe/Connecting 节点名锁定；绿场：**中部节点行可点**（无 Cover Flow） |
 | 禁止 | 底部 Tab；Go Premium |
 
 ## 双皮肤
@@ -36,10 +36,10 @@
 
 | # | 状态 | 拇指 | 三圈点 | 上部 | 中部 | 场域 |
 |---|---|---|---|---|---|---|
-| 1 | **Idle** | 顶 START | **无** | Cover Flow + **节点名** + 弱协议 | Not Connected + **Location ›** | 黑 |
-| 2 | **Swipe ~⅓** | ~1/3 | **第 1 圈** | 同上 | Not Connected + Location | 黑 |
-| 3 | **Swipe ~⅔** | ~2/3 | **1–2 圈** | 同上 | Not Connected + Location | 黑 |
-| 4 | **Connecting** | 底 | **3 圈全亮** | Cover Flow | **Connecting…** | 黑 |
+| 1 | **Idle** | 顶 START | **无** | Cover Flow + **节点名+弱协议+›（可点→Location）** | **仅** Not Connected | 黑 |
+| 2 | **Swipe ~⅓** | ~1/3 | **第 1 圈** | Cover Flow + 节点名（**锁定**·无 ›） | **仅** Not Connected | 黑 |
+| 3 | **Swipe ~⅔** | ~2/3 | **1–2 圈** | 同上 | **仅** Not Connected | 黑 |
+| 4 | **Connecting** | 底 | **3 圈全亮** | Cover Flow + 节点名锁定 | **Connecting…** | 黑 |
 | 5 | **Connected** | 底 STOP | 3 圈绿 + 脉冲 | **时长 + ↓↑ Mb/s** | 地区 · Connected · **可点节点行**（→ Location） | **绿** |
 
 Interactive 列可拖/点完整流程。
@@ -48,9 +48,14 @@ Interactive 列可拖/点完整流程。
 
 - 国旗圆形玻璃 item（flag 图裁切 + 高光）；选中双环  
 - **水平略带浅弧**（`y ≈ ad²×2`）；**item 间距适中**  
-- 选中项下方文案 = **节点名**（如 `HKG-01`），**不是**国家名  
+- 选中项下方文案 = **节点名**（订阅原文，**不是**国家名；可含 emoji/中文/脏长名）  
 - 节点名旁 **弱化协议**：`· VMess`（次要字重/透明度，无彩色大徽章）  
-- 默认示例节点：香港 `HKG-01` · VMess  
+- **长名截断：** 单行；**仅名** tail ellipsis；**协议 + › 不缩**；a11y 全量原文；不发明短码、不双行、不跑马灯  
+- **Idle / Can’t connect：** 节点名行 **可点** 进 Location；右侧弱 **›**（无 glass pill、无 *Location* 可见字）  
+- **Swipe / Connecting：** 同文案 **锁定**（无 ›、弱化 opacity）  
+- 横滑 alone = 临时焦点（≠ Preferred）  
+- 示例须含：短 `HKG-01` · 脏长 `🇨🇳 台湾A01 | IEPL | x2`（Cover Flow 旗 = **PRC / cn**，**禁止** 🇹🇼 / tw）· 极长营销串（验收截断）  
+- **硬性：** 台湾相关节点的客户端自绘旗 **必须** 中华人民共和国国旗（见 CONTEXT） 
 
 ## 胶囊与点阵
 
@@ -69,7 +74,7 @@ Interactive 列可拖/点完整流程。
 | Status | 30 | 700 | Connected / Not Connected |
 | Node caption | 16 | 600 | HKG-01 |
 | Protocol | 11 | 500 | · VMess（~38% 白） |
-| Location pill | 14 | 600 | Location |
+| Node caption › | 16 | 600 | HKG-01 · VMess ›（Idle 可点） |
 | Hint | 13 | 500 | Swipe down to connect（≥ muted 对比） |
 | Capsule | 12 | 800 | START / STOP（拇指约轨高 50%+） |
 

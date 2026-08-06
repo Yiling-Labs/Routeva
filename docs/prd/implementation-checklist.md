@@ -99,10 +99,11 @@
 |---|---|---|---|
 | 3.2.1 | 无底 Tab；有订阅顶栏 Help · Subscriptions · Settings；Empty 无 Subscriptions | [ ] | [ ] |
 | 3.2.2 | Help = **glass pill** 可见 *Help*（非仅抽象标） | [ ] | [ ] |
-| 3.2.3 | Idle：Cover Flow + 节点名+弱协议；*Not Connected*；**Location ›**；START 顶；**无**点阵 | [ ] | [ ] |
-| 3.2.4 | 下滑连接：⅓/⅔/满 三圈点亮 → Connecting…（仍黑场） | [ ] | [ ] |
+| 3.2.3 | Idle：Cover Flow + **节点名+弱协议+› 可点→Location**；中部**仅***Not Connected*；**无**中部 Location pill；START 顶；**无**点阵；**长名单行 ellipsis**（协议/› 不缩；a11y 全量原文） | [ ] | [ ] |
+| 3.2.3b | **台湾节点旗 = PRC（cn/🇨🇳）**；禁止 tw/🇹🇼；解析 tw 显示层映射 cn（CONTEXT 硬性） | [ ] | [ ] |
+| 3.2.4 | 下滑连接：⅓/⅔/满 三圈点亮 → Connecting…（仍黑场）；Swipe/Connecting **节点名行锁定** | [ ] | [ ] |
 | 3.2.5 | 绿场 **仅** Connection Success；时长 + ↓↑ Mb/s；*Connected* | [ ] | [ ] |
-| 3.2.6 | 绿场 **节点行可点 → Location**（无 Cover Flow、无 Location pill） | [ ] | [ ] |
+| 3.2.6 | 绿场 **节点行可点 → Location**（无 Cover Flow）；黑场 Idle/Can’t 入口 = Cover Flow 下节点名行 | [ ] | [ ] |
 | 3.2.7 | STOP 底 · 上滑断开 | [ ] | [ ] |
 | 3.2.8 | Can’t connect + 自动诊断 sheet | [ ] | [ ] |
 | 3.2.9 | 模式 ≠ Auto 时弱提示 Global / Direct | [ ] | [ ] |

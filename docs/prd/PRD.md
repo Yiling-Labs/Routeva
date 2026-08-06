@@ -149,7 +149,7 @@
 
 **Location Surface**
 
-- 从 Home **Location ›**（黑场）或 **Connected 中部节点行**（绿场，可点；**不**恢复 Cover Flow / Location pill）全屏 push；标题 *Location*。
+- 从 Home **Cover Flow 下节点名行**（黑场 Idle / Can’t connect，可点）或 **Connected 中部节点行**（绿场，可点；**不**恢复 Cover Flow）全屏 push；标题 *Location*。Swipe / Connecting 节点名行锁定。
 - 只列 **Active** 订阅可选出口节点；分组来自订阅 **服务商 group**（无 group → *All nodes*）；**不**按客户端猜地区重分类；group 名原样展示（含订阅真名 *Auto*——≠ 客户端伪造 Auto 行）。
 - **分组 UI：** **≥2 组** → 导航下固定 **横向 chip**（可左右滑），点选后列表**仅显示该组**；**1 组** → **不**显示 chip，直接列表。默认打开含 Preferred 的组。
 - **行：** 主行节点名 + Preferred 时 check（**无** *Pinned* 文案）；次行弱协议短名（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· Latency（`—` / `{ms} ms` / `Timeout`）。
@@ -277,7 +277,7 @@
 
 | 面 | 内容 |
 |---|---|
-| **Home** | 选节点（Cover Flow）+ **竖直滑动胶囊**（START 顶下滑连 / STOP 底上滑断）+ 连接真值（Not Connected / Connecting… / Connected）+ 黑场 **Location ›** / 绿场 **可点节点行 → Location**；黑/绿双皮肤（绿场 **仅** Connection Success）。顶栏出口：**Help** pill · **Subscriptions**（有订阅时）· **Settings**。**不**常驻策略切换、健康仪表、流量/到期、Active 订阅 chip、Auto 字样。权威 hi-fi：`02-home.html` |
+| **Home** | 选节点（Cover Flow 临时焦点 + **节点名行可点 → Location**，Idle/Can’t）+ **竖直滑动胶囊**（START 顶下滑连 / STOP 底上滑断）+ 连接真值（Not Connected / Connecting… / Connected）+ 绿场 **可点节点行 → Location**；**无**黑场中部空 Location pill；黑/绿双皮肤（绿场 **仅** Connection Success）。顶栏出口：**Help** pill · **Subscriptions**（有订阅时）· **Settings**。**不**常驻策略切换、健康仪表、流量/到期、Active 订阅 chip、Auto 字样。权威 hi-fi：`02-home.html` |
 | **Location** | 全屏节点列表（ADR **0055**/**0056**）：服务商分组 · **点选 = Preferred**（记住偏好，Failover 仍允许）· 顶栏 Latency *Test* · **无** `⋯` / 清回 Auto；返回同步 Cover Flow。权威 hi-fi：`08-location.html` |
 | **Help（Agent Surface）** | 用户可见 **Help**；信任条 + 空态 chips（随连/断双态）+ 聊天 + *What Help can do* + *How we use data*；Cloud 默认开可关。能力接通；过程展示 Craft P1。权威：`06-agent.html` |
 | **Subscriptions** | 一级面单列表：全部订阅 + Active 高亮（有则流量/带标签 Expires·Expired + Update）；Set active；底 Add；可选 Rename。权威：`04-subscriptions.html` |

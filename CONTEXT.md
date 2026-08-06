@@ -154,14 +154,26 @@ _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表�
 
 **Home Mid Copy（闭集）**：
 - **无订阅（Home Empty）：** 顶栏 **仅 Help + Settings**（无 Subscriptions；用户可见 **Help**，内部可称 Agent）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA（及同一 Add 流）
-- **Idle / 手势中（黑场）：** 上部 **国旗 Cover Flow**（选中项下为 **节点名** + 弱协议）；中部 **Not Connected** + **Location ›**；**Idle 无点阵**  
-- **Connecting（黑场）：** Cover Flow 可保留；**Connecting…**；三圈点全亮（未染绿场）  
-- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；地区 · Connected · **节点行**（旗 + 节点名 + 弱协议）；三圈绿点。**不**恢复 Cover Flow；**不**再挂 Idle 式 *Location ›* pill。**节点行可点** → 全屏 **Location Surface**（设 Preferred / 已连立即切节点）。  
-- 失败/弱连接：**Can’t connect** + Location；原因在诊断 sheet  
+- **Idle / Can’t connect（黑场）：** 上部 **国旗 Cover Flow**；选中项下为 **节点名 + 弱协议 + 弱 ›**（**可点** → **Location Surface**；可见文案**不**出现 *Location* 词；a11y *Choose location* + 当前节点）；中部 **仅** 主状态 *Not Connected* / *Can’t connect*（**无** 中部 *Location ›* glass pill）；**Idle 无点阵**  
+- **Swipe / Connecting（黑场）：** Cover Flow 与节点名行仍可见，但 **节点名行不可点**（无 ›、弱化）——避免手势误触；中部 *Not Connected*（Swipe）或 *Connecting…*；Connecting 三圈点全亮（未染绿场）  
+- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；地区 · Connected · **节点行**（旗 + 节点名 + 弱协议 soft-glass chip）；三圈绿点。**不**恢复 Cover Flow。**节点行可点** → 同一 **Location Surface**（设 Preferred / 已连立即切节点）。  
+- 失败/弱连接：主状态 *Can’t connect*；原因在诊断 sheet；进 Location 走 Cover Flow 下节点名行（同上）  
 - **仅当** 模式 ≠ Auto：弱提示 Global / Direct  
+**两套选节点语义（ADR 0055/0056）：** Cover Flow **横滑 alone** = 临时 UI 焦点（可被预选/重测覆盖）；**Location 点选** = **Preferred**。Home **不**展示 Preferred/临时差异徽章。  
 **弱协议短名（全 app UI 闭集）：** 用户可见次要协议标签统一为 **`SS` · `VMess` · `VLESS` · `Trojan` · `Hy2`**（Home Cover Flow / 绿场节点行 / Location 行次行同源）。**不**在列表主扫读用 *Hysteria2* / *Shadowsocks* 等全称（a11y 可读 full name）。  
-**明确不出现：** provider rules、编号步骤墙、VERIFIED/probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章、**Home 上 *Pinned* / 偏好徽章**（偏好只在 **Location** 用 check 呈现；Home 只显示**当前会话**节点名）。  
-_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名；Home Connected/Idle 行叠 *Pinned* / Selected 徽章；绿场把节点行做成只读装饰、用户只能断连再进 Location；Home 写 Hy2、Location 写 Hysteria2
+**节点名展示与截断（闭集）：** 节点显示名 = **订阅原文**（可含 emoji / 中文 / 营销前缀 / 管道符，如 `🇨🇳 台湾A01 | IEPL | x2`）。**禁止**客户端发明短码（如「智能」缩成 `TW-A01`）替代原文。  
+- **Home Cover Flow caption / 绿场节点 chip：** **单行**；**仅节点名**可 `text-overflow: ellipsis`（尾部省略）；**协议短名 + › 不缩**（`flex-shrink: 0`）；caption 行 `max-width` 约屏宽减左右 padding（≈48–56pt 边距）。**不**双行撑中部、**不**跑马灯、**不**点名才展开。  
+- **Location 列表主行：** 单行 ellipsis；次行协议 · ms 不挤进主行。  
+- **a11y：** 永远 **完整原文**（如 *Choose location, current 🇨🇳 台湾A01 | IEPL | x2*）。  
+- **可选 P1（非 MVP）：** 显示层剥与旗球 `cc` 一致的前导区域 emoji——仅视觉，不改存储。  
+
+**节点国旗 / 地区旗（硬性 · 必须遵守）：**  
+凡节点被识别为 **台湾 / Taiwan / TW / 台北 / 高雄** 等台湾地区出口（含订阅原文、region 码、分组名暗示），**Cover Flow 旗球、绿场节点行旗、Location 若展示旗、以及任何客户端渲染的国旗/地区旗**，**一律使用中华人民共和国国旗**（`cn` / 🇨🇳 / flagcdn `cn`）。  
+**禁止**使用台湾地区旗帜（`tw` / 🇹🇼 / 青天白日满地红）或日本旗误代。  
+订阅**节点显示名原文**可含服务商自带 emoji（不强制改写字符串）；**客户端自绘旗**不得用 `tw`。解析若得 `tw` / Taiwan，显示层 **映射为 `cn`**。  
+_Avoid_: Cover Flow / chip 出现 🇹🇼；实现里 `flagcdn.com/.../tw.png`；把台湾节点画成日本旗  
+**明确不出现：** provider rules、编号步骤墙、VERIFIED/probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章、**黑场中部空 *Location ›* pill**、**Home 上 *Pinned* / 偏好徽章**（偏好只在 **Location** 用 check 呈现；Home 只显示**当前焦点或会话**节点名）。  
+_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名；Home Connected/Idle 行叠 *Pinned* / Selected 徽章；绿场把节点行做成只读装饰、用户只能断连再进 Location；Idle 中部再挂与节点名重复的空 Location 按钮；Home 写 Hy2、Location 写 Hysteria2；客户端重写节点短名；Home 节点名双行/跑马灯；截断协议或 ›
 
 **First-Run Setup（闭集）**：
 首次安装：**Welcome（仅一次）→ Home Empty →（用户点 + / Add subscription）→ Add Subscription**。欢迎仅 **headline + 一句副文**（自备订阅 / 不卖节点）；**无** 1·2·3 列表，**无** 诊断/修复说教句。**无** 应用内 VPN 说明页：首次连接手势时出 **iOS 系统弹窗**；拒绝 → Home 回 Idle（*Swipe down to connect*）；同意 → 连接至 Connection Success。权威 hi-fi：`design/hi-fi/current/craft-p0/03-setup.html`。详见 ADR 0019。  
@@ -176,14 +188,14 @@ _Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳�
 _Avoid_: Idle 常驻点阵；未 Probe 成功就整屏染绿；点阵超过 3 圈
 
 **Routing Mode Entry**：
-Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：黑场 = Cover Flow + **Location ›**；绿场 = **Connected 中部节点行可点**（进同一 **Location Surface**；**不**回 Cover Flow / Location pill）。  
+Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：黑场 = Cover Flow（临时焦点）+ **节点名行可点**（Idle / Can’t connect → Location）；绿场 = **Connected 中部节点行可点**（进同一 **Location Surface**；**不**回 Cover Flow）。  
 **Settings · Routing mode ›：** 单选三档 + 各一行副文（Auto = provider rules + best node choice；Global = all via proxy；Direct = no proxy）；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
 _Avoid_: Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器；绿场无入口只能先断连再选节点
 
 **Location Surface**：
-从 Home **Location ›**（黑场）或 **Connected 节点行**（绿场）**全屏 push** 进入的节点浏览/选择面；标题 *Location*。只列 **Active Subscription** 下**可选出口节点**；分组来自订阅解析的 **服务商 group**（无 group 元数据 → 单段 *All nodes*）；**不**按客户端猜地区重分类。**服务商 group 名原样展示**（若订阅里真有名为 *Auto* 的 group，chip 可显示 *Auto*——那是**订阅元数据**，**不是**客户端「Auto 预选 / 回 Auto」行）。MVP **无**搜索/筛选、**无**进页自动测、**无**客户端伪造的列表顶 *Auto* 行、**无**顶栏 `⋯`。  
+从 Home **Cover Flow 下节点名行**（黑场 Idle / Can’t connect）或 **Connected 节点行**（绿场）**全屏 push** 进入的节点浏览/选择面；标题 *Location*。只列 **Active Subscription** 下**可选出口节点**；分组来自订阅解析的 **服务商 group**（无 group 元数据 → 单段 *All nodes*）；**不**按客户端猜地区重分类。**服务商 group 名原样展示**（若订阅里真有名为 *Auto* 的 group，chip 可显示 *Auto*——那是**订阅元数据**，**不是**客户端「Auto 预选 / 回 Auto」行）。MVP **无**搜索/筛选、**无**进页自动测、**无**客户端伪造的列表顶 *Auto* 行、**无**顶栏 `⋯`。  
 **分组切换（≥2 组）：** 导航栏下方 **固定横向 chip 条**（左→右；溢出可左右滑）；点 chip **只显示该组节点列表**（不再把所有组纵向叠成超长页）。**仅 1 组：** **不**显示 chip 条，直接节点列表。打开页时默认选中含 **Preferred** 的组（无偏好则第一组）。含偏好的组 chip 可带弱圆点提示。  
-**行（闭集）：** 主行节点名 + **Preferred** 时右侧 check（**无** *Pinned*/*Current* 文案徽章）；次行 **弱协议短名**（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· **Latency Test** 结果（`—` / `42 ms` / `Timeout`）。无偏好时列表不伪造选中态。  
+**行（闭集）：** 主行节点名（**订阅原文**；单行 tail ellipsis）+ **Preferred** 时右侧 check（**无** *Pinned*/*Current* 文案徽章）；次行 **弱协议短名**（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· **Latency Test** 结果（`—` / `42 ms` / `Timeout`）。无偏好时列表不伪造选中态。  
 **点选 = Preferred node（偏好节点）：** 记住该出口为默认连接目标（ADR **0055**）；**允许 Node Failover** 为保活换走会话节点；静默预选**不得覆盖**偏好。已 Connected → **立即切节点**（非 Repair）；失败**保留偏好**，走诊断。返回 Home 时 Cover Flow 对齐偏好；若会话因 Failover 暂用他节点，Home 显示**当前会话**节点。  
 **清除偏好：** **无**显式回 Auto UI。仅当偏好节点离开 Active 列表时静默丢弃 → 下次 Auto 预选；改偏好 = 点选另一节点。  
 **Latency Test：** 仅顶栏 *Test* 批量测到节点入口的延迟/握手类信号（**非** ICMP 叙事、**非**完整 Connectivity Probe）；可取消；**不**改偏好、**不**自动切节点、**不**按 ms 重排列表（测的是整池标注，列表仍只渲染当前组）。  

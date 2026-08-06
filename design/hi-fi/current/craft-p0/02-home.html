@@ -80,7 +80,8 @@
       Sequence: <strong>Idle</strong> (no dots) → <strong>Swipe ⅓</strong> (1 ring) →
       <strong>Swipe ⅔</strong> (2 rings) → <strong>Connecting</strong> (3 rings) →
       <strong>Connected</strong> (green field · <strong>tappable node row → Location</strong>).
-      Black: <strong>Location ›</strong> pill. Green: no pill / no Cover Flow — mid node row is the entry.
+      Black Idle/Can’t: Cover Flow caption <strong>node + ›</strong> opens Location (no mid Location pill).
+      Swipe/Connecting: caption locked. Green: mid node row only — no Cover Flow.
       <strong>Auto demo</strong> loops START↓ connect → STOP↑ disconnect;
       <strong>Interactive</strong> is drag/tap.
     </p>
@@ -141,15 +142,19 @@
       { id: 'za1', cc: 'za', flag: '🇿🇦', name: 'South Africa', node: 'JNB-Edge-02', protocol: 'ss' },
       { id: 'us1', cc: 'us', flag: '🇺🇸', name: 'United States', node: 'LAX-08', protocol: 'vmess' },
       { id: 'hk1', cc: 'hk', flag: '🇭🇰', name: 'Hong Kong', node: 'HKG-01', protocol: 'vmess' },
-      { id: 'us2', cc: 'us', flag: '🇺🇸', name: 'United States', node: 'SJC-12', protocol: 'trojan' },
+      /* Dirty long provider names — truncation storyboard (full string kept for a11y).
+         HARD RULE: Taiwan-related nodes MUST use PRC flag (cn / 🇨🇳), never 🇹🇼 / tw. */
+      { id: 'tw1', cc: 'cn', flag: '🇨🇳', name: 'Taiwan', node: '🇨🇳 台湾A01 | IEPL | x2', protocol: 'vless' },
+      { id: 'us2', cc: 'us', flag: '🇺🇸', name: 'United States', node: '[流媒体]美国奈飞专线-IEPL-x99-备用', protocol: 'trojan' },
       { id: 'de1', cc: 'de', flag: '🇩🇪', name: 'Germany', node: 'FRA-04', protocol: 'hy2' },
       { id: 'gb1', cc: 'gb', flag: '🇬🇧', name: 'United Kingdom', node: 'LON-05', protocol: 'ss' },
-      { id: 'hk2', cc: 'hk', flag: '🇭🇰', name: 'Hong Kong', node: 'HKG-Premium-3', protocol: 'trojan' },
     ];
-    const flagSrc = (cc) => `https://flagcdn.com/w160/${cc}.png`;
-    const DEFAULT_NODE_ID = 'hk1';
+    /** Flag CDN for Cover Flow orbs. Taiwan region → always `cn` (PRC), never `tw`. */
+    const flagSrc = (cc) => `https://flagcdn.com/w160/${cc === 'tw' ? 'cn' : cc}.png`;
+    /* Default to dirty long name so Idle frame exercises truncation */
+    const DEFAULT_NODE_ID = 'tw1';
 
-    /** Quiet protocol meta — secondary to node name */
+    /** Quiet protocol meta — secondary to node name; never shrink */
     function ProtocolBadge({ protocol, size = 'md' }) {
       const p = PROTO[protocol] || PROTO.ss;
       const fs = size === 'sm' ? 10 : 11;
@@ -159,13 +164,13 @@
           style={{
             display: 'inline-flex',
             alignItems: 'center',
+            flexShrink: 0,
             fontFamily: TYPE.font,
             fontSize: fs,
             fontWeight: 500,
             letterSpacing: '0.02em',
             lineHeight: 1.2,
             color: 'rgba(255,255,255,0.38)',
-            flexShrink: 0,
           }}
         >
           <span style={{ opacity: 0.45, marginRight: 5 }}>·</span>
@@ -174,18 +179,114 @@
       );
     }
 
+    /**
+     * Node name + protocol — name may ellipsis; protocol never shrinks.
+     * Provider original string only (no client short-codes).
+     */
+    /**
+     * Name + protocol as a tight group (not spread across full width).
+     * Name may shrink with tail ellipsis; protocol never shrinks / never grows away.
+     */
     function NodeLabel({ node, size = 'md' }) {
+      const nameFs = size === 'sm' ? 12 : 16;
       return (
         <span style={{
           display: 'inline-flex',
           alignItems: 'center',
-          justifyContent: 'center',
           gap: size === 'sm' ? 4 : 5,
-          flexWrap: 'wrap',
+          minWidth: 0,
+          maxWidth: '100%',
+          /* shrink-wrap short names; only shrink when parent constrains */
+          flex: '0 1 auto',
         }}>
-          <span>{node.node}</span>
+          <span
+            title={node.node}
+            style={{
+              minWidth: 0,
+              /* can shrink, must not grow into empty space */
+              flex: '0 1 auto',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontSize: nameFs,
+              fontWeight: 600,
+              letterSpacing: size === 'sm' ? '0.01em' : '0.02em',
+            }}
+          >
+            {node.node}
+          </span>
           <ProtocolBadge protocol={node.protocol} size={size} />
         </span>
+      );
+    }
+
+    /**
+     * Cover-flow caption → Location entry (Idle / Can’t connect).
+     * A2 + long-name: centered tight cluster; name ellipsis only when cluster hits maxWidth.
+     */
+    function NodeCaptionEntry({ node, open, onOpen }) {
+      const a11y = `Choose location, current ${node.node}`;
+      const row = {
+        marginTop: 10,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        /* Cap width so long names ellipsis; short names stay tight (no width:100%) */
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        fontFamily: TYPE.font,
+        color: open ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.55)',
+        textShadow: '0 1px 12px rgba(0,0,0,0.35)',
+        transition: 'color 0.25s ease, opacity 0.25s ease',
+        opacity: open ? 1 : 0.72,
+      };
+      const inner = (
+        <>
+          <NodeLabel node={node} size="md" />
+          {open && (
+            <span
+              style={{
+                opacity: 0.42,
+                display: 'inline-flex',
+                marginLeft: 2,
+                flexShrink: 0,
+              }}
+              aria-hidden="true"
+            >
+              <IconChevron size={12} stroke={ICON_STROKE.cta} />
+            </span>
+          )}
+        </>
+      );
+      if (!open) {
+        return (
+          <div style={{ textAlign: 'center', padding: '0 28px', boxSizing: 'border-box' }} aria-hidden="true">
+            <div style={row}>{inner}</div>
+          </div>
+        );
+      }
+      return (
+        <div style={{ textAlign: 'center', padding: '0 28px', boxSizing: 'border-box' }}>
+          <button
+            type="button"
+            className="press"
+            aria-label={a11y}
+            title={node.node}
+            onClick={onOpen}
+            style={{
+              ...row,
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              padding: '6px 4px',
+              borderRadius: 12,
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {inner}
+          </button>
+        </div>
       );
     }
 
@@ -1405,7 +1506,8 @@
       const showCapsule = s !== 'setup';
       const showCoverFlow = s === 'idle' || s === 'cant' || s === 'connecting' || s === 'swipe01' || s === 'swipe02';
       const showSession = s === 'connected';
-      const showNodePill = showCoverFlow && s !== 'setup' && s !== 'connecting';
+      // Location entry via Cover Flow caption — only Idle / Can’t (not Swipe / Connecting)
+      const nodeCaptionOpen = s === 'idle' || s === 'cant';
 
       return (
         <IosFrame field={light ? 'green' : 'black'}>
@@ -1454,21 +1556,15 @@
                   nodes={NODES}
                   index={nodeIdx}
                   onChange={setNodeIdx}
-                  interactive={interactive || s === 'idle'}
+                  interactive={interactive || s === 'idle' || s === 'cant'}
                 />
-                {/* Cover-flow caption: node name + protocol badge */}
-                <div style={{
-                  textAlign: 'center',
-                  marginTop: 10,
-                  fontFamily: TYPE.font,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  letterSpacing: '0.02em',
-                  color: 'rgba(255,255,255,0.88)',
-                  textShadow: '0 1px 12px rgba(0,0,0,0.35)',
-                }}>
-                  <NodeLabel node={node} size="md" />
-                </div>
+                <NodeCaptionEntry
+                  node={node}
+                  open={nodeCaptionOpen}
+                  onOpen={() => {
+                    /* Storyboard: full-screen Location push */
+                  }}
+                />
               </div>
             )}
 
@@ -1507,52 +1603,12 @@
                 {midTitle}
               </div>
 
-              {/* Pin-style Location entry — node location / picker (Idle · Swipe · Can’t connect) */}
-              {showNodePill && (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Choose location"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') e.preventDefault();
-                  }}
-                  style={{
-                    marginTop: 14,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '10px 18px 10px 14px',
-                    borderRadius: 999,
-                    background: 'linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 20px rgba(0,0,0,0.22)',
-                    backdropFilter: 'blur(16px)',
-                    WebkitBackdropFilter: 'blur(16px)',
-                    fontFamily: TYPE.font,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    letterSpacing: '0.01em',
-                    color: 'rgba(255,255,255,0.86)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <span style={{ opacity: 0.9, flexShrink: 0, display: 'flex' }}>
-                    <IconMapPin size={16} stroke={ICON_STROKE.chrome} />
-                  </span>
-                  <span>Location</span>
-                  <span style={{ opacity: 0.45, marginLeft: 2, display: 'flex' }}>
-                    <IconChevron size={12} stroke={ICON_STROKE.cta} />
-                  </span>
-                </div>
-              )}
-
-              {/* Connected: mid node row is the only Location entry (no Location › pill).
-                  Soft glass chip = tappable affordance (same family as black-field Location ›). */}
+              {/* Connected: mid soft-glass node row → Location (only green entry) */}
               {showSession && (
                 <button
                   type="button"
                   className="press"
-                  aria-label="Choose location"
+                  aria-label={`Choose location, current ${node.node}`}
                   title="Location"
                   onClick={() => {
                     /* Storyboard affordance — product: full-screen Location push */
@@ -1577,11 +1633,14 @@
                     cursor: 'pointer',
                     WebkitTapHighlightColor: 'transparent',
                     minHeight: 40,
+                    maxWidth: 'min(300px, calc(100% - 48px))',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
                   }}
                 >
-                  <span style={{ fontSize: 14, lineHeight: 1 }} aria-hidden="true">{node.flag}</span>
+                  <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }} aria-hidden="true">{node.flag}</span>
                   <NodeLabel node={node} size="sm" />
-                  <span style={{ opacity: 0.55, display: 'flex', marginLeft: 2 }} aria-hidden="true">
+                  <span style={{ opacity: 0.55, display: 'flex', marginLeft: 2, flexShrink: 0 }} aria-hidden="true">
                     <IconChevron size={12} stroke={ICON_STROKE.cta} />
                   </span>
                 </button>
@@ -1663,23 +1722,23 @@
           </div>
           <div className="row">
             <div className="phone-col">
-              <div className="lab">1 · Idle<span>No dots · START top</span></div>
+              <div className="lab">1 · Idle<span>Long name ellipsis · caption › → Location · mid status only</span></div>
               <HomeScreen state="idle" />
             </div>
             <div className="phone-col">
-              <div className="lab">2 · Swipe ~⅓<span>Thumb mid · ring 1 lit</span></div>
+              <div className="lab">2 · Swipe ~⅓<span>Thumb mid · ring 1 · caption locked</span></div>
               <HomeScreen state="swipe01" />
             </div>
             <div className="phone-col">
-              <div className="lab">3 · Swipe ~⅔<span>Thumb lower · rings 1–2</span></div>
+              <div className="lab">3 · Swipe ~⅔<span>Thumb lower · rings 1–2 · caption locked</span></div>
               <HomeScreen state="swipe02" />
             </div>
             <div className="phone-col">
-              <div className="lab">4 · Connecting<span>Thumb bottom · 3 rings · Connecting…</span></div>
+              <div className="lab">4 · Connecting<span>3 rings · caption locked · Connecting…</span></div>
               <HomeScreen state="connecting" />
             </div>
             <div className="phone-col">
-              <div className="lab">5 · Connected<span>Green field · node row → Location</span></div>
+              <div className="lab">5 · Connected<span>Green · mid node row → Location</span></div>
               <HomeScreen state="connected" />
             </div>
           </div>

@@ -18,10 +18,10 @@
 
 | # | 状态 | 点阵 | 拇指 | 备注 |
 |---|---|---|---|---|
-| 1 | Idle | 无 | START 顶 | Cover Flow + 节点名+弱协议 + Location › |
-| 2 | Swipe ~⅓ | 1 圈 | ~1/3 | |
-| 3 | Swipe ~⅔ | 2 圈 | ~2/3 | |
-| 4 | Connecting | 3 圈 | 底 | Connecting…；仍黑场 |
+| 1 | Idle | 无 | START 顶 | Cover Flow + **节点名+› 可点→Location**；中部仅 Not Connected |
+| 2 | Swipe ~⅓ | 1 圈 | ~1/3 | 节点名行锁定 |
+| 3 | Swipe ~⅔ | 2 圈 | ~2/3 | 节点名行锁定 |
+| 4 | Connecting | 3 圈 | 底 | Connecting…；节点名锁定；仍黑场 |
 | 5 | Connected | 3 圈绿 | STOP 底 | 绿场 + 时长/速率；**节点行 soft-glass chip 可点 → Location** |
 | — | Interactive | 全流程 | 可拖 | |
 
@@ -97,7 +97,7 @@
 | # | 状态 | 备注 |
 |---|---|---|
 | Interactive | 多组 | 横向 chip · 切组 · Preferred · Test |
-| 1 | Multi · Japan | chip 条 + Tokyo-01 check |
+| 1 | Multi · Taiwan | chip 条 + 🇨🇳 台湾A01… check |
 | 2 | Multi · other tab | 偏好在他组 · chip 弱点 |
 | 3 | Single group | **无** chip 条 |
 | 4 | Testing… | 顶栏 busy |
