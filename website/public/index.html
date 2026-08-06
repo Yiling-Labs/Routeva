@@ -3,78 +3,642 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Routeva</title>
-  <meta name="description" content="Routeva — smart proxy client. Paste a subscription you already have. Connect, explain failures, repair safely." />
+  <title>Routeva — Your subscription, not ours</title>
+  <meta name="description" content="Routeva is a smart proxy client for people who already have a subscription. Paste to connect, see honest failure reasons, and repair only what the client can fix—with your OK." />
   <link rel="canonical" href="https://routeva.yilinglabs.com/" />
+  <meta name="theme-color" content="#0b0e11" />
+  <meta property="og:title" content="Routeva — Your subscription, not ours" />
+  <meta property="og:description" content="Paste a subscription you already have. Connect, explain failures honestly, repair safely. We don’t sell nodes." />
+  <meta property="og:url" content="https://routeva.yilinglabs.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://routeva.yilinglabs.com/media/home-connected.png" />
+  <link rel="stylesheet" href="/tokens.css" />
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0b0e11;
-      --fg: rgba(255,255,255,0.94);
-      --muted: rgba(255,255,255,0.58);
-      --quiet: rgba(255,255,255,0.4);
-      --card: rgba(255,255,255,0.06);
-      --border: rgba(255,255,255,0.11);
-      --mint: #7fd9b0;
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; overflow-x: clip; }
+    html { scroll-behavior: smooth; color-scheme: dark; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-      background: linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%);
-      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--text-body);
+      font-weight: 500;
+      line-height: 1.55;
+      color: var(--color-ink);
+      background: linear-gradient(
+        168deg,
+        var(--color-paper-top) 0%,
+        var(--color-paper-2) 42%,
+        var(--color-paper) 100%
+      );
       -webkit-font-smoothing: antialiased;
-      padding: 48px 24px 64px;
     }
-    .wrap { max-width: 40rem; margin: 0 auto; }
-    .brand {
-      font-size: 13px; font-weight: 600; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--quiet); margin-bottom: 28px;
-    }
-    h1 {
-      font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 700;
-      letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 14px;
-    }
-    .lead {
-      font-size: 1.0625rem; font-weight: 500; color: var(--muted);
-      line-height: 1.55; max-width: 36ch; margin-bottom: 28px;
-    }
-    .card {
-      border-radius: 18px; padding: 18px 20px;
-      background: var(--card); border: 1px solid var(--border);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
-    }
-    .card p { font-size: 0.9375rem; color: var(--muted); line-height: 1.5; }
-    nav { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 16px 24px; }
+
     a {
-      color: var(--mint); font-size: 0.9375rem; font-weight: 600;
+      color: var(--color-mint);
+      font-weight: 600;
+      text-underline-offset: 0.18em;
+    }
+    a:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    .skip {
+      position: absolute;
+      left: var(--page-gutter);
+      top: -100px;
+      z-index: 100;
+      padding: 0.4rem 0.75rem;
+      background: var(--color-paper-2);
+      color: var(--color-ink);
+      border-radius: 8px;
+      font-weight: 600;
       text-decoration: none;
     }
-    a:hover { text-decoration: underline; }
-    footer {
-      margin-top: 48px; font-size: 0.8125rem; color: var(--quiet); line-height: 1.45;
+    .skip:focus { top: 0.75rem; }
+
+    #hero, #beliefs, #product, #how-it-works, #trust {
+      scroll-margin-top: var(--scroll-pad);
+    }
+
+    /* —— Sticky glass nav —— */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: var(--nav-h);
+      padding: 0.65rem var(--page-gutter);
+      background: color-mix(in srgb, var(--color-paper) 78%, transparent);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      border-bottom: 1px solid var(--color-edge);
+    }
+    .nav__brand {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .nav__brand:hover { color: var(--color-ink); text-decoration: none; }
+    .nav__links {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: none;
+      gap: 1.35rem;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav__links a {
+      color: var(--color-ink-2);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .nav__links a:hover { color: var(--color-ink); }
+    .nav__cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 1.1rem;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(180deg, var(--color-mint-lift), var(--color-mint));
+      color: var(--color-mint-ink);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      flex-shrink: 0;
+      transition: filter var(--dur) var(--ease-out);
+    }
+    .nav__cta:hover {
+      filter: brightness(1.05);
+      text-decoration: none;
+    }
+    @media (min-width: 40rem) {
+      .nav__links { display: flex; }
+    }
+
+    main { display: block; }
+
+    /* —— Hero 50/50 —— */
+    .hero {
+      max-width: var(--shell);
+      margin: 0 auto;
+      padding: var(--space-xl) var(--page-gutter) var(--space-2xl);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-xl);
+      align-items: center;
+    }
+    .hero__copy { min-width: 0; }
+    .hero__meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.65rem;
+      margin-bottom: var(--space-md);
+    }
+    .hero__kicker {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+    .hero__status {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-ink-2);
+      padding: 0.28rem 0.7rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--color-edge);
+      background: var(--color-glass);
+      white-space: nowrap;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: var(--text-hero);
+      font-weight: 700;
+      font-style: normal;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+      margin: 0 0 var(--space-md);
+      max-width: 12ch;
+      text-wrap: balance;
+    }
+    .hero h1 .mark { color: var(--color-mint); }
+    .hero__lede {
+      margin: 0 0 var(--space-lg);
+      font-size: var(--text-body);
+      color: var(--color-ink-2);
+      line-height: 1.55;
+      max-width: 34ch;
+    }
+    .hero__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1.25rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 1.25rem;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(180deg, var(--color-mint-lift), var(--color-mint));
+      color: var(--color-mint-ink);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: filter var(--dur) var(--ease-out);
+    }
+    .btn:hover { filter: brightness(1.05); text-decoration: none; }
+    .btn:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 3px;
+    }
+    .link-quiet {
+      color: var(--color-muted);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid var(--color-edge);
+      padding-bottom: 2px;
+      white-space: nowrap;
+    }
+    .link-quiet:hover {
+      color: var(--color-mint);
+      border-color: var(--color-mint);
+    }
+    .hero__figure {
+      margin: 0;
+      justify-self: center;
+      width: min(100%, 17.5rem);
+      min-width: 0;
+    }
+    .hero__figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: var(--radius-phone);
+      outline: 1px solid var(--color-image-outline);
+      outline-offset: -1px;
+    }
+    .hero__figure figcaption {
+      margin-top: 0.55rem;
+      text-align: center;
+      font-size: 12px;
+      color: var(--color-muted);
+    }
+    @media (min-width: 56rem) {
+      .hero {
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 3rem;
+        padding-block: 3.25rem 3.5rem;
+      }
+      .hero__figure {
+        justify-self: end;
+        width: min(100%, 18.5rem);
+      }
+    }
+
+    /* —— Sections —— */
+    .section {
+      max-width: var(--shell);
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--page-gutter);
+      border-top: 1px solid var(--color-edge-soft);
+    }
+    .section h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-section);
+      font-weight: 700;
+      font-style: normal;
+      letter-spacing: -0.03em;
+      line-height: 1.12;
+      margin: 0 0 0.45rem;
+      text-wrap: balance;
+    }
+    .section__lead {
+      margin: 0 0 var(--space-lg);
+      color: var(--color-ink-2);
+      font-size: 15px;
+      line-height: 1.5;
+      max-width: 40ch;
+    }
+
+    /* Beliefs chips */
+    .chips {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.75rem;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    @media (min-width: 44rem) {
+      .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .chip {
+      margin: 0;
+      padding: 1.15rem 1.2rem;
+      border-radius: var(--radius-card);
+      background: var(--color-glass);
+      border: 1px solid var(--color-edge);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      min-width: 0;
+    }
+    .chip__n {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-mint);
+      margin-bottom: 0.4rem;
+    }
+    .chip h3 {
+      font-family: var(--font-display);
+      font-size: var(--text-card);
+      font-weight: 700;
+      font-style: normal;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin: 0 0 0.4rem;
+      text-wrap: balance;
+    }
+    .chip p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--color-ink-2);
+      line-height: 1.45;
+      max-width: 36ch;
+    }
+
+    /* Product duo */
+    .duo {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-xl);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    @media (min-width: 44rem) {
+      .duo {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2rem;
+      }
+    }
+    .duo figure {
+      margin: 0;
+      text-align: center;
+      min-width: 0;
+    }
+    .duo img {
+      display: block;
+      width: min(100%, 16.5rem);
+      margin-inline: auto;
+      height: auto;
+      border-radius: 24px;
+      outline: 1px solid var(--color-image-outline);
+      outline-offset: -1px;
+    }
+    .duo figcaption {
+      margin-top: 0.75rem;
+    }
+    .duo strong {
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-ink);
+      margin-bottom: 0.2rem;
+    }
+    .duo span {
+      font-size: 14px;
+      color: var(--color-ink-2);
+      line-height: 1.4;
+    }
+
+    /* How it works rail */
+    .rail {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1px;
+      background: var(--color-edge);
+      border: 1px solid var(--color-edge);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+    .rail > li {
+      background: var(--color-paper-2);
+      padding: 1.15rem 1.1rem;
+      min-width: 0;
+    }
+    .rail strong {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.3rem;
+    }
+    .rail span {
+      font-size: 13px;
+      color: var(--color-ink-2);
+      line-height: 1.4;
+    }
+    @media (min-width: 50rem) {
+      .rail { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    /* Trust */
+    .trust-card {
+      max-width: 40rem;
+      padding: 1.25rem 1.4rem;
+      border-radius: var(--radius-card);
+      background: var(--color-glass);
+      border: 1px solid var(--color-edge);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .trust-card h2 {
+      font-size: 1.25rem;
+      margin-bottom: 0.4rem;
+    }
+    .trust-card p {
+      margin: 0 0 0.9rem;
+      color: var(--color-ink-2);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .trust-card nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      font-size: 14px;
+    }
+    .trust-card a { white-space: nowrap; }
+
+    /* Footer */
+    .foot {
+      max-width: var(--shell);
+      margin: 0 auto;
+      padding: var(--space-lg) var(--page-gutter) var(--space-xl);
+      border-top: 1px solid var(--color-edge-soft);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 13px;
+      color: var(--color-muted);
+    }
+    .foot a {
+      color: var(--color-muted);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .foot a:hover { color: var(--color-mint); }
+    .foot__links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.1rem;
+    }
+
+    @media (max-width: 40rem) {
+      .hero { padding-top: var(--space-lg); }
+      .hero h1 { max-width: none; }
+      .hero__figure { width: min(100%, 15rem); }
+      .btn { width: 100%; }
+      .section { padding-block: var(--space-xl); }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <p class="brand">Routeva</p>
-    <h1>Smart proxy client.<br />Your subscription, not ours.</h1>
-    <p class="lead">
-      Paste a link you already have. Connect, see honest failure reasons, and repair only what the client can fix—with your OK.
-    </p>
-    <div class="card">
-      <p>App Store and product site content will expand here. Legal pages are live now.</p>
-    </div>
-    <nav>
-      <a href="/privacy/">Privacy Policy</a>
-      <a href="/terms/">Terms of Use</a>
-      <a href="/privacy/#contact">Contact</a>
+  <a class="skip" href="#hero">Skip to content</a>
+
+  <header class="nav">
+    <a class="nav__brand" href="/">Routeva</a>
+    <ul class="nav__links" aria-label="Primary">
+      <li><a href="#beliefs">Beliefs</a></li>
+      <li><a href="#product">Product</a></li>
+      <li><a href="#how-it-works">How it works</a></li>
+      <li><a href="#trust">Trust</a></li>
+    </ul>
+    <a class="nav__cta" href="#how-it-works">How it works</a>
+  </header>
+
+  <main>
+    <section class="hero" id="hero" aria-labelledby="hero-title">
+      <div class="hero__copy">
+        <div class="hero__meta">
+          <p class="hero__kicker">Smart proxy client</p>
+          <span class="hero__status">iOS &amp; Android · not on the stores yet</span>
+        </div>
+        <h1 id="hero-title">Your subscription, <span class="mark">not ours.</span></h1>
+        <p class="hero__lede">
+          Paste a link you already have. Connect, see honest failure reasons, and repair only what the client can fix—with your OK.
+        </p>
+        <div class="hero__actions">
+          <a class="btn" href="#how-it-works">How it works</a>
+          <a class="link-quiet" href="#product">See the product</a>
+        </div>
+      </div>
+      <figure class="hero__figure">
+        <img
+          src="/media/home-connected.png"
+          width="830"
+          height="1748"
+          alt="Routeva home screen connected: green field, session timer, and STOP control."
+          decoding="async"
+          fetchpriority="high"
+        />
+        <figcaption>Home · Connection Success</figcaption>
+      </figure>
+    </section>
+
+    <section class="section" id="beliefs" aria-labelledby="beliefs-title">
+      <h2 id="beliefs-title">What we stand for</h2>
+      <p class="section__lead">Soft glass instrument. Calm, honest, no node shop.</p>
+      <ul class="chips">
+        <li class="chip">
+          <span class="chip__n">01</span>
+          <h3>We do not sell nodes.</h3>
+          <p>Bring the subscription you already pay for. No provider recommendations.</p>
+        </li>
+        <li class="chip">
+          <span class="chip__n">02</span>
+          <h3>Failure in plain language.</h3>
+          <p>Buckets you can act on—not raw error codes.</p>
+        </li>
+        <li class="chip">
+          <span class="chip__n">03</span>
+          <h3>Repair with your OK.</h3>
+          <p>Snapshot first. Verify after. Roll back if needed.</p>
+        </li>
+        <li class="chip">
+          <span class="chip__n">04</span>
+          <h3>No silent cloud brain.</h3>
+          <p>Help cloud assist is default-on and optional.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" id="product" aria-labelledby="product-title">
+      <h2 id="product-title">What it looks like</h2>
+      <p class="section__lead">
+        Design previews from the craft system—same Field Black, soft glass, and mint actions.
+      </p>
+      <ul class="duo">
+        <li>
+          <figure>
+            <img
+              src="/media/diagnostic-app-fix.png"
+              width="830"
+              height="1748"
+              alt="Diagnostic sheet with App can fix and Repair with my OK."
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              <strong>Explain</strong>
+              <span>App can fix · Repair only after consent</span>
+            </figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <img
+              src="/media/help-empty.png"
+              width="830"
+              height="1748"
+              alt="Help empty state with cloud assist on."
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              <strong>Help</strong>
+              <span>Cloud on by default · temporary analysis</span>
+            </figcaption>
+          </figure>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" id="how-it-works" aria-labelledby="loop-title">
+      <h2 id="loop-title">How it works</h2>
+      <p class="section__lead">One self-healing loop. Not a longer settings list.</p>
+      <ol class="rail">
+        <li>
+          <strong>Paste</strong>
+          <span>Import a link, QR, or file you already own.</span>
+        </li>
+        <li>
+          <strong>Connect</strong>
+          <span>System VPN + real connectivity probe.</span>
+        </li>
+        <li>
+          <strong>Explain</strong>
+          <span>App · Provider · Network · Not sure.</span>
+        </li>
+        <li>
+          <strong>Repair</strong>
+          <span>Consent · snapshot · verify · roll back.</span>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section" id="trust" aria-labelledby="trust-title">
+      <div class="trust-card">
+        <h2 id="trust-title">Trust, without theatre</h2>
+        <p>
+          Data on device by default. Help cloud assist is temporary analysis only—and you can turn it off.
+        </p>
+        <nav aria-label="Legal">
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/terms/">Terms of Use</a>
+          <a href="/privacy/#contact">Contact</a>
+        </nav>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Routeva · Yiling Labs · we don’t sell nodes.</span>
+    <nav class="foot__links" aria-label="Footer">
+      <a href="#how-it-works">How it works</a>
+      <a href="/privacy/">Privacy</a>
+      <a href="/terms/">Terms</a>
+      <a href="mailto:privacy@yilinglabs.com">Contact</a>
     </nav>
-    <footer>
-      © <span id="y"></span> Yiling Labs · Routeva does not sell nodes.
-    </footer>
-  </div>
-  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+    <span>© <span id="y"></span> · Brand Presence</span>
+  </footer>
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>

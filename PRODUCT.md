@@ -15,7 +15,7 @@
 | code_layout | Dual-Native：`app/ios/` + `app/android/`（ADR 0049） |
 | min_os | iOS 17+；Android 待实现期定 minSdk（建议 API 26+，PRD 显式） |
 | market | 美国 App Store / Google Play 双端开发；商店叙事仍可分区优先 |
-| product_language | English 源；App 8 locale（M · ADR 0048）；壳机翻 · T1（0047）；Android 同闭集策略 |
+| product_language | English 源（`docs/copy/en.yaml` · ADR 0053）；App 8 locale（M · 0048）；壳机翻 · T1（0047） |
 | business | **Beta：全功能免费**；目标草稿 Free + Pro $2.99 永久（见 ADR 0001/0006；双端 IAP 为实现差异） |
 | updated | 2026-08-06 |
 | status | Grill 收口 + Dual-Native 双端；可进入设计/实现细化 |
@@ -28,6 +28,7 @@
 | 需求 | [docs/prd/](./docs/prd/) | PRD |
 | 过程稿 | [docs/sessions/](./docs/sessions/) | grill / Brief 原料 |
 | 决策 | [docs/adr/](./docs/adr/) | ADR |
+| App 文案键 | [docs/copy/](./docs/copy/) | English 键值源（P0+壳 · ADR 0053） |
 | 品类实践 | [docs/guides/](./docs/guides/) | iOS / Android L2 |
 | 设计 | [design/](./design/) | 线框、高保真（两端 UI 真源；平台控件差异属 Realization） |
 | 发布 | [gtm/](./gtm/) | App Store + Play Store 等 |
@@ -83,7 +84,7 @@
 | Android 设备 | **手机主验收**；平板/折叠基础可用、布局不优先 |
 | 系统 | **iOS 17+**；Android minSdk 实现期锁定（建议 ≥ API 26） |
 | 商店 | App Store + Google Play；叙事/合规可分区优先，产品语义单源 |
-| 文案语言 | **English** 源；App **en·zh-Hans·zh-Hant·es·pt-BR·ja·ko·de**（壳机翻；诊断/Repair/隐私锁 en · ADR 0047/0048）；两端同闭集策略；GTM 精做 en 优先 |
+| 文案语言 | **English** 源（[`docs/copy/en.yaml`](./docs/copy/en.yaml) · ADR 0053）；App **en·zh-Hans·zh-Hant·es·pt-BR·ja·ko·de**（壳机翻；诊断/Repair/隐私锁 en · 0047/0048）；GTM 精做 en 优先 |
 | 身份 | 无自建账号；数据本机（商业化后：StoreKit / Play Billing 恢复购买 = Platform Realization） |
 | 商业 | **Beta 全免**；目标草稿：Free 深度体验 + Pro Non-Consumable **$2.99**（双端价位对齐，实现 API 不同） |
 | VPN 实现 | iOS：Network Extension / 系统 VPN 弹窗；Android：VpnService / 系统 VPN 权限 — 同一「连接」能力的 Realization |

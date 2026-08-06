@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Routeva · Direction C · Editorial Field</title>
+<style>
+  /* Skeleton: masthead + full-bleed type fold + horizontal still strip + long serif claims
+     Designer lens: quiet editorial / warm-editorial craft triad · instrument honesty */
+  :root {
+    --paper: #0c1014;
+    --paper-2: #151a1f;
+    --ink: rgba(255,255,255,0.96);
+    --ink2: rgba(255,255,255,0.68);
+    --mute: rgba(255,255,255,0.48);
+    --mint: #7fd9b0;
+    --rule: rgba(255,255,255,0.14);
+    --g: clamp(1.25rem, 5vw, 3.5rem);
+    --display: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+    --body: "Source Sans 3", -apple-system, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--body);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--mint); font-weight: 600; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .mast {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 1.5rem var(--g) 1rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .mast__word {
+    font-family: var(--display); font-size: 1.35rem; font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .mast__meta {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .mast__links {
+    display: none; gap: 1.5rem; font-size: 14px; font-weight: 600;
+  }
+  .mast__links a { color: var(--ink2); }
+  @media (min-width: 720px) {
+    .mast__links { display: flex; }
+  }
+
+  .fold {
+    padding: 4rem var(--g) 3.5rem;
+    border-bottom: 1px solid var(--rule);
+    max-width: 90rem; margin: 0 auto;
+  }
+  .fold__k {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 1.25rem;
+  }
+  .fold h1 {
+    font-family: var(--display); font-style: normal;
+    font-size: clamp(3rem, 9vw, 6.5rem); font-weight: 600;
+    letter-spacing: -0.04em; line-height: 0.96;
+    max-width: 10ch; text-wrap: balance; margin-bottom: 1.5rem;
+  }
+  .fold h1 span { color: var(--mint); }
+  .fold__row {
+    display: flex; flex-wrap: wrap; gap: 1.5rem 3rem;
+    align-items: flex-end; justify-content: space-between;
+  }
+  .fold__lede {
+    font-size: 1.125rem; color: var(--ink2); line-height: 1.5;
+    max-width: 32ch; font-weight: 500;
+  }
+  .fold__cta {
+    display: inline-flex; align-items: center; min-height: 44px;
+    font-family: var(--display); font-size: 1.05rem; font-weight: 600;
+    color: var(--ink); border-bottom: 2px solid var(--mint);
+    padding-bottom: 0.15rem;
+  }
+  .fold__cta:hover { color: var(--mint); text-decoration: none; }
+
+  /* horizontal product strip — structural difference */
+  .strip-wrap {
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-2);
+  }
+  .strip-label {
+    padding: 1.25rem var(--g) 0.5rem;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .strip {
+    display: flex; gap: 1.5rem;
+    overflow-x: auto; padding: 0.75rem var(--g) 1.75rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .strip figure {
+    margin: 0; flex: 0 0 min(72vw, 240px);
+    scroll-snap-align: start;
+  }
+  .strip img {
+    width: 100%; height: auto; border-radius: 22px;
+    outline: 1px solid rgba(255,255,255,0.1);
+    display: block;
+  }
+  .strip figcaption {
+    margin-top: 0.65rem;
+    font-family: var(--display); font-size: 1rem; font-weight: 600;
+  }
+  .strip figcaption span {
+    display: block; font-family: var(--body); font-size: 13px;
+    font-weight: 500; color: var(--ink2); margin-top: 0.2rem;
+  }
+
+  .claims {
+    max-width: 48rem; margin: 0 auto;
+    padding: 3.5rem var(--g);
+  }
+  .claims h2 {
+    font-family: var(--display); font-size: 0.95rem; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute);
+    margin-bottom: 2rem;
+  }
+  .claim {
+    padding: 1.75rem 0;
+    border-top: 1px solid var(--rule);
+  }
+  .claim:last-child { border-bottom: 1px solid var(--rule); }
+  .claim h3 {
+    font-family: var(--display); font-style: normal;
+    font-size: clamp(1.6rem, 3.5vw, 2.15rem); font-weight: 600;
+    letter-spacing: -0.025em; line-height: 1.15;
+    margin-bottom: 0.6rem; text-wrap: balance;
+  }
+  .claim p {
+    font-size: 1rem; color: var(--ink2); line-height: 1.55; max-width: 38ch;
+  }
+
+  .loop {
+    border-top: 1px solid var(--rule);
+    padding: 3rem var(--g) 3.5rem;
+    max-width: 72rem; margin: 0 auto;
+  }
+  .loop h2 {
+    font-family: var(--display); font-size: clamp(1.8rem, 3vw, 2.4rem);
+    font-weight: 600; letter-spacing: -0.03em; margin-bottom: 0.5rem;
+  }
+  .loop > p {
+    color: var(--ink2); max-width: 36ch; margin-bottom: 1.75rem; line-height: 1.5;
+  }
+  .loop ol {
+    list-style: none; display: grid; gap: 1rem;
+  }
+  @media (min-width: 720px) {
+    .loop ol { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+  }
+  .loop li {
+    padding-top: 0.75rem; border-top: 2px solid var(--mint);
+  }
+  .loop strong {
+    display: block; font-family: var(--display); font-size: 1.25rem;
+    font-weight: 600; margin-bottom: 0.35rem;
+  }
+  .loop span { font-size: 14px; color: var(--ink2); line-height: 1.4; }
+
+  .trust {
+    max-width: 40rem; margin: 0 auto;
+    padding: 0 var(--g) 3.5rem;
+  }
+  .trust__box {
+    border-top: 1px solid var(--rule); padding-top: 1.5rem;
+  }
+  .trust h2 {
+    font-family: var(--display); font-size: 1.35rem; font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .trust p { color: var(--ink2); line-height: 1.5; margin-bottom: 1rem; font-size: 15px; }
+  .trust nav { display: flex; gap: 1.25rem; font-size: 14px; }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 1.5rem var(--g) 2rem;
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem;
+    font-size: 13px; color: var(--mute);
+  }
+  .dir-tag {
+    position: fixed; bottom: 12px; right: 12px; z-index: 50;
+    font-family: var(--display); font-size: 12px; font-weight: 600;
+    padding: 0.4rem 0.75rem; background: var(--paper-2);
+    border: 1px solid var(--rule); color: var(--ink2);
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="dir-tag">C · Editorial Field</div>
+
+  <header class="mast">
+    <div>
+      <div class="mast__word">Routeva</div>
+      <div class="mast__meta">Yiling Labs</div>
+    </div>
+    <nav class="mast__links" aria-label="Primary">
+      <a href="#beliefs">Beliefs</a>
+      <a href="#product">Product</a>
+      <a href="#loop">How it works</a>
+      <a href="#trust">Trust</a>
+    </nav>
+  </header>
+
+  <section class="fold">
+    <p class="fold__k">Smart proxy client · not on the stores yet</p>
+    <h1>Your subscription, <span>not ours.</span></h1>
+    <div class="fold__row">
+      <p class="fold__lede">
+        For people who already pay for a proxy. Paste to connect. Failures in plain language. Repair only with your OK.
+      </p>
+      <a class="fold__cta" href="#loop">How it works →</a>
+    </div>
+  </section>
+
+  <div class="strip-wrap" id="product">
+    <p class="strip-label">In the product · design preview · scroll →</p>
+    <div class="strip">
+      <figure>
+        <img src="home-connected.png" alt="Connected home" width="480" height="1000" />
+        <figcaption>Connect<span>Success means probe-true</span></figcaption>
+      </figure>
+      <figure>
+        <img src="diagnostic-app-fix.png" alt="Diagnostic" width="480" height="1000" />
+        <figcaption>Explain<span>Repair with my OK</span></figcaption>
+      </figure>
+      <figure>
+        <img src="help-empty.png" alt="Help" width="480" height="1000" />
+        <figcaption>Help<span>Cloud on · optional</span></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <section class="claims" id="beliefs">
+    <h2>What we believe</h2>
+    <article class="claim">
+      <h3>We do not sell nodes.</h3>
+      <p>Bring the subscription you already have. Routeva will not recommend a provider or plan.</p>
+    </article>
+    <article class="claim">
+      <h3>Failure deserves plain language.</h3>
+      <p>When connect fails, you get honest buckets—not a raw error code and a shrug.</p>
+    </article>
+    <article class="claim">
+      <h3>Repair only with your OK.</h3>
+      <p>Client-fixable issues: consent, snapshot first, verify after, roll back if needed.</p>
+    </article>
+    <article class="claim">
+      <h3>No silent cloud brain.</h3>
+      <p>Help can use temporary cloud analysis by default—and you can turn it off.</p>
+    </article>
+  </section>
+
+  <section class="loop" id="loop">
+    <h2>How it works</h2>
+    <p>One self-healing loop. Paste, connect, explain, repair.</p>
+    <ol>
+      <li><strong>Paste</strong><span>Import a link, QR, or file you own.</span></li>
+      <li><strong>Connect</strong><span>System VPN + real connectivity probe.</span></li>
+      <li><strong>Explain</strong><span>App · Provider · Network · Not sure.</span></li>
+      <li><strong>Repair</strong><span>Consent · snapshot · verify · roll back.</span></li>
+    </ol>
+  </section>
+
+  <section class="trust" id="trust">
+    <div class="trust__box">
+      <h2>Trust, without theatre</h2>
+      <p>Connection data stays on your device by default. Help cloud assist is temporary analysis only.</p>
+      <nav>
+        <a href="https://routeva.yilinglabs.com/privacy/">Privacy Policy</a>
+        <a href="https://routeva.yilinglabs.com/terms/">Terms of Use</a>
+      </nav>
+    </div>
+  </section>
+
+  <footer>
+    <span>Routeva · we don’t sell nodes.</span>
+    <span>© 2026 Yiling Labs</span>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,1141 @@
+# Routeva App UI — English product copy (source of truth for keys)
+# Governance: docs/copy/README.md · ADR 0053 · CONTEXT Product Copy Source
+# tier: shell = machine-translatable shell · lock-en = stay English (ADR 0047)
+# Do not add non-en locales to this file.
+
+version: 1
+locale: en
+scope: p0_plus_chrome
+
+strings:
+
+  # ── chrome (platform-generic shell; may be filled beyond hi-fi) ──────────
+  - key: chrome.cancel
+    en: Cancel
+    tier: shell
+    surface: chrome
+
+  - key: chrome.done
+    en: Done
+    tier: shell
+    surface: chrome
+
+  - key: chrome.close
+    en: Close
+    tier: shell
+    surface: chrome
+
+  - key: chrome.back
+    en: Back
+    tier: shell
+    surface: chrome
+
+  - key: chrome.ok
+    en: OK
+    tier: shell
+    surface: chrome
+
+  - key: chrome.save
+    en: Save
+    tier: shell
+    surface: chrome
+
+  - key: chrome.delete
+    en: Delete
+    tier: shell
+    surface: chrome
+
+  - key: chrome.edit
+    en: Edit
+    tier: shell
+    surface: chrome
+
+  - key: chrome.try_again
+    en: Try again
+    tier: shell
+    surface: chrome
+
+  - key: chrome.not_now
+    en: Not now
+    tier: shell
+    surface: chrome
+
+  - key: chrome.continue
+    en: Continue
+    tier: shell
+    surface: chrome
+
+  - key: chrome.send
+    en: Send
+    tier: shell
+    surface: chrome
+
+  - key: chrome.remove
+    en: Remove
+    tier: shell
+    surface: chrome
+
+  - key: chrome.none
+    en: None
+    tier: shell
+    surface: chrome
+
+  - key: chrome.error_title
+    en: Something went wrong
+    tier: shell
+    surface: chrome
+
+  - key: chrome.loading
+    en: Loading…
+    tier: shell
+    surface: chrome
+
+  # ── home ────────────────────────────────────────────────────────────────
+  - key: home.chrome.help
+    en: Help
+    tier: shell
+    surface: home
+    notes: "User-visible label; internal code may say Agent. ADR 0036."
+
+  - key: home.chrome.subscriptions
+    en: Subscriptions
+    tier: shell
+    surface: home
+
+  - key: home.chrome.settings
+    en: Settings
+    tier: shell
+    surface: home
+
+  - key: home.idle.status
+    en: Not Connected
+    tier: shell
+    surface: home
+    notes: "Home Mid Copy · craft-p0/02-home"
+
+  - key: home.connecting.status
+    en: Connecting…
+    tier: shell
+    surface: home
+
+  - key: home.connected.status
+    en: Connected
+    tier: shell
+    surface: home
+
+  - key: home.cant_connect.status
+    en: Can’t connect
+    tier: shell
+    surface: home
+    notes: "Prefer over 'Needs attention'"
+
+  - key: home.location
+    en: Location
+    tier: shell
+    surface: home
+
+  - key: home.location.a11y
+    en: Choose location
+    tier: shell
+    surface: home
+
+  - key: home.gesture.connect_hint
+    en: Swipe down to connect
+    tier: shell
+    surface: home
+
+  - key: home.gesture.disconnect_hint
+    en: Swipe up to stop
+    tier: shell
+    surface: home
+
+  - key: home.gesture.a11y.connect
+    en: Connect
+    tier: shell
+    surface: home
+
+  - key: home.gesture.a11y.disconnect
+    en: Disconnect
+    tier: shell
+    surface: home
+
+  - key: home.gesture.a11y.connecting
+    en: Connecting
+    tier: shell
+    surface: home
+
+  - key: home.gesture.start
+    en: START
+    tier: shell
+    surface: home
+    notes: "Thumb label idle · craft-p0/02-home"
+
+  - key: home.gesture.stop
+    en: STOP
+    tier: shell
+    surface: home
+    notes: "Thumb label connected"
+
+  - key: home.gesture.swipe_label
+    en: SWIPE
+    tier: shell
+    surface: home
+    notes: "Micro-label on rail chevrons"
+
+  - key: home.empty.cta
+    en: Add subscription
+    tier: shell
+    surface: home
+
+  - key: home.empty.subtitle
+    en: Paste a link you already have
+    tier: shell
+    surface: home
+
+  - key: home.mode.hint.global
+    en: Global
+    tier: shell
+    surface: home
+    notes: "Weak hint only when mode ≠ Auto"
+
+  - key: home.mode.hint.direct
+    en: Direct
+    tier: shell
+    surface: home
+
+  - key: home.speed.unit_mbs
+    en: Mb/s
+    tier: shell
+    surface: home
+
+  # ── setup / welcome / add subscription ──────────────────────────────────
+  - key: setup.welcome.brand
+    en: ROUTEVA
+    tier: shell
+    surface: setup
+
+  - key: setup.welcome.headline_line1
+    en: Paste your subscription.
+    tier: shell
+    surface: setup
+    notes: "hi-fi 03-setup · ADR 0019"
+
+  - key: setup.welcome.headline_line2
+    en: We handle the rest.
+    tier: shell
+    surface: setup
+
+  - key: setup.welcome.subtitle
+    en: Use a link you already have. We don’t sell or recommend providers.
+    tier: lock-en
+    surface: setup
+    notes: "no-sell is product trust; COPY.noSell in hi-fi"
+
+  - key: setup.welcome.cta
+    en: Get started
+    tier: shell
+    surface: setup
+
+  - key: setup.add.title
+    en: Add subscription
+    tier: shell
+    surface: setup
+
+  - key: setup.add.lead
+    en: Get a subscription link or QR from your provider, then paste or scan it here.
+    tier: shell
+    surface: setup
+
+  - key: setup.add.paste
+    en: Paste from Clipboard
+    tier: shell
+    surface: setup
+
+  - key: setup.add.paste_again
+    en: Paste again
+    tier: shell
+    surface: setup
+
+  - key: setup.add.scan_qr
+    en: Scan QR
+    tier: shell
+    surface: setup
+
+  - key: setup.add.import_file
+    en: Import file
+    tier: shell
+    surface: setup
+
+  - key: setup.add.footer_no_sell
+    en: We don’t sell or recommend providers.
+    tier: lock-en
+    surface: setup
+
+  - key: setup.add.parsing.clipboard
+    en: Reading from Clipboard…
+    tier: shell
+    surface: setup
+
+  - key: setup.add.parsing.qr
+    en: Reading QR code…
+    tier: shell
+    surface: setup
+
+  - key: setup.add.fail.title
+    en: Couldn’t add this
+    tier: shell
+    surface: setup
+
+  - key: setup.add.fail.body
+    en: Copy a fresh link or QR from your provider, then try again.
+    tier: shell
+    surface: setup
+
+  - key: setup.add.fail.footer
+    en: Nothing on this device was changed.
+    tier: lock-en
+    surface: setup
+    notes: "Safety assurance on failed import"
+
+  - key: setup.add.success_title
+    en: Subscription added
+    tier: shell
+    surface: setup
+    notes: "Toast title · craft-p0/03-setup"
+
+  - key: setup.add.success_toast
+    en: "{displayName} · {count} nodes"
+    tier: shell
+    surface: setup
+    notes: "Toast detail · CONTEXT Add Subscription"
+
+  # ── subscriptions ───────────────────────────────────────────────────────
+  - key: subs.title
+    en: Subscriptions
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.active.badge
+    en: Active
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.set_active
+    en: Set active
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.update
+    en: Update
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.updating
+    en: Updating…
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.add
+    en: Add subscription
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.meta.nodes
+    en: "{count} nodes"
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.meta.expires
+    en: "Expires {date}"
+    tier: shell
+    surface: subscriptions
+    notes: "ADR 0046 · never bare date next to nodes"
+
+  - key: subs.meta.expired
+    en: "Expired {date}"
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.meta.updated
+    en: "Updated {relative}"
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.rename
+    en: Rename
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.default_name
+    en: Subscription
+    tier: shell
+    surface: subscriptions
+    notes: "Subscription Display Name fallback"
+
+  - key: subs.default_name_n
+    en: "Subscription {n}"
+    tier: shell
+    surface: subscriptions
+
+  - key: subs.data_label
+    en: Data
+    tier: shell
+    surface: subscriptions
+
+  # ── settings ────────────────────────────────────────────────────────────
+  - key: settings.title
+    en: Settings
+    tier: shell
+    surface: settings
+
+  - key: settings.section.connection
+    en: Connection
+    tier: shell
+    surface: settings
+
+  - key: settings.section.app
+    en: App
+    tier: shell
+    surface: settings
+
+  - key: settings.routing.title
+    en: Routing mode
+    tier: shell
+    surface: settings
+
+  - key: settings.routing.subtitle
+    en: How traffic uses your proxy
+    tier: shell
+    surface: settings
+    notes: "CONTEXT Settings · explain title, not options"
+
+  - key: settings.routing.auto.title
+    en: Auto
+    tier: shell
+    surface: settings
+
+  - key: settings.routing.auto.sub
+    en: Provider rules + best node choice
+    tier: shell
+    surface: settings
+
+  - key: settings.routing.global.title
+    en: Global
+    tier: shell
+    surface: settings
+
+  - key: settings.routing.global.sub
+    en: All traffic via proxy
+    tier: shell
+    surface: settings
+
+  - key: settings.routing.direct.title
+    en: Direct
+    tier: shell
+    surface: settings
+
+  - key: settings.routing.direct.sub
+    en: No proxy
+    tier: shell
+    surface: settings
+
+  - key: settings.dns.title
+    en: DNS
+    tier: shell
+    surface: settings
+
+  - key: settings.dns.subtitle
+    en: How names resolve on your connection
+    tier: shell
+    surface: settings
+
+  - key: settings.dns.automatic.title
+    en: Automatic
+    tier: shell
+    surface: settings
+
+  - key: settings.dns.automatic.sub
+    en: System / tunnel default
+    tier: shell
+    surface: settings
+
+  - key: settings.dns.privacy.title
+    en: Privacy
+    tier: shell
+    surface: settings
+
+  - key: settings.dns.privacy.sub
+    en: Encrypted DNS when possible
+    tier: shell
+    surface: settings
+
+  - key: settings.dns.compatibility.title
+    en: Compatibility
+    tier: shell
+    surface: settings
+
+  - key: settings.dns.compatibility.sub
+    en: Prefer widely reachable resolvers
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.title
+    en: Overrides
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.subtitle
+    en: Exceptions for specific domains
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.empty.title
+    en: No exceptions yet
+    tier: shell
+    surface: settings
+    notes: "CONTEXT User Override empty closed set"
+
+  - key: settings.overrides.empty.howto
+    en: Pin a domain to proxy or direct when Auto isn’t enough.
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.empty.boundary
+    en: A few exceptions, not a full rule set.
+    tier: lock-en
+    surface: settings
+    notes: "O3 intent — not a full rule engine"
+
+  - key: settings.overrides.empty.chip
+    en: One domain each
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.list.hint
+    en: Domain exceptions for Auto — not a full rule set.
+    tier: lock-en
+    surface: settings
+
+  - key: settings.overrides.add
+    en: Add exception
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.save
+    en: Save exception
+    tier: shell
+    surface: settings
+    notes: "Add exception sheet primary · hi-fi"
+
+  - key: settings.overrides.field.domain
+    en: Domain
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.field.domain_placeholder
+    en: example.com
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.field.domain_hint
+    en: "Example: api.example.com"
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.field.domain_error
+    en: Enter a single domain, like example.com.
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.field.constraint
+    en: One domain per exception.
+    tier: shell
+    surface: settings
+    notes: "Add exception sheet description · hi-fi"
+
+  - key: settings.overrides.field.domain_error_format
+    en: Enter one domain per exception — no wildcards, paths, or spaces.
+    tier: shell
+    surface: settings
+    notes: "Format error on Add exception sheet · hi-fi"
+
+  - key: settings.overrides.field.action
+    en: Action
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.action.proxy
+    en: Via proxy
+    tier: shell
+    surface: settings
+    notes: "List row label when action is proxy"
+
+  - key: settings.overrides.action.proxy_option
+    en: Proxy
+    tier: shell
+    surface: settings
+    notes: "Segmented control option"
+
+  - key: settings.overrides.action.direct
+    en: Direct
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.consequence.proxy
+    en: Send this domain through the proxy in Auto.
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.consequence.direct
+    en: Bypass the proxy for this domain in Auto.
+    tier: shell
+    surface: settings
+
+  - key: settings.overrides.consequence.proxy_compact
+    en: Via proxy in Auto
+    tier: shell
+    surface: settings
+    notes: "Compact sheet with keyboard open"
+
+  - key: settings.overrides.consequence.direct_compact
+    en: Direct in Auto
+    tier: shell
+    surface: settings
+
+  # iOS · User Override iCloud Backup (ADR 0054) — not Android
+  - key: settings.overrides.icloud.restored_one
+    en: Restored 1 exception
+    tier: shell
+    surface: settings
+    notes: "ADR 0054 · success toast when count == 1 · iOS only"
+
+  - key: settings.overrides.icloud.restored_other
+    en: Restored {count} exceptions
+    tier: shell
+    surface: settings
+    notes: "ADR 0054 · success toast when count != 1 · iOS only"
+
+  - key: settings.overrides.icloud.restore_failed
+    en: Couldn’t restore from iCloud
+    tier: shell
+    surface: settings
+    notes: "ADR 0054 · empty list only · weak empty-state line or toast · iOS only"
+
+  - key: settings.app.subscriptions
+    en: Subscriptions
+    tier: shell
+    surface: settings
+
+  - key: settings.app.about
+    en: About
+    tier: shell
+    surface: settings
+
+  - key: settings.about.title
+    en: About
+    tier: shell
+    surface: settings
+
+  - key: settings.about.privacy_promise
+    en: Privacy first. Temporary help context only — and you can turn cloud assist off.
+    tier: lock-en
+    surface: settings
+    notes: "CONTEXT About · do not write absolute never-upload"
+
+  - key: settings.about.icloud_exceptions
+    en: On iPhone, domain exceptions may back up to your iCloud for reinstalls and device switches.
+    tier: lock-en
+    surface: settings
+    notes: "ADR 0054 · About secondary disclosure · not a Settings switch · iOS only; hide or omit on Android"
+
+  - key: settings.about.links
+    en: Links
+    tier: shell
+    surface: settings
+
+  - key: settings.about.privacy_policy
+    en: Privacy Policy
+    tier: shell
+    surface: settings
+
+  - key: settings.about.privacy_policy.sub
+    en: How we handle your data
+    tier: shell
+    surface: settings
+
+  - key: settings.about.terms
+    en: Terms of Use
+    tier: shell
+    surface: settings
+
+  - key: settings.about.terms.sub
+    en: Rules for using Routeva
+    tier: shell
+    surface: settings
+
+  - key: settings.about.support
+    en: Support
+    tier: shell
+    surface: settings
+
+  - key: settings.about.export_report
+    en: Export diagnostic report
+    tier: shell
+    surface: settings
+
+  - key: settings.about.mt_disclosure
+    en: Some interface text may be machine-translated. Critical explanations stay in English.
+    tier: lock-en
+    surface: settings
+    notes: "CONTEXT Localization Policy · optional secondary About line; no per-screen MT banner"
+
+  # ── diagnostic sheet ────────────────────────────────────────────────────
+  # User-visible bucket labels — never internal Client-Fixable etc. (ADR 0041)
+  - key: diag.sheet.title
+    en: Can’t connect
+    tier: shell
+    surface: diagnostic
+
+  - key: diag.sheet.eyebrow
+    en: What we found
+    tier: lock-en
+    surface: diagnostic
+    notes: "Sheet header above status · same language as Help process cards"
+
+  - key: diag.section.why
+    en: Why
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.section.impact
+    en: Impact
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.section.next
+    en: Next
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.meta.confidence_line
+    en: "{confidence} · Same checks as the rest of the app"
+    tier: lock-en
+    surface: diagnostic
+    notes: "Compose with diag.confidence.* values"
+
+  - key: diag.cta.not_now
+    en: Not now
+    tier: shell
+    surface: diagnostic
+    notes: "Tertiary dismiss on fix/network buckets · ADR 0044"
+
+  - key: diag.bucket.app_can_fix
+    en: App can fix
+    tier: lock-en
+    surface: diagnostic
+    notes: "Maps internal Client-Fixable · ADR 0002 / 0041"
+
+  - key: diag.bucket.provider
+    en: Provider
+    tier: lock-en
+    surface: diagnostic
+    notes: "Maps Provider-Side"
+
+  - key: diag.bucket.your_network
+    en: Your network
+    tier: lock-en
+    surface: diagnostic
+    notes: "Maps Environment"
+
+  - key: diag.bucket.not_sure
+    en: Not sure
+    tier: lock-en
+    surface: diagnostic
+    notes: "Maps Unknown"
+
+  - key: diag.confidence.high
+    en: High confidence
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.confidence.medium
+    en: Medium confidence
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.confidence.low
+    en: Low confidence
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.cta.repair
+    en: Approve and repair
+    tier: lock-en
+    surface: diagnostic
+    notes: "Repair Consent primary · ADR 0010"
+
+  - key: diag.cta.got_it
+    en: Got it
+    tier: shell
+    surface: diagnostic
+
+  - key: diag.cta.try_again
+    en: Try again
+    tier: shell
+    surface: diagnostic
+
+  - key: diag.cta.ask_help
+    en: Ask Help
+    tier: shell
+    surface: diagnostic
+    notes: "Secondary · ADR 0044 · not second solid primary"
+
+  # Example scenario bodies from craft-p0/07-diagnostic (engine may template later;
+  # keep lock-en until product freezes template grammar)
+  - key: diag.example.fix.why
+    en: The VPN tunnel came up, but the connectivity check failed — so we don’t call this Connected.
+    tier: lock-en
+    surface: diagnostic
+    notes: "hi-fi example scenario · not every failure uses this sentence"
+
+  - key: diag.example.fix.impact
+    en: Apps that need the proxy may stall or time out until this is fixed.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.fix.next
+    en: "We can try a safe repair: switch DNS preset, then re-check. You’ll give your OK first; we snapshot and can roll back."
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.provider.why
+    en: Your subscription looks expired or rejected by the provider — this isn’t something the app can repair alone.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.provider.impact
+    en: Connecting will keep failing until the subscription is renewed or replaced.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.provider.next
+    en: Open your provider’s site or app to renew, then paste a fresh link in Subscriptions.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.provider.secondary_hint
+    en: You can still export a redacted report for support.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.network.why
+    en: This Wi‑Fi may require a sign-in page, or it blocks the connection type your nodes use.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.network.impact
+    en: Routeva can’t fix the network itself. Another network or node type may work.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.network.next
+    en: Try cellular or a different Wi‑Fi. If you stay here, we can still check for a safer DNS or node option.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.unsure.why
+    en: We ran our usual checks and still can’t pin this down with high confidence.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.unsure.impact
+    en: Guessing a fix would be dishonest — we won’t invent a reason or repeat the same failed checks.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.unsure.next
+    en: Ask Help to walk through what we saw, or export a redacted report.
+    tier: lock-en
+    surface: diagnostic
+
+  - key: diag.example.unsure.secondary_hint
+    en: We’ll walk you through what we saw before changing anything.
+    tier: lock-en
+    surface: diagnostic
+
+  # ── repair ──────────────────────────────────────────────────────────────
+  - key: repair.progress.title
+    en: Repairing…
+    tier: lock-en
+    surface: repair
+
+  - key: repair.progress.step_example
+    en: Snapshot saved · trying DNS Compatibility · re-checking
+    tier: lock-en
+    surface: repair
+    notes: "hi-fi example step line; production steps should stay plain language"
+
+  - key: repair.cancel
+    en: Cancel
+    tier: shell
+    surface: repair
+
+  - key: repair.success.title
+    en: Connected
+    tier: shell
+    surface: repair
+    notes: "Success returns to Connection Success; copy may reuse home.connected"
+
+  - key: repair.rolled_back.title
+    en: Rolled back
+    tier: lock-en
+    surface: repair
+    notes: "Shell label; body templates TBD with implementation"
+
+  - key: repair.rolled_back.body
+    en: We restored your previous settings. Nothing unsafe was left half-applied.
+    tier: lock-en
+    surface: repair
+    notes: "Product intent; refine with Craft if needed"
+
+  # ── help / agent surface ────────────────────────────────────────────────
+  - key: help.title
+    en: Help
+    tier: shell
+    surface: help
+
+  - key: help.input.placeholder
+    en: Ask about your connection…
+    tier: shell
+    surface: help
+
+  - key: help.input.a11y
+    en: Message Help
+    tier: shell
+    surface: help
+
+  - key: help.trust.eyebrow.cloud_on
+    en: Cloud assist on
+    tier: lock-en
+    surface: help
+    notes: "Trust strip uppercase label · hi-fi"
+
+  - key: help.trust.eyebrow.cloud_off
+    en: Private by default
+    tier: lock-en
+    surface: help
+
+  - key: help.trust.cloud_on
+    en: Temporary analysis only · not stored after help
+    tier: lock-en
+    surface: help
+    notes: "Cloud AI trust strip · ADR 0042 / CONTEXT"
+
+  - key: help.trust.cloud_off
+    en: On-device help · nothing sent to our servers
+    tier: lock-en
+    surface: help
+
+  - key: help.trust.how_we_use_data
+    en: How we use data
+    tier: lock-en
+    surface: help
+
+  - key: help.cloud_assist.title
+    en: Cloud assist
+    tier: shell
+    surface: help
+
+  - key: help.cloud_assist.sub
+    en: On by default · turn off anytime
+    tier: lock-en
+    surface: help
+
+  - key: help.empty.down.headline
+    en: Trouble connecting?
+    tier: shell
+    surface: help
+    notes: "ADR 0040 · not connected / can’t connect"
+
+  - key: help.empty.down.sub
+    en: Ask here. Help explains failures and can run safe fixes — with your OK.
+    tier: shell
+    surface: help
+
+  - key: help.empty.up.headline
+    en: Need a hand with your connection?
+    tier: shell
+    surface: help
+
+  - key: help.empty.up.sub
+    en: Ask about speed, routing mode, DNS, or overrides — changes still need your OK.
+    tier: shell
+    surface: help
+
+  - key: help.chip.why_cant_connect
+    en: Why can’t I connect?
+    tier: shell
+    surface: help
+
+  - key: help.chip.provider_or_app
+    en: Is this my provider or the app?
+    tier: shell
+    surface: help
+
+  - key: help.chip.switch_dns
+    en: Switch DNS preset
+    tier: shell
+    surface: help
+
+  - key: help.chip.why_slow
+    en: Why is this slow?
+    tier: shell
+    surface: help
+
+  - key: help.chip.try_global
+    en: Use Global for a bit?
+    tier: shell
+    surface: help
+
+  - key: help.chip.what_can_help
+    en: What can Help do?
+    tier: shell
+    surface: help
+
+  - key: help.bounds.link
+    en: What Help can do
+    tier: shell
+    surface: help
+
+  - key: help.bounds.can_heading
+    en: Help can
+    tier: lock-en
+    surface: help
+    notes: "ADR 0039"
+
+  - key: help.bounds.cant_heading
+    en: Help can’t
+    tier: lock-en
+    surface: help
+
+  - key: help.bounds.can.1
+    en: Explain connection problems in plain language
+    tier: lock-en
+    surface: help
+
+  - key: help.bounds.can.2
+    en: Run checks and suggest a fix when the app can fix it
+    tier: lock-en
+    surface: help
+
+  - key: help.bounds.can.3
+    en: Apply a repair after you confirm — with snapshot and rollback
+    tier: lock-en
+    surface: help
+
+  - key: help.bounds.can.4
+    en: Adjust safe settings you allow (mode, DNS, a few overrides)
+    tier: lock-en
+    surface: help
+
+  - key: help.bounds.cant.1
+    en: Sell or recommend a provider or nodes
+    tier: lock-en
+    surface: help
+
+  - key: help.bounds.cant.2
+    en: See your browsing or full traffic history
+    tier: lock-en
+    surface: help
+
+  - key: help.bounds.cant.3
+    en: Upload your subscription link, tokens, or raw config — or keep analysis data after help
+    tier: lock-en
+    surface: help
+
+  - key: help.bounds.cant.4
+    en: Change VPN or system settings silently, invent free-form configs, or intercept your traffic
+    tier: lock-en
+    surface: help
+
+  - key: help.process.what_we_found
+    en: What we found
+    tier: lock-en
+    surface: help
+    notes: "Process card title · ADR 0041 · no internal engine names"
+
+  - key: help.process.same_checks
+    en: Same checks as the rest of the app
+    tier: lock-en
+    surface: help
+
+  - key: help.privacy.ephemeral_body
+    en: Temporary analysis context only — structured, redacted summaries (like what we found), never your subscription link, tokens, raw config, or browsing history.
+    tier: lock-en
+    surface: help
+    notes: "How we use data · hi-fi 06-agent · same as privacy.what_we_may_send.body"
+
+  - key: help.privacy.default_on.title
+    en: Cloud assist is on by default
+    tier: lock-en
+    surface: help
+
+  - key: help.privacy.default_on.body
+    en: In Help, cloud is on so you can resolve issues quickly. You can turn it off anytime below. Connection, diagnostics, and allowlisted repair still work if cloud is off.
+    tier: lock-en
+    surface: help
+
+  - key: help.privacy.what_we_may_send.title
+    en: What we may send
+    tier: lock-en
+    surface: help
+
+  - key: help.privacy.what_we_may_send.body
+    en: Temporary analysis context only — structured, redacted summaries (like what we found), never your subscription link, tokens, raw config, or browsing history.
+    tier: lock-en
+    surface: help
+
+  - key: help.privacy.not_kept.title
+    en: Not kept after help
+    tier: lock-en
+    surface: help
+
+  - key: help.privacy.not_kept.body
+    en: That context is for the current help session. We don’t store it on our servers after analysis completes.
+    tier: lock-en
+    surface: help
+
+  - key: help.privacy.no_files.title
+    en: No arbitrary files
+    tier: lock-en
+    surface: help
+
+  - key: help.privacy.no_files.body
+    en: Help doesn’t ask you to upload config dumps or log packs. Analysis context is structured — not free-form file upload.
+    tier: lock-en
+    surface: help
+
+  - key: help.chat.example.next
+    en: "Next: try a DNS preset change, then re-check. I’ll need your OK before any repair."
+    tier: lock-en
+    surface: help
+    notes: "hi-fi chat demo line · engine templates may replace"
+
+  # ── paywall (commercialization draft · Beta free · ADR 0006) ────────────
+  # Keys reserved so implementation doesn’t invent copy; refine before ship.
+  - key: paywall.title
+    en: Unlock Pro
+    tier: lock-en
+    surface: paywall
+    notes: "Draft · Beta does not show paywall"
+
+  - key: paywall.subtitle
+    en: Lifetime unlock — not a proxy subscription.
+    tier: lock-en
+    surface: paywall
+    notes: "Avoid confusion with Subscription (provider)"
+
+  - key: paywall.cta
+    en: Unlock
+    tier: lock-en
+    surface: paywall

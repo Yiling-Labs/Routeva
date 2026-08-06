@@ -131,7 +131,7 @@
 
     const CAN = [
       'Explain connection problems in plain language',
-      'Run checks and suggest a fix when it’s client-fixable',
+      'Run checks and suggest a fix when the app can fix it',
       'Apply a repair after you confirm — with snapshot and rollback',
       'Adjust safe settings you allow (mode, DNS, a few overrides)',
     ];
@@ -139,7 +139,7 @@
       'Sell or recommend a provider or nodes',
       'See your browsing or full traffic history',
       'Upload your subscription link, tokens, or raw config — or keep analysis data after help',
-      'Change VPN or system settings silently, invent free-form configs, or use MITM',
+      'Change VPN or system settings silently, invent free-form configs, or intercept your traffic',
     ];
 
     function IosFrame({ children }) {
@@ -304,12 +304,6 @@
           background: 'rgba(0,0,0,0.22)',
           border: `1px solid ${T.hairline}`,
         }}>
-          <div style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
-            textTransform: 'uppercase', color: T.quiet, marginBottom: 5,
-          }}>
-            Check
-          </div>
           <div style={{ fontSize: 14, fontWeight: 650, color: T.primary }}>{title}</div>
           <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500, color: T.secondary, lineHeight: 1.35 }}>
             {detail}
@@ -336,7 +330,7 @@
             aria-label="Message Help"
             placeholder={placeholder || 'Ask about your connection…'}
             style={{
-              flex: 1, fontSize: 15, fontWeight: 500, fontFamily: TYPE.font,
+              flex: 1, fontSize: 16, fontWeight: 500, fontFamily: TYPE.font,
             }}
           />
           <button
@@ -410,6 +404,7 @@
                   <div style={{
                     fontSize: up ? 24 : 26, fontWeight: 700, letterSpacing: '-0.03em',
                     color: T.primary, lineHeight: 1.15, marginBottom: 10,
+                    textWrap: 'balance',
                   }}>
                     {headline}
                   </div>
@@ -446,7 +441,7 @@
                 <div style={{ paddingTop: 4 }}>
                   <Bubble role="user">Why can’t I connect?</Bubble>
                   <Bubble role="assistant">
-                    The VPN tunnel is up, but the connectivity check failed — so we don’t call this Connected yet.
+                    The VPN tunnel came up, but the connectivity check failed — so we don’t call this Connected.
                     <ToolCard
                       title="What we found"
                       detail="App can fix · High confidence · Same checks as the rest of the app"
@@ -460,7 +455,7 @@
                       background: CTA, boxShadow: CTA_SH,
                       color: '#0a1f18', fontFamily: TYPE.font, fontSize: 15, fontWeight: 800,
                     }}>
-                      Repair with my OK
+                      Approve and repair
                     </button>
                   </Bubble>
                   <button
@@ -604,7 +599,7 @@
               {[
                 {
                   h: 'Cloud assist is on by default',
-                  b: 'In Help, cloud is on so you can get unstuck quickly. You can turn it off anytime below. Connection, diagnostics, and allowlisted repair still work if cloud is off.',
+                  b: 'In Help, cloud is on so you can resolve issues quickly. You can turn it off anytime below. Connection, diagnostics, and allowlisted repair still work if cloud is off.',
                 },
                 {
                   h: 'What we may send',

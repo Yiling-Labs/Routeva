@@ -35,6 +35,10 @@ _Avoid_: 永久单端功能伪装成 Gap
 面向用户的 UI、Onboarding、诊断可读文案、付费墙、商店材料与 Agent 首发质量以 **English** 为源语言（source of truth）并优先做 Craft 打磨。内部文档可用中文。布局与 i18n 工程须按 **MVP Locale Set** + 伪本地化验收。详见 ADR **0047**（策略）/ **0048**（闭集 M）。  
 _Avoid_: 中文 UI 当美区首发唯一验收；中英半套上架；用语言数量当完成度；App locale 与 GTM 精做套数强行 1:1
 
+**Product Copy Source**：
+App 用户可见串的 **English 键值工程源** 在 `docs/copy/en.yaml`（治理见同目录 README）。范围：**P0 闭集 + 壳层骨架**；每条 `key`（`surface.slot`）· `en` · `tier: shell | lock-en`。**不**预译 8 语；机翻仅上架前对 shell、且服从 **Localization Policy**。权威分轨：`lock-en` ↔ CONTEXT/ADR；`shell` ↔ current hi-fi。生命周期：**种子 + 持续回写**（改用户可见 en 先改 yaml，再灌双端 catalog）。GTM 商店文案与营销站长文不在此表。详见 ADR **0053**。  
+_Avoid_: 编码前 7 语齐套；用英文短句当 key；只在一端 app 改英文字符串不回写 yaml；把清单当第三套产品真理；App 键表与 GTM/官网长文混仓
+
 **MVP Locale Set（方案 M · 8）**：
 App UI 上架闭集（L2，ADR **0048** 取代 0047 之三语闭集）：  
 **en**（人工源）· **zh-Hans** · **zh-Hant** · **es** · **pt-BR** · **ja** · **ko** · **de**（后七者为机翻壳层，无人审）。  
@@ -58,6 +62,22 @@ Go-to-market **精做**语言与 App locale **不同步强绑**。
 - **P2：** 按安装/投放 ROI 再开 **es** 或 **ja** 等 **listing 文案**；完整多语言截图/视频按需，默认不 8 语齐套。  
 闭集外 GTM 语言不做。机翻可用于非 en listing 草稿，**功效/隐私承诺不以无人审机翻为最终口径**。  
 _Avoid_: App 8 locale 迫使 GTM 8 套像素物料；商店多语言徽章当虚荣指标
+
+**Marketing Site**：
+对外产品站 **`https://routeva.yilinglabs.com`**（仓库 `website/`）。承载 **Brand Presence** 与 **Legal Pages**；不是 App 本体，也不替代 App Store / Play listing。
+_Avoid_: 把官网当第二套产品能力源；把商店长文原样堆进营销页当唯一内容
+
+**Brand Presence（本阶段主职）**：
+上架前官网主职：用一页（或极少页）讲清 Routeva 是谁、为谁、不卖节点、核心闭环（Connect → 诚实失败 → 安全 Repair）与信任边界。主 CTA 不得假装已可下载（无真实商店/内测链时）。
+_Avoid_: Launch Marketing 的下载转化叙事；发明用户数/转化率；把协议清单当主卖点
+
+**Marketing Site Primary CTA（本阶段）**：
+Brand Presence 阶段首页**唯一主 CTA** = **页内理解闭环**（如 *How it works* 锚点滚动）。次要出口仅法律与联系：Privacy · Terms · Contact。无 Waitlist 表单、无伪商店按钮。
+_Avoid_: Download / Get on App Store 假链；邮箱表单当主职；用 Privacy 当主 CTA 冲淡产品叙事
+
+**Legal Pages**：
+**Privacy Policy** 与 **Terms of Use** 的权威正文，路径分别为 `/privacy/`、`/terms/`；App About 以系统浏览器外链打开。合规底座，与 Brand Presence **同时必保**，不可被营销改版冲掉。
+_Avoid_: 应用内嵌长文替代官网政策；营销页弱化或拆散法律 URL
 
 **Product Bet (MVP)**：
 MVP 要证明的是 **自愈闭环**（诊断准、修复可验证可回滚）。**自动导入并连上**是入场必要条件。**Craft** 为交付质量要求。首发选择 **Thick Agent** 作为主交互面之一（开放自然语言 + 分流意图 + 云端可选），但 **Agent 不得取代 Diagnostic Engine 成为故障裁判**；无模型时核心连接/诊断/修复仍须可用。北极星仍是修复成功率与连接稳定性，不是对话次数。
@@ -109,11 +129,11 @@ _Avoid_: Empty 用 + 替换 Settings；顶栏四钮塞回 Activity；入口仅�
    - **Overrides** — 副文 *Exceptions for specific domains*（进入后管 Domain 例外列表）。  
    **DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（钉节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
 2. **App** — 根页固定两行：**Subscriptions ›**（深链同一套 UI，含 Empty 时无顶栏入口的补偿）· **About ›**。**无** 根页 **Privacy ›**（与 About 内 Privacy Policy 重复）。**无 Appearance 行：** UI 光暗 **仅跟随系统**；**连接绿场仍仅 Connection Success**，不提供主题皮肤或「永远绿」。**Beta 不**在根页放 Restore Purchases / 付费墙 / 账号。  
-   - **About › 闭集：** 名+版本 · **一句隐私承诺**（如 *Privacy first. Temporary help context only — and you can turn cloud assist off.*；**不**写绝对 never upload）· Links（均为系统浏览器，**非**应用内长文）：  
+   - **About › 闭集：** 名+版本 · **一句隐私承诺**（如 *Privacy first. Temporary help context only — and you can turn cloud assist off.*；**不**写绝对 never upload）· **iOS 一句 iCloud 披露**（Domain exceptions 可经用户 iCloud 备份以便重装/换机；**非**开关、**非**全量配置同步；Android **不**显示）· Links（均为系统浏览器，**非**应用内长文）：  
      - **Privacy Policy** → **`https://routeva.yilinglabs.com/privacy/`**（副文 *How we handle your data*）  
      - **Terms of Use** → **`https://routeva.yilinglabs.com/terms/`**（副文 *Rules for using Routeva*）  
      - **Support** · **Export diagnostic report**（脱敏，次要）。**无** 连点 Advanced、无 Rate/Share 必达。  
-   - **Privacy Policy（Web）：** 权威正文在 **website/**；本机数据 · 默认不收集 · Help 云辅助可关 · 诊断明示。  
+   - **Privacy Policy（Web）：** 权威正文在 **website/**；本机数据 · 默认不收集 · Help 云辅助可关 · **iOS User Override 经用户 iCloud 备份（非 Routeva 服务器）** · 诊断明示。  
    - **Terms of Use（Web）：** 客户端非节点商 · 自备订阅 · 合法使用 · 权限/Repair 边界 · 无担保/责任限制 · IAP 若上线走 Apple。无第二套 Cloud 开关（管理在 Help）。  
 **无 History 段：** 不在根页放 **Activity ›** / **Snapshots ›**（及任何「事件浏览器 / 配置时光机」主入口）。  
 **Cloud AI 不进 Settings 根页：** 开关与披露仅在 **Help / Agent Surface**（默认开、可关；见 **Cloud AI**）。根页**无**独立 Assistant 段。  
@@ -144,7 +164,7 @@ _Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下�
 _Avoid_: Welcome→Import→VPN 三连轰炸；自建「Allow VPN」页；欢迎页编号卡片；欢迎页堆叠第三段能力说明
 
 **Add Subscription（交互）**：
-主路径 **Paste from Clipboard**；次要 **Scan QR**、**Import file**（剪贴板与扫码本质相同：取内容 → 解析）。顶部 **一句** 引导去服务商取链接/二维码。**无** 手填大输入框；**无** 独立「剪贴板已发现」确认页。点 Paste/扫码后在 **Add Subscription 上弹出 Parsing 模态**（*Reading clipboard…* / *Reading QR code…*；**非**独立全屏）。成功：直接回 **Home Idle（同一壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s 自动消失**）；设 Active；**不**自动连；**不**打断命名。失败：回 Add 页失败态——短句 *Couldn’t add this* + *Copy a fresh link or QR…*；主 CTA Paste again；次要 Scan/File；**不**列协议/格式清单；**不覆盖**已有配置。  
+主路径 **Paste from Clipboard**；次要 **Scan QR**、**Import file**（剪贴板与扫码本质相同：取内容 → 解析）。顶部 **一句** 引导去服务商取链接/二维码。**无** 手填大输入框；**无** 独立「剪贴板已发现」确认页。点 Paste/扫码后在 **Add Subscription 上弹出 Parsing 模态**（*Reading from Clipboard…* / *Reading QR code…*；**非**独立全屏）。成功：直接回 **Home Idle（同一壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s 自动消失**）；设 Active；**不**自动连；**不**打断命名。失败：回 Add 页失败态——短句 *Couldn’t add this* + *Copy a fresh link or QR…*；主 CTA Paste again；次要 Scan/File；**不**列协议/格式清单；**不覆盖**已有配置。  
 _Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳不一致；失败文案堆 Clash/YAML 等格式科普
 
 **Connect Gesture**：
@@ -153,7 +173,7 @@ _Avoid_: Idle 常驻点阵；未 Probe 成功就整屏染绿；点阵超过 3 �
 
 **Routing Mode Entry**：
 Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：Cover Flow + Location 入口；Connected 节点行可点。  
-**Settings · Routing mode ›：** 单选三档 + 各一行副文（Auto = provider rules + smart nodes；Global = all via proxy；Direct = no proxy）；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
+**Settings · Routing mode ›：** 单选三档 + 各一行副文（Auto = provider rules + best node choice；Global = all via proxy；Direct = no proxy）；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
 _Avoid_: Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器
 
 **Activity Log**：
@@ -289,18 +309,26 @@ _Avoid_: 在 Beta 实现并强推 IAP；把 IAP 叫成「订阅」
 _Avoid_: Beta 展示付费墙；启动即墙
 
 **Identity（MVP）**：
-无自建账号、无强制注册/邮箱。付费身份依赖 Apple ID + StoreKit 恢复购买；Subscription、配置、快照与诊断历史默认本机。换机需用户重新导入订阅（多设备/iCloud 同步不在 MVP）。
-_Avoid_: 强制登录才能连接；自建账户体系当 MVP 依赖
+无自建账号、无强制注册/邮箱。付费身份依赖 Apple ID + StoreKit 恢复购买。Subscription、Mode/DNS、快照与诊断历史默认本机；换机须用户重新导入订阅。**唯一例外：** iOS 上 **User Override** 可经用户 **iCloud** 做备份/空库恢复与有限合并（见 **User Override iCloud Backup**）；**不是**全量配置同步，**不是**自建账号云。Android 无此能力（Platform Gap）。
+_Avoid_: 强制登录才能连接；自建账户体系当 MVP 依赖；把整包配置/订阅 Token 上 iCloud；把 Override 备份写成「多设备实时同步」
 
 **Auto Policy**：
 默认连接策略名可叫 Auto，含义是 **尊重订阅/服务商规则 + 智能选节点**，不是客户端自建「全球智能分流引擎」。能解析的订阅规则/策略组/节点分组优先执行；节点层由客户端负责测试、评分、自动选择与故障切换。客户端仅保留安全兜底（如局域网/回环直连等），不承诺流媒体解锁（更偏节点/服务商能力）。
 _Avoid_: 以自建庞大域名库当主分流；规则社区；完整策略组编辑器
 
 **User Override Rule**：
-用户或 Agent 发起的**结构化覆盖层**：每条为 **单个 Domain** → `proxy | direct`。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。**Beta 不设条数上限**（不做「满 N 禁用 Add」）；产品意图仍是 **少数例外**，靠文案与 O3 呈现约束，不靠配额 UI。Global / Direct 总开关不计入 Override 列表。  
-**Settings 交互（Overrides › · O3 呈现，ADR 0045 / 0049 / 0050）：** 列表（每条可开/关/删）+ **Add exception** sheet（输入 Domain → Proxy/Direct → Save）；**无** 预设 Service 名、**无** 正则/通配/一行速记语法；**无** 列表条数上限提示。Domain 为单主机名（如 `example.com`）。Agent 写同一模型，非只读旁路。  
-**空态 English 源（闭集意图 · 排版双行）：** 标题 *No exceptions yet*；主文（怎么用）*Pin a domain to proxy or direct when Auto isn’t enough.*；边界句 *A few exceptions, not a full rule set.*；约束 chip *One domain each*。有列表时顶栏提示同样「非完整规则集」；根页计数写数字/None，**不**写 *rules*。  
-_Avoid_: 产品维护的 Service/站点预设表；手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；用「N of M」或硬上限把 Overrides 做成规则引擎配额；Overrides 仅 Agent 可写、Settings 不能 Add；空态/根页用 *rules* 暗示 Clash 式规则引擎
+用户或 Agent 发起的**结构化覆盖层**：每条为 **单个 Domain** → `proxy | direct`（含可关）。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。**Beta 不设条数上限**（不做「满 N 禁用 Add」）；产品意图仍是 **少数例外**，靠文案与 O3 呈现约束，不靠配额 UI。Global / Direct 总开关不计入 Override 列表。iOS 上该列表可经 **User Override iCloud Backup** 跨设备带走；其余连接策略不在此列。  
+**Settings 交互（Overrides › · O3 呈现，ADR 0045 / 0049 / 0050 / 0054）：** 列表（每条可开/关/删）+ **Add exception** sheet（输入 Domain → Proxy/Direct → Save）；**无** 预设 Service 名、**无** 正则/通配/一行速记语法；**无** 列表条数上限提示；**无** iCloud 主开关或常驻云状态条。Domain 为单主机名（如 `example.com`）。Agent 写同一模型，非只读旁路。  
+**空态 English 源（闭集意图 · 排版双行）：** 标题 *No exceptions yet*；主文（怎么用）*Pin a domain to proxy or direct when Auto isn’t enough.*；边界句 *A few exceptions, not a full rule set.*；约束 chip *One domain each*。有列表时顶栏提示同样「非完整规则集」；根页计数写数字/None，**不**写 *rules*。空库且 iCloud 恢复失败时可有一行弱提示（见 Backup 术语）。  
+_Avoid_: 产品维护的 Service/站点预设表；手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；用「N of M」或硬上限把 Overrides 做成规则引擎配额；Overrides 仅 Agent 可写、Settings 不能 Add；空态/根页用 *rules* 暗示 Clash 式规则引擎；把 Override 页做成云同步控制台
+
+**User Override iCloud Backup**：
+**仅 iOS：** 将 **User Override** 列表（含开关状态与删除墓碑）静默备份到**用户自己的 iCloud**（跟系统 Apple ID，非 Routeva 账号）。主职是**换机/重装带走例外**，不是多设备实时同步。  
+**读路径：** 冷启动/回前台与进入 Overrides 时读云——本机**空库**则整表恢复；本机**非空**且与云不一致则按 Domain **合并**（同 Domain 以条目标 `updatedAt` 较新整条胜出，并列或缺失则本机胜；删除靠墓碑防复活）；合并/恢复写入后尽快作用于当前分流。  
+**写路径：** 本机 Override 每次成功变更后静默写回 iCloud；写失败安静，下次再试。  
+**可见性：** 默认开、无主开关、无登录墙；成功恢复可一次短 toast；**仅**空库恢复失败弱提示；合并与日常写入失败安静；**不**记 Activity；Privacy/About 一句披露。  
+**Platform Gap：** Android 本机-only。订阅、Mode、DNS、快照、诊断历史**不上**此备份。详见 ADR **0054**。  
+_Avoid_: 全量配置/订阅 Token 上云；自建账号同步；「多设备一直一致」承诺；Settings iCloud 开关；Android 假装已有等价能力；用 Activity 刷 iCloud 事件
 
 **Node Selection**：
 在可用节点集合内，按延迟、握手、实际访问成功率（含 Connectivity Probe）、近期失败与稳定性等加权评分，选出当前节点；不能只按 Ping 排序。属客户端主智能之一。

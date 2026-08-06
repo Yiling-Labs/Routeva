@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Privacy Policy · Routeva</title>
-  <meta name="description" content="Routeva privacy policy: data on device, Help cloud assist, diagnostics, and your controls." />
+  <meta name="description" content="Routeva privacy policy: data on device, optional Help cloud assist, iCloud domain-exception backup on iPhone, diagnostics, and your controls." />
   <link rel="canonical" href="https://routeva.yilinglabs.com/privacy/" />
   <style>
     :root {
@@ -112,10 +112,27 @@
     <div class="card">
       <h3>Stored locally by default</h3>
       <p>
-        Subscriptions, configuration, connection settings, Config Snapshots, and Activity-style
-        event records stay on your iPhone. Routeva has no required user account or login.
+        Subscriptions, connection settings (such as routing mode and DNS presets), Config Snapshots,
+        and Activity-style event records stay on your device by default. Routeva has no required
+        user account or login.
       </p>
     </div>
+
+    <h2>Domain exceptions &amp; iCloud (iPhone)</h2>
+    <p>
+      On <strong>iPhone</strong>, the small list of <strong>domain exceptions</strong> you add
+      (a domain pinned to proxy or direct—not your subscription links or tokens) may
+      <strong>back up to your own iCloud</strong> using your Apple ID, so a reinstall or a new
+      iPhone can restore that list when the app’s local list is empty. If both this device and
+      iCloud already have exceptions, Routeva may merge them by domain using the newer change.
+    </p>
+    <ul>
+      <li>This uses <strong>your iCloud</strong>, not a Routeva account or Routeva-hosted sync service</li>
+      <li><strong>Not</strong> full configuration sync: subscriptions, mode, DNS, snapshots, and diagnostics stay local unless stated otherwise here</li>
+      <li><strong>Not</strong> a promise that every device stays identical in real time</li>
+      <li>If iCloud is unavailable, exceptions remain on-device; only a failed empty-list restore may show a brief notice</li>
+      <li>Android builds do not provide this iCloud path (platform gap)</li>
+    </ul>
 
     <h2>What we don’t collect by default</h2>
     <ul>
@@ -123,6 +140,7 @@
       <li>Full browsing history, visited domains as a continuous log, or page content</li>
       <li>Chat transcripts from Help as a permanent server-side archive</li>
       <li>Arbitrary configuration files or diagnostic dumps unless you explicitly export and share them</li>
+      <li>Your domain-exception list on Routeva servers (iCloud backup, when used, is via Apple—not our backend)</li>
     </ul>
 
     <h2>Help &amp; cloud assist</h2>
@@ -156,8 +174,9 @@
     <ul>
       <li>Cloud assist opt-out in Help</li>
       <li>System VPN permission (iOS system prompt on first connect)</li>
+      <li>iCloud availability for domain-exception backup via your Apple ID / system iCloud settings (iPhone)</li>
       <li>Export of a redacted diagnostic report from About (you choose when to share it)</li>
-      <li>Deleting the app removes local data from the device (subject to iOS behavior)</li>
+      <li>Deleting the app removes local data from the device (subject to iOS behavior; iCloud copies of exceptions follow Apple’s iCloud retention until removed there)</li>
     </ul>
 
     <h2>Children</h2>

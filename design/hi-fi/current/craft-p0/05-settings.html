@@ -128,7 +128,7 @@
     };
 
     const MODE_OPTS = [
-      { id: 'auto', title: 'Auto', sub: 'Provider rules + smart nodes' },
+      { id: 'auto', title: 'Auto', sub: 'Provider rules + best node choice' },
       { id: 'global', title: 'Global', sub: 'All traffic via proxy' },
       { id: 'direct', title: 'Direct', sub: 'No proxy' },
     ];
@@ -886,7 +886,7 @@
           return;
         }
         if (/[*\s/]/.test(d) || d.includes('..') || d.startsWith('.')) {
-          setError('Use one domain only — no wildcards, paths, or spaces.');
+          setError('Enter one domain per exception — no wildcards, paths, or spaces.');
           domainRef.current && domainRef.current.focus();
           return;
         }
@@ -1001,7 +1001,7 @@
                   color: T.secondary, lineHeight: 1.45,
                 }}
               >
-                One domain only — no wildcards or rule language.
+                One domain per exception.
               </p>
             )}
 

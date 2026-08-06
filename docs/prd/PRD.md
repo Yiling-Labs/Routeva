@@ -73,7 +73,7 @@
 - 完整 QX/Surge/Stash 高级语法；暂缓协议列表（SSH/ShadowTLS/MASQUE 等）
 - MITM / Rewrite / 根证书 / 远程脚本
 - 规则市场、完整规则编辑器、per-App 分流承诺
-- 强制账号、默认云端大脑、iCloud / 跨端账号同步
+- 强制账号、默认云端大脑、自建跨端账号同步；**全量**配置 / 订阅 Token 的 iCloud 或跨端同步（**例外：** iOS 仅 **User Override** 经用户 iCloud 备份——ADR **0054**；Android 无此能力，记 Platform Gap）
 - Mac / Apple TV / 桌面；iOS 16−
 - 默认跨端 UI 壳或编译期共享业务内核（除非另 ADR）
 - 流媒体解锁 SLA
@@ -199,7 +199,8 @@
   - 可预览、可关、可回滚；应用前按 Snapshot Policy 建快照（显式策略变更）。
   - 须提示可能与订阅/服务商规则**叠加**；不静默删除服务商规则。
   - **Beta 不设条数硬上限**（ADR 0050）；意图仍为少数例外，靠 O3 文案而非配额。
-  - **不做：** 正则、Rule Set 市场、JS 规则、per-App 分流。
+  - **iOS · User Override iCloud Backup（ADR 0054）：** 默认静默备份到用户 iCloud；空库整表恢复；非空不一致则按 Domain 合并（`updatedAt` 较新整条胜 / 墓碑删）；冷启动·前台·进 Overrides 读云；变更后写云；恢复/合并后尽快作用于分流。成功恢复可短 toast；**仅**空库恢复失败弱提示；无主开关、不记 Activity。**Android：** Platform Gap（本机-only）。
+  - **不做：** 正则、Rule Set 市场、JS 规则、per-App 分流；订阅/Mode/DNS/快照经 iCloud；多设备实时同步 SLA。
 
 ### 4.8 商业：Beta 全免 + 目标 Free / Pro 草稿
 
@@ -283,6 +284,7 @@
 - Subscription Refresh：仅冷启动/连接前按 T（默认 6h）刷 Active；无固定后台周期；失败不覆盖；成功少打扰。
 - Subscription Display Name：导入静默自动取名（配置名 → 元数据/文件名 → host 弱名 → 中性默认）；可选 Rename；不承诺服务商品牌名（ADR 0033）。
 - User Override：仅**单域名** → proxy|direct；Beta **无**条数硬上限；无 Service 预设、无正则/规则市场；Global/Direct 另计（ADR 0049 / 0050）。
+- User Override iCloud Backup（iOS · ADR 0054）：换机/重装后空库可恢复例外列表；非空可合并；无 iCloud 时本机可用；Android 不假装已有。订阅等其余配置仍须本机重导。
 - Cloud 关闭或无网时核心连接/诊断/Repair 与 Help 本机路径仍可用（ADR 0042）。
 
 ## 8. 指标与成功定义

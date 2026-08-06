@@ -29,6 +29,7 @@
 | 文档 | 内容 |
 |---|---|
 | [00-ia.md](../../wireframes/current/craft-p0/00-ia.md) | IA + 故事板 |
+| [acceptance-by-screen.md](../../../docs/copy/acceptance-by-screen.md) | 文案按屏验收（帧 ↔ `docs/copy` key） |
 | [CONTEXT.md](../../../CONTEXT.md) | Home Surface / **Home Chrome** / Settings Surface / Subscriptions / Agent |
 | [PRD §4.10](../../../docs/prd/PRD.md) | 信息架构（与本目录对齐） |
 | [ADR 0018](../../../docs/adr/0018-home-surface-minimal.md) | Home 中部极简 |
@@ -76,7 +77,7 @@
 | # | 状态 | 备注 |
 |---|---|---|
 | Interactive | 四桶切换 | Repair demo · Ask Help toast |
-| 1 | App can fix | 主 CTA *Repair with my OK* · 次要 *Ask Help* |
+| 1 | App can fix | 主 CTA *Approve and repair* · 次要 *Ask Help* |
 | 2 | Provider | *Got it* · 无假 Repair · Ask Help |
 | 3 | Your network | *Try again* · Ask Help |
 | 4 | Not sure | 主 CTA 即为 *Ask Help* |

@@ -453,7 +453,7 @@
     /* —— 3–5 Add Subscription + optional Parsing modal / fail —— */
     function AddSub({ fail, parsing }) {
       const { useEffect, useRef } = React;
-      const parseLabel = parsing === 'qr' ? 'Reading QR code…' : 'Reading clipboard…';
+      const parseLabel = parsing === 'qr' ? 'Reading QR code…' : 'Reading from Clipboard…';
       // Unique per source so storyboard frames 4 + 4b never collide
       const parseId = parsing ? `parse-status-label-${parsing}` : 'parse-status-label';
       const statusRef = useRef(null);
@@ -608,12 +608,6 @@
                     }}
                   >
                     {parseLabel}
-                  </div>
-                  <div style={{
-                    marginTop: 8, fontSize: 13, fontWeight: 500,
-                    color: T.secondary, lineHeight: 1.35, fontFamily: TYPE.font,
-                  }}>
-                    Checking your subscription
                   </div>
                 </div>
               </div>

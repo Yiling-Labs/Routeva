@@ -117,8 +117,8 @@
         confidence: 'High confidence',
         why: 'The VPN tunnel came up, but the connectivity check failed — so we don’t call this Connected.',
         impact: 'Apps that need the proxy may stall or time out until this is fixed.',
-        next: 'We can try a safe repair: switch DNS preset, then re-check. You’ll confirm first; we snapshot and can roll back.',
-        primary: 'Repair with my OK',
+        next: 'We can try a safe repair: switch DNS preset, then re-check. You’ll give your OK first; we snapshot and can roll back.',
+        primary: 'Approve and repair',
         primaryKind: 'repair',
         secondaryHint: null,
       },
@@ -152,7 +152,7 @@
         badgeTone: 'quiet',
         confidence: 'Low confidence',
         why: 'We ran our usual checks and still can’t pin this down with high confidence.',
-        impact: 'Guessing a fix would be dishonest — we won’t invent a reason or loop empty repairs.',
+        impact: 'Guessing a fix would be dishonest — we won’t invent a reason or repeat the same failed checks.',
         next: 'Ask Help to walk through what we saw, or export a redacted report.',
         primary: 'Ask Help',
         primaryKind: 'help',
@@ -555,7 +555,7 @@
             <p style={{
               marginTop: 10, fontSize: 14, fontWeight: 500, color: T.secondary, lineHeight: 1.45,
             }}>
-              Snapshot saved · trying DNS Compatibility · then re-check
+              Snapshot saved · trying DNS Compatibility · re-checking
             </p>
             <button type="button" style={{
               marginTop: 20, border: '1px solid rgba(255,255,255,0.14)',
