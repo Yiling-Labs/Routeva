@@ -31,6 +31,10 @@ DerivedData/
 .wrangler/
 **/.wrangler/
 
+# Website local tooling & WIP snapshots (not product source)
+website/.hallmark/
+website/public/*.v-pre-*.html
+
 # Large local design exports (prefer Git LFS or external storage if needed)
 # design/**/*.psd
 # design/**/*.sketch
