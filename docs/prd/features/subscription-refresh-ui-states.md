@@ -47,34 +47,34 @@
 
 ## IMPL-SUB-1e · Manual Update failed（仅手动失败）
 
-**用户可见：** 用户点 *Update* 且拉取失败时，Active 卡内展示错误 + 可再点 *Update* 重试；**不**覆盖旧节点/规则。
+**用户可见：** 用户点 *Update* 且拉取失败时，短 **toast**（*Couldn’t update. Check your connection and try again.*，**2–3s** 自动消失，与导入成功 / iCloud restore toast 同模式）；*Update* 仍可再点；**不**覆盖旧节点/规则；**无**卡内错误条。
 
 ### 范围
 
 | 做 | 不做 |
 |---|---|
-| 手动 Update 失败 → 卡内错误态（非全屏、非阻断其它行） | 自动刷新失败弹同等横幅 / Toast（自动路径保持安静） |
-| 文案 `subs.update.failed` + `subs.update.failed.hint` | 失败时用新空配置覆盖旧配置 |
-| 错误态下主 CTA 仍为 *Update*（可重试）；busy 用 `subs.updating` | 把 Provider 失败强行塞进诊断四桶（除非用户另走连接失败路径） |
-| 成功 → 清错误态，更新 *Updated* / meta | |
+| 手动 Update 失败 → 顶部短 toast（非全屏、非卡内横幅） | 自动刷新失败弹同等 Toast（自动路径保持安静） |
+| 文案仅 `subs.update.failed`（单行） | 失败时用新空配置覆盖旧配置 |
+| 主 CTA 仍为 *Update*（可重试）；busy 用 `subs.updating` | 常驻错误条 / `subs.update.failed.hint` 副文 |
+| 成功 → 更新 *Updated* / meta（无失败 toast 残留） | 把 Provider 失败强行塞进诊断四桶（除非用户另走连接失败路径） |
 
 ### 验收 DoD
 
-- [ ] **iOS / Android：** 模拟/桩：远程返回失败或无网 → 保留旧节点表；卡内 *Couldn’t update* + hint；*Update* 可再点  
-- [ ] **iOS / Android：** 重试成功 → 错误条消失；节点/规则/*Updated* 更新  
-- [ ] 自动刷新失败 **不** 走本 UI 态（无 1e 卡片错误、无成功 Toast）  
+- [ ] **iOS / Android：** 模拟/桩：远程返回失败或无网 → 保留旧节点表；短 toast *Couldn’t update. Check your connection and try again.*（约 2–3s 消失）；*Update* 可再点  
+- [ ] **iOS / Android：** 重试成功 → 节点/规则/*Updated* 更新；无卡内错误 UI  
+- [ ] 自动刷新失败 **不** 走本 UI 态（无 1e toast、无成功 Toast）  
 - [ ] 文案来自 `en.yaml`  
 - [ ] 对照 hi-fi 帧 **1e**；acceptance §3 **1e** 文案走查可勾  
 
 ### Keys
 
-- `subs.update.failed`  
-- `subs.update.failed.hint`  
+- `subs.update.failed`（toast 正文）  
 - `subs.update` · `subs.updating`（重试 / busy）  
 
 ### 参考
 
-- hi-fi：`04-subscriptions.html` · variant `failed`  
+- hi-fi：`04-subscriptions.html` · variant `failed`（`SubToast`）  
+- visual-system：**Toast** 2–3s · `role="status"`  
 - ADR 0015 · PRD §4.1 Subscription Refresh  
 
 ---

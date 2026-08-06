@@ -148,7 +148,7 @@ _Avoid_: Settings 当第二连接台；Trust/History 占满根页主视觉；两
 _Avoid_: 竞品有则默认加；说不清就不进（误杀 Mode/DNS）；逐项无标准拍脑袋
 
 **Subscriptions Surface**：
-一级面（非 Settings 内嵌第二套管理）。**单列表**：一屏列出全部 Subscription；**Active** 行高亮（徽章 + 可选到期/流量 + **Update**）；非 Active 行可 **Set active**；底 **Add subscription**。**无**独立「All subscriptions」第二层。**Rename（能力 P0 · Craft 轻交互）：** 导入**不**阻断命名；用户可对显示名 **可选改名**——入口为 **次要**（如显示名 long-press / 行菜单 → 短 sheet），**非**列表常驻主 CTA、**非**独立全屏。**无**教学脚注。与 Empty/Add 流共用添加路径。Settings 最多 *Subscriptions ›* **深链到同一套 UI**，不复制 CRUD；**自动刷新总闸不在本面**（在 Settings › App）。  
+一级面（非 Settings 内嵌第二套管理）。**单列表**：一屏列出全部 Subscription；**Active** 行高亮（徽章 + 可选到期/流量 + **Update**）；非 Active 行可 **Set active**；底 **Add subscription**。**无**独立「All subscriptions」第二层。**Rename（能力 P0 · Craft 轻交互）：** 导入**不**阻断命名；用户可对显示名 **可选改名**——入口为每行显示名旁 **轻量铅笔图标** → 短 sheet；**非**列表主 CTA（不与 Update/Add 同权重）、**非**独立全屏。**无**教学脚注。与 Empty/Add 流共用添加路径。Settings 最多 *Subscriptions ›* **深链到同一套 UI**，不复制 CRUD；**自动刷新总闸不在本面**（在 Settings › App）。  
 **列表元信息槽（有则显示、无则整槽省略）：** ① **节点数**（`N nodes`）② **到期**（状态词必显：未过期 *Expires {medium date}* / 已过期 *Expired {medium date}*，警示色；**禁止**裸日期与 nodes 用 `·` 粘连；列表**不到秒**）③ **Updated**（刷新新鲜度，relative 可；**不**冒充到期）。无 provider 字段时不写 *Not reported*。无远程源时 **Update** 可弱化/说明不可自动更新，**禁止**假装刷新成功。权威 hi-fi：`design/hi-fi/current/craft-p0/04-subscriptions.html`。详见 **Subscription Display Name** / ADR **0033** / **0015**。  
 _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表双页重复；假设每家都有流量仪表盘；无数据时伪造仪表或写 *Not reported* 解释句；`42 nodes · Sep 12, 2026` 无标签日期；列表主扫读用 `yyyy-mm-dd hh:mm:ss`；未过期写 *Expired*；用 *Renews*（多数代理订阅无法确认自动续费）；Rename 做成导入强制步骤或列表主按钮墙
 
@@ -237,7 +237,7 @@ _Avoid_: 默认同池合并多机场；同时连多个订阅隧道
 **自动路径（闸开时）：** 仅 **严格冷启动**（进程不在内存后的启动；**不含**热启动/回前台、**不含**点连接）；且仅 **Active**；且距上次**成功**更新 ≥ **T**（默认 **24h**，实现常数）；且该 Active **有可复访远程源**（订阅 URL 等）。无远程源（单节点 URI、无 URL 的文件等）→ 自动 **静默 no-op**。  
 **成功：** 整包安静落盘 + Activity；**Preferred** / 上次节点若已不在新列表 → **静默取消偏好**，下次连接走 Node Selection；**不**弹成功打扰。  
 **自动失败：** 完全安静、**不覆盖**旧可用配置、不强制诊断横幅；需要时由连接失败/诊断或用户手动 Update 暴露。  
-**手动 Update：** 用户随时可触发；失败可在 Subscriptions 内明确提示。Repair Allowlist #2 = 失败路径重载。非 Active 不自动刷，除非切为 Active 后满足自动条件或用户手动。  
+**手动 Update：** 用户随时可触发；失败用短 toast（*Couldn’t update. Check your connection and try again.*，2–3s 自动消失；与导入/iCloud 成功 toast 同模式），**无**卡内常驻错误条；*Update* 仍可重试。Repair Allowlist #2 = 失败路径重载。非 Active 不自动刷，除非切为 Active 后满足自动条件或用户手动。  
 **禁止**固定后台周期拉订阅。详见 ADR **0015**。  
 _Avoid_: 连接前自动刷；热启动/回前台当自动触发；后台定时轮询；失败覆盖旧配置；成功 Toast 刷屏；不可刷新源假装成功；无总闸的强制自动
 

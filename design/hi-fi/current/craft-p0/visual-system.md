@@ -62,7 +62,7 @@
 | 曲线 | `cubic-bezier(0.22, 1, 0.36, 1)` 一类 ease-out |
 | 点阵 | 仅连接过程；3 圈内→外；Idle 无点 |
 | 场域切换 | 黑↔绿 **整屏交叉淡入**，禁止顶条残留 |
-| Toast | 成功反馈 **2–3s** 自动消失；尊重 `prefers-reduced-motion`（可瞬时隐去） |
+| Toast | 轻反馈（成功 / 手动 Update 失败等）**2–3s** 自动消失；尊重 `prefers-reduced-motion`（可瞬时隐去） |
 | 加载模态 | 短阻塞；spinner 在减动偏好下停转或静态环 |
 
 **禁止：** 弹跳过度、花哨粒子与状态语义无关。
@@ -86,7 +86,7 @@
 | **Location / 节点列表** | Field Black；顶栏 Back + *Location* + *Test*；**≥2 组** 导航下横向 glass chip（可左右滑）；列表仅当前组；**1 组无 chip**；行：名 · Preferred check · 弱协议 · ms；权威 `08-location.html`（ADR **0055**/**0056**） |
 | **Diagnostic** | 叠在 dimmed Home（Can’t connect 黑场）；底 glass sheet；四桶白话；Why/Impact/Next；主 CTA；**次要 Ask Help**（Not sure 时可作主 CTA）。权威：`07-diagnostic.html` |
 | **Repair** | 同场材质进度卡；Snapshot 文案；Cancel = ghost；验证后回绿场或失败 sheet |
-| **Subscriptions** | Field Black；**单列表**（Active 行加强 + Update）；流量/到期有则显示、无则隐藏；**到期必带 Expires/Expired 标签**（已过期暖警示色，非连接绿）；禁止裸日期贴 nodes；**少文案**；无 All 第二层 |
+| **Subscriptions** | Field Black；**单列表**（Active 行加强 + Update）；名旁轻量铅笔 → Rename sheet（非主 CTA · ADR 0033）；流量/到期有则显示、无则隐藏；**到期必带 Expires/Expired 标签**（已过期暖警示色，非连接绿）；手动 Update 失败 = 短 toast（非卡内错误条）；禁止裸日期贴 nodes；**少文案**；无 All 第二层 |
 | **Activity** | **非**独立一级/Settings 二级主入口（ADR **0051**）。若后续做完整时间线：Black 场；轻分割；图标线框、低饱和；优先从 Help / 诊断上下文进入 |
 | **Help / Agent** | Black 场；顶 **信任条**（Cloud 默认 On）；空态求助文案 + chips；气泡轻量；输入条 glass 胶囊；边界页 Can/Can’t。权威：`06-agent.html`（ADR 0035–0043） |
 | **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → App** 两段（**无** History · ADR **0051**）；**App 三行：** **Auto-update subscription**（Toggle，默认开 · ADR **0015**）· Subscriptions › · About ›；隐私经 About → Privacy Policy（含 iOS iCloud 披露 · Support · Export · ADR **0031**）；**无** 根页 Privacy / Appearance / Advanced / Cloud AI / Activity / Snapshots。**Overrides O3：** 空态/列表提示 *exceptions, not a full rule set*；CTA *Add exception*；根计数数字/None 不写 *rules*（ADR 0045）。权威：`05-settings.html` |

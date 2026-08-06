@@ -94,7 +94,7 @@
   - **禁止：** 固定后台周期拉订阅；连接前自动刷。
   - **成功：** 安静落盘 + Activity；Preferred / 上次节点失效 → 静默取消偏好，下次连接 Node Selection；**不**弹成功打扰。
   - **自动失败：** 完全安静；**不覆盖**已有可用配置；不强制诊断横幅。
-  - **手动：** Subscriptions **Update** 随时可；失败可在列表内提示；Repair #2 = 失败路径重载。
+  - **手动：** Subscriptions **Update** 随时可；失败短 toast（2–3s，*Couldn’t update. Check your connection and try again.*），无卡内错误条；Repair #2 = 失败路径重载。
   - 非 Active：不自动刷，除非切换为 Active 后满足条件或用户手动。
 
 ### 4.2 P0 互操作（瘦身）
@@ -281,7 +281,7 @@
 | **Home** | 选节点（Cover Flow 临时焦点 + **节点名行可点 → Location**，Idle/Can’t）+ **竖直滑动胶囊**（START 顶下滑连 / STOP 底上滑断）+ 连接真值（Not Connected / Connecting… / Connected）+ 绿场 **可点节点行 → Location**；**无**黑场中部空 Location pill；黑/绿双皮肤（绿场 **仅** Connection Success）。顶栏出口：**Help** pill · **Subscriptions**（有订阅时）· **Settings**。**不**常驻策略切换、健康仪表、流量/到期、Active 订阅 chip、Auto 字样。权威 hi-fi：`02-home.html` |
 | **Location** | 全屏节点列表（ADR **0055**/**0056**）：服务商分组 · **点选 = Preferred**（记住偏好，Failover 仍允许）· 顶栏 Latency *Test* · **无** `⋯` / 清回 Auto；返回同步 Cover Flow。权威 hi-fi：`08-location.html` |
 | **Help（Agent Surface）** | 用户可见 **Help**；信任条 + 空态 chips（随连/断双态）+ 聊天 + *What Help can do* + *How we use data*；Cloud 默认开可关。能力接通；过程展示 Craft P1。权威：`06-agent.html` |
-| **Subscriptions** | 一级面单列表：全部订阅 + Active 高亮（有则流量/带标签 Expires·Expired + Update）；Set active；底 Add；可选 Rename。权威：`04-subscriptions.html` |
+| **Subscriptions** | 一级面单列表：全部订阅 + Active 高亮（有则流量/带标签 Expires·Expired + Update）；Set active；底 Add；可选 Rename（名旁铅笔 → sheet，ADR 0033）。权威：`04-subscriptions.html` |
 | **Settings** | 根页两段（ADR **0051**）：**Connection**（Routing mode · DNS · Overrides，各带释义副文）→ **App**（**Auto-update subscription** Toggle 默认开 · Subscriptions 深链 · About）。**无** History/Activity/Snapshots、Appearance、Advanced、Cloud 开关、根页 Privacy。隐私经 About → Privacy Policy 外链。权威：`05-settings.html` |
 | **Activity** | **能力 P0 / Craft P1：** 连接、Failover、诊断、Repair、回滚、模式/Override 等须**记录**且可解释；触点优先 Help / 诊断·Repair（**非** Settings 根页 · ADR 0051）；完整时间线 UI 可后打磨 |
 | **Diagnostic / Repair** | 失败底 sheet：四桶白话（App can fix / Provider / Your network / Not sure）+ Why/Impact/Next + 主 CTA；次要 *Ask Help*（ADR 0044）。Repair 仅 Client-Fixable + Consent + 快照/验证/回滚。权威：`07-diagnostic.html` |
@@ -325,7 +325,7 @@
 - Subscription Refresh（ADR 0015）：Settings › App 全局 Auto-update 默认开；开时仅严格冷启动 + T=24h 刷可远程刷新的 Active；无连接前/后台周期；整包替换；自动失败安静不覆盖；手动 Update 在 Subscriptions。
 - **UI 态实现任务（open）：** 无远程源 Active **1d**、手动 Update 失败 **1e** — 见 [`features/subscription-refresh-ui-states.md`](./features/subscription-refresh-ui-states.md)（IMPL-SUB-1d / 1e）。
 - **实现勾选总表：** [`implementation-checklist.md`](./implementation-checklist.md)（双端 · 屏 · 文案 · 门槛 · 建议顺序）。
-- Subscription Display Name：导入静默自动取名（配置名 → 元数据/文件名 → host 弱名 → 中性默认）；可选 Rename；不承诺服务商品牌名（ADR 0033）。
+- Subscription Display Name：导入静默自动取名（配置名 → 元数据/文件名 → host 弱名 → 中性默认）；可选 Rename（名旁铅笔）；不承诺服务商品牌名（ADR 0033）。
 - User Override：仅**单域名** → proxy|direct；Beta **无**条数硬上限；无 Service 预设、无正则/规则市场；Global/Direct 另计（ADR **0057** / 0050）。
 - User Override iCloud Backup（iOS · ADR 0054）：换机/重装后空库可恢复例外列表；非空可合并；无 iCloud 时本机可用；Android 不假装已有。订阅等其余配置仍须本机重导。
 - Cloud 关闭或无网时核心连接/诊断/Repair 与 Help 本机路径仍可用（ADR 0042）。

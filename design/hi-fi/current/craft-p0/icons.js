@@ -287,6 +287,15 @@
     ], p);
   }
 
+  // pencil / edit → SF pencil (Subscriptions Rename affordance · ADR 0033)
+  function IconPencil(props) {
+    var p = Object.assign({ size: 15, stroke: 1.75 }, props || {});
+    return Icon([
+      path('M12 20h9'),
+      path('M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z'),
+    ], p);
+  }
+
   /** Alias: Help mark same as Help (unified glyph) */
   var IconHelpMark = IconHelp;
 
@@ -318,5 +327,6 @@
     IconArrowDown: IconArrowDown,
     IconArrowUp: IconArrowUp,
     IconMore: IconMore,
+    IconPencil: IconPencil,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

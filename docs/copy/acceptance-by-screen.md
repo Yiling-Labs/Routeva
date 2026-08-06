@@ -97,21 +97,21 @@
 
 ## 3 · Subscriptions · [`04-subscriptions.html`](../../design/hi-fi/current/craft-p0/04-subscriptions.html)
 
-> **走查 2026-08-06：** 1–1e · 1f Rename · 2 深链。**文案/hi-fi pass**；1d/1e **实现**仍 open。
+> **走查 2026-08-06：** 1–1e · 1f Rename · 2 深链。**文案/hi-fi pass**；1d/1e **实现**仍 open。Rename 入口：**铅笔图标**（非 long-press-only）。
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 List · Active rich** | 标题 · Active · meta · Update · Add | `subs.title` S · `subs.active.badge` S · `subs.meta.nodes` S · `subs.meta.expires` S · `subs.meta.updated` S · `subs.update` S · `subs.add` S · `subs.data_label` S（有流量时） | [x] |
-| **1b List · sparse** | 无到期/流量整槽省略 | 同上；**不**出现 *Not reported* | [x] |
-| **1c Updating** | busy | `subs.updating` S | [x] |
-| **1d Not remote-refreshable** | 无 URL 的 Active：无主 Update CTA；说明 | `subs.update.unavailable` S（*Can’t update automatically*）· `subs.update.unavailable.hint` S；**不**出现可点 *Update* 假装成功 | [x] hi-fi · **实现** [IMPL-SUB-1d](../prd/features/subscription-refresh-ui-states.md#impl-sub-1d--not-remote-refreshable无远程源) |
-| **1e Manual Update failed** | 列表内错误（仅手动） | `subs.update.failed` S · `subs.update.failed.hint` S · `subs.update` S 可重试 | [x] hi-fi · **实现** [IMPL-SUB-1e](../prd/features/subscription-refresh-ui-states.md#impl-sub-1e--manual-update-failed仅手动失败) |
-| **非 Active 行** | Set active | `subs.set_active` S | [x] |
+| **1 List · Active rich** | 标题 · **铅笔 Rename** · Active · meta · Update · Add | `subs.title` S · `subs.active.badge` S · `subs.meta.nodes` S · `subs.meta.expires` S · `subs.meta.updated` S · `subs.update` S · `subs.add` S · `subs.data_label` S（有流量时）· `subs.rename` S（a11y） | [x] |
+| **1b List · sparse** | 无到期/流量整槽省略 · 铅笔仍在 | 同上；**不**出现 *Not reported* | [x] |
+| **1c Updating** | busy · 铅笔仍在 | `subs.updating` S | [x] |
+| **1d Not remote-refreshable** | 无 URL 的 Active：无主 Update CTA；说明 · 铅笔仍在 | `subs.update.unavailable` S（*Can’t update automatically*）· `subs.update.unavailable.hint` S；**不**出现可点 *Update* 假装成功 | [x] hi-fi · **实现** [IMPL-SUB-1d](../prd/features/subscription-refresh-ui-states.md#impl-sub-1d--not-remote-refreshable无远程源) |
+| **1e Manual Update failed** | 短 toast 2–3s（仅手动）· 无卡内错误条 · 铅笔仍在 | `subs.update.failed` S · `subs.update` S 可重试 | [x] hi-fi · **实现** [IMPL-SUB-1e](../prd/features/subscription-refresh-ui-states.md#impl-sub-1e--manual-update-failed仅手动失败) |
+| **非 Active 行** | Set active · 铅笔 | `subs.set_active` S | [x] |
 | **Expired** | 警示标签 | `subs.meta.expired` S | [x] |
-| **Rename / 默认名** | 可选轻交互（long-press / 右键 → sheet；非主 CTA） | `subs.rename` S · `subs.rename.hint` S · `chrome.cancel` S · `chrome.save` S · `subs.default_name` S · `subs.default_name_n` S | [x] Interactive + 1f |
+| **1f Rename / 默认名** | 铅笔 → 短 sheet；非主 CTA；无 long-press-only / 无教学脚注 | `subs.rename` S · `subs.rename.hint` S · `chrome.cancel` S · `chrome.save` S · `subs.default_name` S · `subs.default_name_n` S | [x] 1 + 1f |
 | **2 Settings deep link** | 同一套 UI 标题；App 含 Auto-update | `subs.title`（门：`settings.app.subscriptions`）；深链示意应含 `settings.app.auto_update.*` | [x] |
 
-**不应出现：** 裸日期贴 nodes · *Renews* · All subscriptions 第二层 · 自动刷新失败 Toast · 无远程源却 *Update* 成功。
+**不应出现：** 裸日期贴 nodes · *Renews* · All subscriptions 第二层 · 自动刷新失败 Toast · 手动失败卡内错误条 · 无远程源却 *Update* 成功 · Rename 仅靠 long-press 无可见入口 · 列表主按钮墙级 Rename。
 
 **实现任务（1d / 1e）：** 编码 DoD 见  
 [`docs/prd/features/subscription-refresh-ui-states.md`](../prd/features/subscription-refresh-ui-states.md)。  

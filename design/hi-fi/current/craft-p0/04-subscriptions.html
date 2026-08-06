@@ -50,6 +50,13 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spin-ring { animation: spin 0.9s linear infinite; }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .toast-enter {
+      animation: toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
     button {
       -webkit-tap-highlight-color: transparent;
       transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.12s ease;
@@ -70,6 +77,7 @@
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
       .spin-ring { animation: none; border-top-color: rgba(127,217,176,0.55) !important; border-right-color: rgba(127,217,176,0.55) !important; }
+      .toast-enter { animation: none; }
       button:active:not(:disabled) { transform: none; }
     }
   </style>
@@ -81,7 +89,7 @@
       One screen: all subscriptions listed; <strong>Active</strong> marked on the row in use.
       No separate “All subscriptions” layer. Update sits on the Active card; Add at the bottom.
       Meta slots: <strong>nodes</strong> · labeled <strong>Expires / Expired</strong> (omit if unknown) · <strong>Updated</strong> — never a bare date next to node count.
-      <strong>Rename</strong> = light path (long-press display name → sheet); not a primary list CTA (ADR 0033).
+      <strong>Rename</strong> = light path (pencil by display name → sheet); not a primary list CTA (ADR 0033).
     </p>
     <div class="tags">
       <span class="tag">ADR 0020</span>
@@ -95,7 +103,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { IconClose, IconRefresh, IconChevron } = window.RoutevaIcons;
+    const { IconClose, IconRefresh, IconChevron, IconPencil } = window.RoutevaIcons;
     const TYPE = { font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif' };
     const FIELD = 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)';
     const CTA = 'linear-gradient(160deg, #8fe8c0 0%, #4bb98a 48%, #2f9a6c 100%)';
@@ -380,28 +388,10 @@
       );
     }
 
-    function SubRow({ sub, refreshing, updateFailed, onRenameRequest }) {
+    function SubRow({ sub, refreshing, onRenameRequest }) {
       const isActive = !!sub.active;
       const remote = sub.remote !== false;
       const expiry = formatExpiry(sub.expiresAt);
-      const pressTimer = React.useRef(null);
-      const longPressFired = React.useRef(false);
-
-      const clearPress = () => {
-        if (pressTimer.current) {
-          clearTimeout(pressTimer.current);
-          pressTimer.current = null;
-        }
-      };
-
-      const startPress = () => {
-        longPressFired.current = false;
-        clearPress();
-        pressTimer.current = setTimeout(() => {
-          longPressFired.current = true;
-          onRenameRequest && onRenameRequest(sub);
-        }, 480);
-      };
 
       return (
         <div
@@ -428,45 +418,47 @@
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
             <div style={{ minWidth: 0, flex: 1 }}>
-              {/* Display name: long-press → Rename (light, not a primary CTA) */}
-              <button
-                type="button"
-                aria-label={`${sub.name}. Rename`}
-                aria-haspopup="dialog"
-                onPointerDown={startPress}
-                onPointerUp={clearPress}
-                onPointerLeave={clearPress}
-                onPointerCancel={clearPress}
-                onClick={(e) => {
-                  /* Short tap does nothing — rename is long-press only */
-                  if (longPressFired.current) e.preventDefault();
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  onRenameRequest && onRenameRequest(sub);
-                }}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  border: 'none',
-                  background: 'transparent',
-                  padding: '2px 0',
-                  margin: 0,
-                  marginLeft: -2,
-                  paddingLeft: 2,
-                  borderRadius: 8,
-                  cursor: onRenameRequest ? 'pointer' : 'default',
-                  fontFamily: TYPE.font,
+              {/* Display name + light pencil (ADR 0033) — not a primary list CTA */}
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', gap: 2, minWidth: 0,
+              }}>
+                <div style={{
+                  minWidth: 0, flex: 1,
                   fontSize: isActive ? 20 : 17,
                   fontWeight: 700,
                   letterSpacing: '-0.02em',
                   color: T.primary,
-                  WebkitUserSelect: 'none',
-                  userSelect: 'none',
-                  transition: 'background 0.2s ease, transform 0.2s ease',
-                }}
-              >
-                {sub.name}
-              </button>
+                  lineHeight: 1.2,
+                  padding: '2px 0',
+                }}>
+                  {sub.name}
+                </div>
+                {onRenameRequest && (
+                  <button
+                    type="button"
+                    aria-label={`Rename ${sub.name}`}
+                    aria-haspopup="dialog"
+                    onClick={() => onRenameRequest(sub)}
+                    style={{
+                      flexShrink: 0,
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      color: T.quiet,
+                      width: 40, height: 40,
+                      margin: '-6px -6px 0 0',
+                      padding: 0,
+                      borderRadius: 12,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: TYPE.font,
+                    }}
+                  >
+                    <IconPencil size={15} stroke={1.75} color={T.quiet} />
+                  </button>
+                )}
+              </div>
               {/* Meta slots: nodes → Expires/Expired (optional) → Updated — never bare date · nodes */}
               <div style={{
                 marginTop: 6, fontSize: 13, fontWeight: 500, color: T.secondary, lineHeight: 1.35,
@@ -518,26 +510,6 @@
               <TrafficBar used={sub.usedGb} total={sub.totalGb} />
               {remote ? (
                 <div style={{ marginTop: 14 }}>
-                  {updateFailed && (
-                    <div style={{
-                      marginBottom: 12, padding: '10px 12px', borderRadius: 12,
-                      background: 'rgba(255,160,100,0.1)',
-                      border: '1px solid rgba(255,160,100,0.28)',
-                    }}>
-                      <div style={{
-                        fontSize: 14, fontWeight: 650, color: T.warn,
-                        fontFamily: TYPE.font, letterSpacing: '-0.01em',
-                      }}>
-                        Couldn’t update
-                      </div>
-                      <div style={{
-                        marginTop: 4, fontSize: 13, fontWeight: 500, color: T.muted,
-                        lineHeight: 1.35, fontFamily: TYPE.font,
-                      }}>
-                        Your current nodes stay as they are. Try again, or paste, scan, or import a fresh subscription from your provider.
-                      </div>
-                    </div>
-                  )}
                   <Primary wide busy={refreshing} onCard>
                     {refreshing ? (
                       <>
@@ -720,8 +692,44 @@
       );
     }
 
+    /** Short toast — parity with 05-settings iCloud / 03-setup success. Storyboard freezes visible; product auto-dismiss 2–3s. */
+    function SubToast({ text }) {
+      return (
+        <div
+          role="status"
+          aria-live="polite"
+          className="toast-enter"
+          style={{
+            position: 'absolute',
+            left: 20, right: 20, top: 62, zIndex: 25,
+            display: 'flex', justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{
+            maxWidth: 320,
+            padding: '12px 16px',
+            borderRadius: 16,
+            background: 'linear-gradient(155deg, rgba(40,48,56,0.96) 0%, rgba(18,22,28,0.98) 100%)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            fontFamily: TYPE.font,
+            fontSize: 14, fontWeight: 600,
+            color: T.primary,
+            letterSpacing: '-0.01em',
+            lineHeight: 1.35,
+            textAlign: 'center',
+          }}>
+            {text}
+          </div>
+        </div>
+      );
+    }
+
     /* —— Single Subscriptions list (no second “All” page) —— */
-    function SubscriptionsList({ variant, renameOpen = false, interactive = false }) {
+    function SubscriptionsList({ variant, renameOpen = false }) {
       // variant: 'full' | 'sparse' | 'refreshing' | 'local' | 'failed' | 'rename'
       const seed = React.useMemo(() => {
         if (variant === 'sparse') return SUBS_SPARSE.map((s) => ({ ...s }));
@@ -750,10 +758,8 @@
 
       const refreshing = variant === 'refreshing';
       const updateFailed = variant === 'failed';
-      const canRename = interactive || variant === 'rename' || renameOpen;
 
       const openRename = (sub) => {
-        if (!canRename) return;
         setRenaming(sub);
         setDraft(sub.name);
       };
@@ -773,26 +779,19 @@
               left={<GlassOrb label="Close"><IconClose /></GlassOrb>}
               footer={<Secondary wide>Add subscription</Secondary>}
             >
-              {interactive && (
-                <p style={{
-                  margin: '0 0 10px', fontSize: 12, fontWeight: 500, color: T.quiet,
-                  lineHeight: 1.35,
-                }}>
-                  Long-press a name to rename
-                </p>
-              )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4, paddingBottom: 8 }} role="list">
                 {items.map((s) => (
                   <SubRow
                     key={s.id}
                     sub={s}
                     refreshing={refreshing && s.active}
-                    updateFailed={updateFailed && s.active}
-                    onRenameRequest={canRename ? openRename : undefined}
+                    onRenameRequest={openRename}
                   />
                 ))}
               </div>
             </Shell>
+            {/* 1e: manual Update fail → short toast (not in-card). Board freezes; product 2–3s. */}
+            {updateFailed && <SubToast text="Couldn’t update. Check your connection and try again." />}
             {renaming && (
               <RenameSheet
                 name={renaming.name}
@@ -931,11 +930,7 @@
       return (
         <div className="row">
           <div className="phone-col">
-            <div className="lab">Interactive<span>Long-press name → Rename sheet</span></div>
-            <SubscriptionsList variant="full" interactive />
-          </div>
-          <div className="phone-col">
-            <div className="lab">1 · List (Active rich)<span>Expires labeled · Expired warn on Orbit</span></div>
+            <div className="lab">1 · List (Active rich)<span>Pencil by name · Expires labeled · Orbit Expired</span></div>
             <SubscriptionsList variant="full" />
           </div>
           <div className="phone-col">
@@ -951,11 +946,11 @@
             <SubscriptionsList variant="local" />
           </div>
           <div className="phone-col">
-            <div className="lab">1e · Manual Update failed<span>In-card error · retry CTA</span></div>
+            <div className="lab">1e · Manual Update failed<span>Short toast 2–3s · Update still available</span></div>
             <SubscriptionsList variant="failed" />
           </div>
           <div className="phone-col">
-            <div className="lab">1f · Rename<span>Light sheet · not a primary CTA</span></div>
+            <div className="lab">1f · Rename<span>Pencil → light sheet · not a primary CTA</span></div>
             <SubscriptionsList variant="rename" />
           </div>
           <div className="phone-col">

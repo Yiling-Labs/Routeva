@@ -42,13 +42,12 @@
 
 | # | 状态 | 备注 |
 |---|---|---|
-| 1 | List · Active rich | 全部在一屏；*Expires* 有标签；Orbit *Expired* 警示 |
-| 1b | List · sparse Active | 未知流量/到期整槽省略 |
+| 1 | List · Active rich | 全部在一屏；名旁铅笔；*Expires* 有标签；Orbit *Expired* 警示 |
+| 1b | List · sparse Active | 未知流量/到期整槽省略；铅笔仍在 |
 | 1c | Updating | Active 卡上 Update busy |
 | 1d | Not remote-refreshable | 无远程 URL：说明、无假 Update（ADR 0015） |
-| 1e | Manual Update failed | 卡内错误 + 可重试 Update |
-| Interactive | Long-press 显示名 → Rename sheet |
-| 1f | Rename（轻交互） | 短 sheet · hint · Cancel/Save；**非**主 CTA（ADR **0033** · `subs.rename.hint`） |
+| 1e | Manual Update failed | 短 toast 2–3s · Update 仍可点 |
+| 1f | Rename（轻交互） | 铅笔 → 短 sheet · hint · Cancel/Save；**非**主 CTA（ADR **0033**） |
 | 2 | Settings deep link | App 含 Auto-update Toggle；权威 Settings 见 05 |
 
 ## Settings 故事板

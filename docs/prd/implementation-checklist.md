@@ -129,8 +129,8 @@
 | 3.4.2 | Meta：nodes · Expires/Expired 有标签 · Updated；未知整槽省略 | [ ] | [ ] |
 | 3.4.3 | 有远程源：Update；busy *Updating…* | [ ] | [ ] |
 | 3.4.4 | **1d** 无远程源：*Can’t update automatically* + hint；**无**假 Update | [ ] | [ ] |
-| 3.4.5 | **1e** 手动失败：卡内错误 + 可重试 | [ ] | [ ] |
-| 3.4.6 | **Rename** 轻交互（long-press/菜单 → sheet；非主 CTA） | [ ] | [ ] |
+| 3.4.5 | **1e** 手动失败：短 toast 2–3s + 可重试 Update | [ ] | [ ] |
+| 3.4.6 | **Rename** 轻交互（名旁铅笔 → sheet；非主 CTA） | [ ] | [ ] |
 | 3.4.7 | Settings 深链同一套 UI（非第二 CRUD） | [ ] | [ ] |
 
 详见 [`features/subscription-refresh-ui-states.md`](./features/subscription-refresh-ui-states.md)。

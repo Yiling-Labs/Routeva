@@ -129,7 +129,7 @@
   2. **开时：** 仅**严格冷启动** + Active + 可远程源 + 距上次成功 ≥ **T=24h** → 整份替换（节点 + 规则/策略组 + 有则元数据）
   3. **不做：** 连接前自动刷 · 热启动/回前台 · 后台周期轮询 · 不可刷新源假装成功
   4. **成功：** 安静 + Activity；节点身份失效静默丢偏好（Preferred）
-  5. **自动失败：** 完全安静、不覆盖；**手动 Update** 仍在 Subscriptions，失败可提示
+  5. **自动失败：** 完全安静、不覆盖；**手动 Update** 仍在 Subscriptions，失败短 toast（2–3s；2026-08-06 由卡内错误改为 toast）
 - **已写入：** CONTEXT（Subscription Refresh / Settings App / Admission 例外）；ADR **0015** 修订 · **0026**；PRD §4.1 / IA / 验收；`en.yaml` keys；acceptance Settings root
 - **后续补齐（同日）：**
   - `en.yaml`：`subs.update.unavailable*` · `subs.update.failed*`

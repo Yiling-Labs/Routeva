@@ -443,15 +443,10 @@ strings:
     surface: subscriptions
 
   - key: subs.update.failed
-    en: Couldn’t update
+    en: Couldn’t update. Check your connection and try again.
     tier: shell
     surface: subscriptions
-    notes: "Manual Update failure only · auto-refresh stays silent"
-
-  - key: subs.update.failed.hint
-    en: Your current nodes stay as they are. Try again, or paste, scan, or import a fresh subscription from your provider.
-    tier: shell
-    surface: subscriptions
+    notes: "Manual Update fail only · short toast 2–3s · status + recovery · auto-refresh silent · no in-card banner"
 
   - key: subs.add
     en: Add subscription
@@ -483,12 +478,13 @@ strings:
     en: Rename
     tier: shell
     surface: subscriptions
+    notes: "Sheet title · also a11y for name-row pencil · ADR 0033"
 
   - key: subs.rename.hint
     en: Display name only — doesn’t change your provider subscription.
     tier: shell
     surface: subscriptions
-    notes: "Rename sheet secondary · craft-p0/04 · ADR 0033"
+    notes: "Rename sheet secondary · craft-p0/04 · ADR 0033 · entry = pencil by display name"
 
   - key: subs.default_name
     en: Subscription
