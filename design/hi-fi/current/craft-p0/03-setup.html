@@ -609,19 +609,256 @@
       );
     }
 
-    /* —— 6 Success = real Home Idle shell + toast (auto-dismiss 2–3s) —— */
+    /* —— Cover-flow + node label (parity with 02-home.html Idle) —— */
+    const PROTO = {
+      ss:     { label: 'SS',     full: 'Shadowsocks' },
+      vmess:  { label: 'VMess',  full: 'VMess' },
+      vless:  { label: 'VLESS',  full: 'VLESS' },
+      trojan: { label: 'Trojan', full: 'Trojan' },
+      hy2:    { label: 'Hy2',    full: 'Hysteria2' },
+    };
+    const NODES = [
+      { id: 'za1', cc: 'za', flag: '🇿🇦', name: 'South Africa', node: 'JNB-Edge-02', protocol: 'ss' },
+      { id: 'us1', cc: 'us', flag: '🇺🇸', name: 'United States', node: 'LAX-08', protocol: 'vmess' },
+      { id: 'hk1', cc: 'hk', flag: '🇭🇰', name: 'Hong Kong', node: 'HKG-01', protocol: 'vmess' },
+      { id: 'us2', cc: 'us', flag: '🇺🇸', name: 'United States', node: 'SJC-12', protocol: 'trojan' },
+      { id: 'de1', cc: 'de', flag: '🇩🇪', name: 'Germany', node: 'FRA-04', protocol: 'hy2' },
+      { id: 'gb1', cc: 'gb', flag: '🇬🇧', name: 'United Kingdom', node: 'LON-05', protocol: 'ss' },
+      { id: 'hk2', cc: 'hk', flag: '🇭🇰', name: 'Hong Kong', node: 'HKG-Premium-3', protocol: 'trojan' },
+    ];
+    const flagSrc = (cc) => `https://flagcdn.com/w160/${cc}.png`;
+    const DEFAULT_NODE_ID = 'hk1';
+
+    function ProtocolBadge({ protocol, size = 'md' }) {
+      const p = PROTO[protocol] || PROTO.ss;
+      const fs = size === 'sm' ? 10 : 11;
+      return (
+        <span
+          title={p.full}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            fontFamily: TYPE.font,
+            fontSize: fs,
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+            lineHeight: 1.2,
+            color: 'rgba(255,255,255,0.38)',
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ opacity: 0.45, marginRight: 5 }}>·</span>
+          {p.label}
+        </span>
+      );
+    }
+
+    function NodeLabel({ node, size = 'md' }) {
+      return (
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: size === 'sm' ? 4 : 5,
+          flexWrap: 'wrap',
+        }}>
+          <span>{node.node}</span>
+          <ProtocolBadge protocol={node.protocol} size={size} />
+        </span>
+      );
+    }
+
+    function FlagOrb({ cc, flag, selected, dim }) {
+      const size = 56;
+      return (
+        <div style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          position: 'relative',
+          boxSizing: 'border-box',
+          flexShrink: 0,
+          background: selected
+            ? 'linear-gradient(155deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.08) 55%, rgba(0,0,0,0.12) 100%)'
+            : 'linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 100%)',
+          boxShadow: selected
+            ? [
+                '0 0 0 1.5px rgba(255,255,255,0.55)',
+                '0 0 0 5px rgba(255,255,255,0.10)',
+                '0 16px 36px rgba(0,0,0,0.45)',
+                '0 2px 0 rgba(255,255,255,0.12)',
+                'inset 0 1px 0 rgba(255,255,255,0.55)',
+                'inset 0 -8px 16px rgba(0,0,0,0.18)',
+              ].join(', ')
+            : [
+                '0 0 0 1px rgba(255,255,255,0.12)',
+                '0 8px 18px rgba(0,0,0,0.32)',
+                'inset 0 1px 0 rgba(255,255,255,0.18)',
+              ].join(', '),
+        }}>
+          <div style={{
+            position: 'absolute',
+            inset: selected ? 4 : 3,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            background: '#1a2228',
+            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.25)',
+          }}>
+            <img
+              src={flagSrc(cc)}
+              alt=""
+              draggable={false}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                display: 'block',
+                filter: dim ? 'saturate(0.75) brightness(0.78)' : 'saturate(1.05) brightness(1.02)',
+                transform: 'scale(1.08)',
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const p = e.currentTarget.parentElement;
+                if (p && !p.querySelector('[data-emoji]')) {
+                  const s = document.createElement('span');
+                  s.dataset.emoji = '1';
+                  s.textContent = flag;
+                  s.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;';
+                  p.appendChild(s);
+                }
+              }}
+            />
+          </div>
+          <div style={{
+            position: 'absolute',
+            left: '12%',
+            right: '12%',
+            top: selected ? 5 : 4,
+            height: '38%',
+            borderRadius: '50% 50% 40% 40%',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.06) 55%, transparent 100%)',
+            pointerEvents: 'none',
+          }} />
+        </div>
+      );
+    }
+
+    function FlagCoverFlow({ nodes, index, onChange, interactive }) {
+      const { useRef, useState } = React;
+      const drag = useRef({ x: 0, active: false, moved: false });
+      const [dragX, setDragX] = useState(0);
+      const reduceMotion = typeof window !== 'undefined'
+        && window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const onDown = (e) => {
+        if (!interactive) return;
+        drag.current = { x: e.clientX, active: true, moved: false };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      };
+      const onMove = (e) => {
+        if (!drag.current.active) return;
+        const dx = e.clientX - drag.current.x;
+        if (Math.abs(dx) > 6) drag.current.moved = true;
+        setDragX(dx);
+      };
+      const onUp = () => {
+        if (!drag.current.active) return;
+        drag.current.active = false;
+        const dx = dragX;
+        setDragX(0);
+        if (dx < -36 && index < nodes.length - 1) onChange(index + 1);
+        else if (dx > 36 && index > 0) onChange(index - 1);
+      };
+
+      const BASE = 56;
+      const STEP = 72;
+
+      return (
+        <div style={{ width: '100%', userSelect: 'none' }}>
+          <div
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+            style={{
+              position: 'relative',
+              height: 118,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: interactive ? 'grab' : 'default',
+              touchAction: 'pan-y',
+              maskImage: 'linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%)',
+            }}
+          >
+            {nodes.map((n, i) => {
+              const dist = i - index - dragX / STEP;
+              const ad = Math.abs(dist);
+              const scale = ad < 0.5 ? 1.26
+                : ad < 1.5 ? 0.88
+                : ad < 2.5 ? 0.76
+                : 0.66;
+              const opacity = ad < 0.5 ? 1
+                : ad < 1.5 ? 0.8
+                : ad < 2.5 ? 0.5
+                : 0.3;
+              const y = Math.min(18, ad * ad * 2.0);
+              const x = dist * STEP;
+              const isCenter = ad < 0.45;
+              return (
+                <button
+                  type="button"
+                  key={n.id}
+                  aria-label={`${n.name} ${n.node}`}
+                  aria-current={isCenter ? 'true' : undefined}
+                  onClick={() => {
+                    if (drag.current.moved) return;
+                    if (interactive) onChange(i);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: BASE,
+                    height: BASE,
+                    padding: 0,
+                    border: 'none',
+                    background: 'transparent',
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    cursor: interactive ? 'pointer' : 'default',
+                    transform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`,
+                    WebkitTransform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`,
+                    transformOrigin: 'center center',
+                    opacity,
+                    transition: (drag.current.active || reduceMotion)
+                      ? 'none'
+                      : 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease',
+                    zIndex: 30 - Math.round(ad * 6),
+                    boxSizing: 'border-box',
+                    willChange: 'transform, opacity',
+                  }}
+                >
+                  <FlagOrb cc={n.cc} flag={n.flag} selected={isCenter} dim={!isCenter} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    /* —— 6 Success = Home Idle (02-home parity) + success toast ——
+     * Storyboard freezes toast visible (product: auto-dismiss 2–3s). */
     function HomeIdleToast() {
-      const { useState, useEffect } = React;
-      const [toast, setToast] = useState('visible'); // visible | leaving | gone
-      const flags = [
-        { cc: 'za', s: 0.66 }, { cc: 'us', s: 0.86 }, { cc: 'hk', s: 1.24, on: true },
-        { cc: 'de', s: 0.86 }, { cc: 'gb', s: 0.66 },
-      ];
-      useEffect(() => {
-        const leave = setTimeout(() => setToast('leaving'), 2500);
-        const gone = setTimeout(() => setToast('gone'), 2820);
-        return () => { clearTimeout(leave); clearTimeout(gone); };
-      }, []);
+      const { useState } = React;
+      const defaultIdx = NODES.findIndex((n) => n.id === DEFAULT_NODE_ID);
+      const [nodeIdx, setNodeIdx] = useState(defaultIdx >= 0 ? defaultIdx : 2);
+      const node = NODES[nodeIdx] || NODES[2];
+
       return (
         <IosFrame>
           <div style={{ height: '100%', position: 'relative', color: '#fff' }}>
@@ -631,107 +868,121 @@
 
             <HomeChrome />
 
-            {/* Stable live region: pre-rendered, only its text updates */}
             <div role="status" aria-live="polite" className="sr-only">
-              {toast === 'visible' ? 'Subscription added' : ''}
+              Subscription added. Apex Transit, 42 nodes.
             </div>
 
-            {toast !== 'gone' && (
-              <div
-                className="toast-exit"
-                aria-hidden="true"
-                style={{
-                  position: 'absolute', top: 62, left: 20, right: 20, zIndex: 40,
-                  padding: '14px 16px', borderRadius: 18,
-                  background: 'linear-gradient(155deg, rgba(40,48,52,0.96) 0%, rgba(18,22,26,0.98) 100%)',
-                  border: '1px solid rgba(127,217,176,0.35)',
-                  boxShadow: '0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  opacity: toast === 'leaving' ? 0 : 1,
-                  transform: toast === 'leaving' ? 'translateY(-8px)' : 'translateY(0)',
-                  transition: 'opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
-                  pointerEvents: 'none',
-                }}
-              >
-                <div style={{
-                  width: 28, height: 28, borderRadius: 999, flexShrink: 0,
-                  background: 'rgba(80,200,150,0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }} aria-hidden="true">
-                  <IconCheck size={14} stroke={2} color="#7fd9b0" />
+            {/* Success toast — always on for board; product auto-dismisses 2–3s */}
+            <div
+              className="toast-exit"
+              aria-hidden="true"
+              style={{
+                position: 'absolute', top: 58, left: 20, right: 20, zIndex: 40,
+                padding: '14px 16px', borderRadius: 18,
+                background: 'linear-gradient(155deg, rgba(40,48,52,0.96) 0%, rgba(18,22,26,0.98) 100%)',
+                border: '1px solid rgba(127,217,176,0.35)',
+                boxShadow: '0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', gap: 12,
+                pointerEvents: 'none',
+              }}
+            >
+              <div style={{
+                width: 28, height: 28, borderRadius: 999, flexShrink: 0,
+                background: 'rgba(80,200,150,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }} aria-hidden="true">
+                <IconCheck size={14} stroke={2} color="#7fd9b0" />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.primary, fontFamily: TYPE.font }}>
+                  Subscription added
                 </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: T.primary, fontFamily: TYPE.font }}>
-                    Subscription added
-                  </div>
-                  <div style={{ marginTop: 2, fontSize: 12, fontWeight: 500, color: T.secondary, fontFamily: TYPE.font }}>
-                    Apex Transit · 42 nodes
-                  </div>
+                <div style={{ marginTop: 2, fontSize: 12, fontWeight: 500, color: T.secondary, fontFamily: TYPE.font }}>
+                  Apex Transit · 42 nodes
                 </div>
               </div>
-            )}
-
-            <div style={{
-              position: 'absolute', top: 118, left: 0, right: 0, zIndex: 2,
-              display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14,
-              height: 72,
-            }} aria-hidden="true">
-              {flags.map((f, i) => (
-                <div key={i} style={{
-                  width: 48, height: 48, borderRadius: 999, overflow: 'hidden', flexShrink: 0,
-                  transform: `scale(${f.s})`,
-                  opacity: f.on ? 1 : 0.55,
-                  boxShadow: f.on
-                    ? '0 0 0 2px rgba(255,255,255,0.45), 0 0 0 5px rgba(255,255,255,0.1), 0 12px 28px rgba(0,0,0,0.4)'
-                    : '0 0 0 1px rgba(255,255,255,0.12)',
-                  background: '#1a2228',
-                }}>
-                  <img
-                    src={`https://flagcdn.com/w160/${f.cc}.png`}
-                    alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transform: 'scale(1.08)' }}
-                  />
-                </div>
-              ))}
             </div>
+
+            {/* Cover-flow band — same layout tokens as 02-home Idle */}
             <div style={{
-              position: 'absolute', top: 198, left: 0, right: 0, textAlign: 'center', zIndex: 2,
-              fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontFamily: TYPE.font,
+              position: 'absolute', top: 64, left: 0, right: 0, zIndex: 3,
             }}>
-              HKG-01 <span style={{ color: T.quiet, fontWeight: 500 }}>· VMess</span>
+              <FlagCoverFlow
+                nodes={NODES}
+                index={nodeIdx}
+                onChange={setNodeIdx}
+                interactive
+              />
+              <div style={{
+                textAlign: 'center',
+                marginTop: 10,
+                fontFamily: TYPE.font,
+                fontSize: 16,
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+                color: 'rgba(255,255,255,0.88)',
+                textShadow: '0 1px 12px rgba(0,0,0,0.35)',
+              }}>
+                <NodeLabel node={node} size="md" />
+              </div>
             </div>
 
             <div style={{
-              position: 'absolute', top: '48%', left: 0, right: 0, textAlign: 'center', zIndex: 2,
+              position: 'absolute',
+              top: '42%',
+              left: 0, right: 0,
+              textAlign: 'center', padding: '0 28px', zIndex: 2,
               transform: 'translateY(-50%)',
             }}>
               <h1 style={{
-                margin: 0, fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em',
-                color: T.primary, fontFamily: TYPE.font,
+                margin: 0,
+                fontSize: 30,
+                fontWeight: 700,
+                letterSpacing: '-0.028em',
+                lineHeight: 1.12,
+                color: T.primary,
+                fontFamily: TYPE.font,
+                textShadow: '0 1px 18px rgba(0,0,0,0.35)',
               }}>
                 Not Connected
               </h1>
-              <button
-                type="button"
-                className="press"
-                aria-label="Location"
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Choose location"
                 style={{
-                  marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '10px 16px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.14)',
+                  marginTop: 14,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '10px 18px 10px 14px',
+                  borderRadius: 999,
                   background: 'linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)',
-                  fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.9)',
-                  fontFamily: TYPE.font, cursor: 'pointer',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 20px rgba(0,0,0,0.22)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  fontFamily: TYPE.font,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  letterSpacing: '0.01em',
+                  color: 'rgba(255,255,255,0.86)',
+                  cursor: 'pointer',
                 }}
               >
-                <IconMapPin size={14} stroke={ICON_STROKE.chrome} />
-                Location
-                <span style={{ opacity: 0.55, display: 'flex' }}><IconChevron size={11} /></span>
-              </button>
+                <span style={{ opacity: 0.9, flexShrink: 0, display: 'flex' }}>
+                  <IconMapPin size={16} stroke={ICON_STROKE.chrome} />
+                </span>
+                <span>Location</span>
+                <span style={{ opacity: 0.45, marginLeft: 2, display: 'flex' }}>
+                  <IconChevron size={12} stroke={ICON_STROKE.cta} />
+                </span>
+              </div>
             </div>
 
             <div style={{
-              position: 'absolute', bottom: 48, left: 0, right: 0,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2,
+              position: 'absolute', bottom: 20, left: 0, right: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 5,
             }}>
               <div style={{
                 width: 80, height: 204, borderRadius: 999,
@@ -798,7 +1049,7 @@
             <AddSub fail />
           </div>
           <div className="phone-col">
-            <div className="lab">6 · Home Idle + toast<span>Auto-dismiss 2–3s · not auto-connect</span></div>
+            <div className="lab">6 · Home Idle + toast<span>Toast held for board · product auto-dismiss 2–3s · cover-flow = 02-home</span></div>
             <HomeIdleToast />
           </div>
         </div>
