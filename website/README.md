@@ -12,7 +12,7 @@ Static site for **https://routeva.yilinglabs.com**.
 
 **本阶段主职：** Brand Presence + Legal 必保。首页主 CTA = *How it works*（无伪商店下载）。
 
-**视觉方向（2026-08-06）：** [A · Instrument Quiet](../design/website-triad/direction-approved.md) — soft glass sticky nav · 50/50 hero + craft 静帧 · 与 `design/hi-fi/current/craft-p0/visual-system.md` 对齐。
+**视觉方向（2026-08-07）：** Sabbath DNA（`https://trysabbath.com/` 结构参考）· 双栏落地 · 右侧 media + Highlights 面板 · 自有 craft 静帧 · 见根目录 [`design.md`](../design.md)。**主 CTA 非商店下载**（Brand Presence）。
 
 ## Local preview
 

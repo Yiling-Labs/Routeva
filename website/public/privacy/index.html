@@ -6,61 +6,59 @@
   <title>Privacy Policy · Routeva</title>
   <meta name="description" content="Routeva privacy policy: data on device, subscription refresh via your provider, optional Help cloud assist, iCloud domain-exception backup on iPhone, diagnostics, and your controls." />
   <link rel="canonical" href="https://routeva.yilinglabs.com/privacy/" />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/tokens.css" />
   <style>
-    :root {
-      color-scheme: dark;
-      --bg0: #2e343a;
-      --bg1: #0b0e11;
-      --fg: rgba(255,255,255,0.96);
-      --secondary: rgba(255,255,255,0.58);
-      --muted: rgba(255,255,255,0.58);
-      --quiet: rgba(255,255,255,0.4);
-      --card: linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%);
-      --border: rgba(255,255,255,0.11);
-      --mint: #7fd9b0;
-    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-      background: linear-gradient(168deg, var(--bg0) 0%, #171c21 42%, var(--bg1) 100%);
-      color: var(--fg);
+      font-family: var(--font-body);
+      background: var(--color-paper);
+      color: var(--color-ink);
       -webkit-font-smoothing: antialiased;
       padding: 40px 22px 72px;
       line-height: 1.5;
     }
     .wrap { max-width: 40rem; margin: 0 auto; }
-    a { color: var(--mint); font-weight: 600; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    a { color: var(--color-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 0.15em; }
+    a:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
     .top {
       display: flex; flex-wrap: wrap; align-items: baseline;
       justify-content: space-between; gap: 12px; margin-bottom: 28px;
     }
     .brand {
-      font-size: 13px; font-weight: 600; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--quiet);
+      font-family: var(--font-display);
+      font-size: 22px; font-weight: 500; letter-spacing: -0.03em;
+      color: var(--color-ink); text-decoration: none;
     }
     h1 {
-      font-size: clamp(1.75rem, 4vw, 2.125rem); font-weight: 700;
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 500;
       letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 8px;
     }
     .meta {
-      font-size: 0.875rem; font-weight: 500; color: var(--muted);
+      font-size: 0.875rem; font-weight: 500; color: var(--color-muted);
       margin-bottom: 28px;
     }
     .promise {
       border-radius: 16px; padding: 16px 18px; margin-bottom: 28px;
-      background: rgba(127,217,176,0.1);
-      border: 1px solid rgba(127,217,176,0.28);
-      font-size: 0.9375rem; font-weight: 500; color: rgba(220,245,232,0.95);
+      background: var(--color-panel);
+      border: 1px solid rgba(0,0,0,0.06);
+      font-size: 0.9375rem; font-weight: 500; color: rgba(0,0,0,0.72);
       line-height: 1.45;
     }
     h2 {
-      font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.015em;
-      margin: 28px 0 10px; color: var(--fg);
+      font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.015em;
+      margin: 28px 0 10px; color: var(--color-ink);
     }
     p, li {
-      font-size: 0.9375rem; font-weight: 500; color: var(--secondary);
+      font-size: 0.9375rem; font-weight: 500; color: rgba(0,0,0,0.72);
       line-height: 1.55;
     }
     p + p { margin-top: 10px; }
@@ -68,19 +66,17 @@
     li { margin-top: 6px; }
     .card {
       border-radius: 16px; padding: 16px 18px; margin-top: 12px;
-      background: var(--card); border: 1px solid var(--border);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      background: var(--color-panel); border: 1px solid rgba(0,0,0,0.06);
     }
     .card h3 {
-      font-size: 0.9375rem; font-weight: 700; margin-bottom: 6px;
-      letter-spacing: -0.01em;
+      font-size: 0.9375rem; font-weight: 600; margin-bottom: 6px;
+      letter-spacing: -0.01em; color: var(--color-ink);
     }
     footer {
       margin-top: 48px; padding-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.08);
-      font-size: 0.8125rem; color: var(--quiet); line-height: 1.5;
+      border-top: 1px solid rgba(0,0,0,0.08);
+      font-size: 0.8125rem; color: var(--color-muted); line-height: 1.5;
     }
-    footer a { font-weight: 600; }
   </style>
 </head>
 <body>

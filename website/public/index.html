@@ -1,644 +1,947 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Routeva — Your subscription, not ours</title>
-  <meta name="description" content="Routeva is a smart proxy client for people who already have a subscription. Paste to connect, see honest failure reasons, and repair only what the client can fix—with your OK." />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Routeva — Connect without the maze</title>
+  <meta name="description" content="Paste a subscription link, swipe once, go online for real. A simple proxy client for the plan you already have." />
   <link rel="canonical" href="https://routeva.yilinglabs.com/" />
-  <meta name="theme-color" content="#0b0e11" />
-  <meta property="og:title" content="Routeva — Your subscription, not ours" />
-  <meta property="og:description" content="Paste a subscription you already have. Connect, explain failures honestly, repair safely. We don’t sell nodes." />
+  <meta property="og:title" content="Routeva — Connect without the maze" />
+  <meta property="og:description" content="Paste a subscription link, swipe once, go online for real. A simple proxy client for the plan you already have." />
   <meta property="og:url" content="https://routeva.yilinglabs.com/" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://routeva.yilinglabs.com/media/home-connected.png" />
+  <meta property="og:image" content="https://routeva.yilinglabs.com/icons/app-icon-1024.png" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=Playfair+Display:wght@500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/tokens.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; overflow-x: clip; }
-    html { scroll-behavior: smooth; color-scheme: dark; }
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
+
+    html {
+      min-width: 320px;
+      background: var(--color-paper);
+      overflow-x: clip;
     }
 
     body {
-      min-height: 100vh;
-      font-family: var(--font-body);
-      font-size: var(--text-body);
-      font-weight: 500;
-      line-height: 1.55;
+      margin: 0;
       color: var(--color-ink);
-      background: linear-gradient(
-        168deg,
-        var(--color-paper-top) 0%,
-        var(--color-paper-2) 42%,
-        var(--color-paper) 100%
-      );
+      background: var(--color-paper);
+      font-family: var(--font-body);
       -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    a {
-      color: var(--color-mint);
-      font-weight: 600;
-      text-underline-offset: 0.18em;
-    }
-    a:focus-visible {
+    a:focus-visible,
+    button:focus-visible {
       outline: 2px solid var(--color-focus);
       outline-offset: 3px;
-      border-radius: 2px;
     }
 
     .skip {
       position: absolute;
-      left: var(--page-gutter);
+      left: 16px;
       top: -100px;
       z-index: 100;
       padding: 0.4rem 0.75rem;
-      background: var(--color-paper-2);
-      color: var(--color-ink);
+      background: var(--color-ink);
+      color: var(--color-paper);
       border-radius: 8px;
       font-weight: 600;
       text-decoration: none;
     }
-    .skip:focus { top: 0.75rem; }
+    .skip:focus { top: 12px; }
 
-    #hero, #beliefs, #product, #how-it-works, #trust {
-      scroll-margin-top: var(--scroll-pad);
-    }
-
-    /* —— Sticky glass nav —— */
-    .nav {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      min-height: var(--nav-h);
-      padding: 0.65rem var(--page-gutter);
-      background: color-mix(in srgb, var(--color-paper) 78%, transparent);
-      backdrop-filter: blur(18px) saturate(140%);
-      -webkit-backdrop-filter: blur(18px) saturate(140%);
-      border-bottom: 1px solid var(--color-edge);
-    }
-    .nav__brand {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--color-muted);
-      text-decoration: none;
-      flex-shrink: 0;
-    }
-    .nav__brand:hover { color: var(--color-ink); text-decoration: none; }
-    .nav__links {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: none;
-      gap: 1.35rem;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    .nav__links a {
-      color: var(--color-ink-2);
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .nav__links a:hover { color: var(--color-ink); }
-    .nav__cta {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 40px;
-      padding: 0 1.1rem;
-      border-radius: var(--radius-pill);
-      background: linear-gradient(180deg, var(--color-mint-lift), var(--color-mint));
-      color: var(--color-mint-ink);
-      font-size: 13px;
-      font-weight: 700;
-      text-decoration: none;
-      white-space: nowrap;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-      flex-shrink: 0;
-      transition: filter var(--dur) var(--ease-out);
-    }
-    .nav__cta:hover {
-      filter: brightness(1.05);
-      text-decoration: none;
-    }
-    @media (min-width: 40rem) {
-      .nav__links { display: flex; }
-    }
-
-    main { display: block; }
-
-    /* —— Hero 50/50 —— */
-    .hero {
-      max-width: var(--shell);
-      margin: 0 auto;
-      padding: var(--space-xl) var(--page-gutter) var(--space-2xl);
+    .landing-page {
+      position: relative;
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--space-xl);
-      align-items: center;
-    }
-    .hero__copy { min-width: 0; }
-    .hero__meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem 0.65rem;
-      margin-bottom: var(--space-md);
-    }
-    .hero__kicker {
-      margin: 0;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--color-muted);
-    }
-    .hero__status {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--color-ink-2);
-      padding: 0.28rem 0.7rem;
-      border-radius: var(--radius-pill);
-      border: 1px solid var(--color-edge);
-      background: var(--color-glass);
-      white-space: nowrap;
-    }
-    .hero h1 {
-      font-family: var(--font-display);
-      font-size: var(--text-hero);
-      font-weight: 700;
-      font-style: normal;
-      letter-spacing: -0.035em;
-      line-height: 1.05;
-      margin: 0 0 var(--space-md);
-      max-width: 12ch;
-      text-wrap: balance;
-    }
-    .hero h1 .mark { color: var(--color-mint); }
-    .hero__lede {
-      margin: 0 0 var(--space-lg);
-      font-size: var(--text-body);
-      color: var(--color-ink-2);
-      line-height: 1.55;
-      max-width: 34ch;
-    }
-    .hero__actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.75rem 1.25rem;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 44px;
-      padding: 0 1.25rem;
-      border-radius: var(--radius-pill);
-      background: linear-gradient(180deg, var(--color-mint-lift), var(--color-mint));
-      color: var(--color-mint-ink);
-      font-size: 14px;
-      font-weight: 700;
-      text-decoration: none;
-      white-space: nowrap;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-      transition: filter var(--dur) var(--ease-out);
-    }
-    .btn:hover { filter: brightness(1.05); text-decoration: none; }
-    .btn:focus-visible {
-      outline: 2px solid var(--color-focus);
-      outline-offset: 3px;
-    }
-    .link-quiet {
-      color: var(--color-muted);
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      border-bottom: 1px solid var(--color-edge);
-      padding-bottom: 2px;
-      white-space: nowrap;
-    }
-    .link-quiet:hover {
-      color: var(--color-mint);
-      border-color: var(--color-mint);
-    }
-    .hero__figure {
-      margin: 0;
-      justify-self: center;
-      width: min(100%, 17.5rem);
-      min-width: 0;
-    }
-    .hero__figure img {
-      display: block;
-      width: 100%;
-      height: auto;
-      border-radius: var(--radius-phone);
-      outline: 1px solid var(--color-image-outline);
-      outline-offset: -1px;
-    }
-    .hero__figure figcaption {
-      margin-top: 0.55rem;
-      text-align: center;
-      font-size: 12px;
-      color: var(--color-muted);
-    }
-    @media (min-width: 56rem) {
-      .hero {
-        grid-template-columns: 1.1fr 0.9fr;
-        gap: 3rem;
-        padding-block: 3.25rem 3.5rem;
-      }
-      .hero__figure {
-        justify-self: end;
-        width: min(100%, 18.5rem);
-      }
-    }
-
-    /* —— Sections —— */
-    .section {
-      max-width: var(--shell);
-      margin: 0 auto;
-      padding: var(--space-2xl) var(--page-gutter);
-      border-top: 1px solid var(--color-edge-soft);
-    }
-    .section h2 {
-      font-family: var(--font-display);
-      font-size: var(--text-section);
-      font-weight: 700;
-      font-style: normal;
-      letter-spacing: -0.03em;
-      line-height: 1.12;
-      margin: 0 0 0.45rem;
-      text-wrap: balance;
-    }
-    .section__lead {
-      margin: 0 0 var(--space-lg);
-      color: var(--color-ink-2);
-      font-size: 15px;
-      line-height: 1.5;
-      max-width: 40ch;
-    }
-
-    /* Beliefs chips */
-    .chips {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 0.75rem;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    @media (min-width: 44rem) {
-      .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    .chip {
-      margin: 0;
-      padding: 1.15rem 1.2rem;
-      border-radius: var(--radius-card);
-      background: var(--color-glass);
-      border: 1px solid var(--color-edge);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      min-width: 0;
-    }
-    .chip__n {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--color-mint);
-      margin-bottom: 0.4rem;
-    }
-    .chip h3 {
-      font-family: var(--font-display);
-      font-size: var(--text-card);
-      font-weight: 700;
-      font-style: normal;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
-      margin: 0 0 0.4rem;
-      text-wrap: balance;
-    }
-    .chip p {
-      margin: 0;
-      font-size: 14px;
-      color: var(--color-ink-2);
-      line-height: 1.45;
-      max-width: 36ch;
-    }
-
-    /* Product duo */
-    .duo {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--space-xl);
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    @media (min-width: 44rem) {
-      .duo {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 2rem;
-      }
-    }
-    .duo figure {
-      margin: 0;
-      text-align: center;
-      min-width: 0;
-    }
-    .duo img {
-      display: block;
-      width: min(100%, 16.5rem);
-      margin-inline: auto;
-      height: auto;
-      border-radius: 24px;
-      outline: 1px solid var(--color-image-outline);
-      outline-offset: -1px;
-    }
-    .duo figcaption {
-      margin-top: 0.75rem;
-    }
-    .duo strong {
-      display: block;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--color-ink);
-      margin-bottom: 0.2rem;
-    }
-    .duo span {
-      font-size: 14px;
-      color: var(--color-ink-2);
-      line-height: 1.4;
-    }
-
-    /* How it works rail */
-    .rail {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 1px;
-      background: var(--color-edge);
-      border: 1px solid var(--color-edge);
-      border-radius: var(--radius-card);
+      grid-template-columns: minmax(534px, 37.083333vw) minmax(630px, 1fr);
+      min-height: max(720px, 100svh);
       overflow: hidden;
     }
-    .rail > li {
-      background: var(--color-paper-2);
-      padding: 1.15rem 1.1rem;
-      min-width: 0;
+
+    .copy-pane { position: relative; min-width: 0; }
+
+    .hero-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 390px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 34px;
+      transform: translate(-50%, -50%);
+      text-align: center;
     }
-    .rail strong {
+
+    .hero-icon {
       display: block;
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.3rem;
-    }
-    .rail span {
-      font-size: 13px;
-      color: var(--color-ink-2);
-      line-height: 1.4;
-    }
-    @media (min-width: 50rem) {
-      .rail { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      width: 85.5px;
+      height: 85.5px;
+      flex: 0 0 auto;
+      border-radius: 22.8px;
+      object-fit: cover;
     }
 
-    /* Trust */
-    .trust-card {
-      max-width: 40rem;
-      padding: 1.25rem 1.4rem;
-      border-radius: var(--radius-card);
-      background: var(--color-glass);
-      border: 1px solid var(--color-edge);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    }
-    .trust-card h2 {
-      font-size: 1.25rem;
-      margin-bottom: 0.4rem;
-    }
-    .trust-card p {
-      margin: 0 0 0.9rem;
-      color: var(--color-ink-2);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .trust-card nav {
+    .message-group {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem 1.25rem;
-      font-size: 14px;
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 24px;
     }
-    .trust-card a { white-space: nowrap; }
 
-    /* Footer */
-    .foot {
-      max-width: var(--shell);
-      margin: 0 auto;
-      padding: var(--space-lg) var(--page-gutter) var(--space-xl);
-      border-top: 1px solid var(--color-edge-soft);
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 1rem;
-      font-size: 13px;
-      color: var(--color-muted);
+    h1,
+    .message-group p { margin: 0; }
+
+    h1 {
+      width: 100%;
+      font-family: var(--font-display);
+      font-size: 64px;
+      font-weight: 500;
+      font-style: normal;
+      line-height: 72px;
+      letter-spacing: -1.92px;
     }
-    .foot a {
+
+    h1 span {
+      display: block;
+      white-space: nowrap;
+    }
+
+    .message-group p {
+      width: 100%;
       color: var(--color-muted);
-      text-decoration: none;
+      font-size: 20px;
       font-weight: 600;
-    }
-    .foot a:hover { color: var(--color-mint); }
-    .foot__links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem 1.1rem;
+      line-height: 28px;
+      letter-spacing: -0.6px;
     }
 
-    @media (max-width: 40rem) {
-      .hero { padding-top: var(--space-lg); }
-      .hero h1 { max-width: none; }
-      .hero__figure { width: min(100%, 15rem); }
-      .btn { width: 100%; }
-      .section { padding-block: var(--space-xl); }
+    .hero-note {
+      margin: 0;
+      max-width: 100%;
+      color: rgba(0, 0, 0, 0.32);
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.4;
+      letter-spacing: -0.02em;
+    }
+
+    /* CTA expands to status + steps (no App Store QR) */
+    .cta-shell {
+      position: relative;
+      z-index: 5;
+      width: 178px;
+      height: 62px;
+    }
+
+    .cta {
+      position: absolute;
+      z-index: 1;
+      right: 50%;
+      bottom: 0;
+      display: inline-flex;
+      width: 178px;
+      height: 62px;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: var(--color-paper);
+      background: var(--color-ink);
+      border-radius: 1000px;
+      text-decoration: none;
+      white-space: nowrap;
+      isolation: isolate;
+      transform: translateX(50%);
+      box-shadow: 0 0 0 transparent;
+      transition:
+        width var(--dur-panel) var(--ease-out),
+        height var(--dur-panel) var(--ease-out),
+        border-radius var(--dur) var(--ease-out),
+        box-shadow var(--dur-panel) var(--ease-out);
+    }
+
+    .cta-text {
+      position: relative;
+      z-index: 1;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 34px;
+      letter-spacing: -0.5px;
+      transition: opacity 140ms ease;
+    }
+
+    .cta-expand {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 28px 24px 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease 60ms;
+    }
+
+    .cta-expand strong {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    .cta-expand span {
+      display: block;
+      max-width: 210px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+      white-space: normal;
+      text-align: center;
+    }
+
+    .cta:active { transform: translateX(50%) scale(0.97); }
+
+    .panel-viewport {
+      position: relative;
+      min-width: 0;
+      margin: 40px 40px 40px 0;
+      overflow: visible;
+    }
+
+    .media-panel,
+    .story-panel {
+      border-radius: 24px;
+      transition: transform var(--dur-panel) var(--ease-panel);
+      will-change: transform;
+    }
+
+    .media-panel {
+      display: flex;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: var(--color-panel);
+      transform: translateY(0);
+    }
+
+    .phone-art {
+      display: block;
+      width: 446px;
+      height: auto;
+      max-width: calc(100% - 144px);
+      max-height: calc(100% - 80px);
+      object-fit: contain;
+      border-radius: 28px;
+      /* product still / video — no fake device chrome */
+    }
+
+    .phone-video {
+      background: transparent;
+    }
+
+    .story-panel {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      color: var(--color-story-ink);
+      background-image: linear-gradient(
+        216.73deg,
+        var(--color-story-a) 4.84%,
+        var(--color-story-b) 91.24%
+      );
+      transform: translateY(calc(100% + var(--panel-gap)));
+    }
+
+    .wall-open .media-panel {
+      transform: translateY(calc(-100% - var(--panel-gap)));
+    }
+
+    .wall-open .story-panel {
+      transform: translateY(0);
+    }
+
+    .story-close {
+      position: absolute;
+      z-index: 3;
+      top: 24px;
+      left: 24px;
+      display: grid;
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      place-items: center;
+      color: var(--color-ink);
+      background: var(--color-paper);
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform var(--dur-press) var(--ease-out);
+    }
+
+    .story-close span,
+    .story-close span::after {
+      position: absolute;
+      width: 18px;
+      height: 2px;
+      background: currentColor;
+      border-radius: 2px;
+      content: "";
+    }
+
+    .story-close span { transform: rotate(45deg); }
+    .story-close span::after {
+      inset: 0;
+      transform: rotate(90deg);
+    }
+
+    .story-close:active { transform: scale(0.97); }
+
+    @media (hover: hover) and (pointer: fine) {
+      .story-close:hover { transform: scale(1.04); }
+    }
+
+    .story-scroll {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 96px,
+        #000 calc(100% - 96px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 96px,
+        #000 calc(100% - 96px),
+        transparent 100%
+      );
+    }
+
+    .story-track {
+      display: flex;
+      width: min(601px, calc(100% - 144px));
+      margin: 0 auto;
+      padding: 106px 0;
+      flex-direction: column;
+      gap: 40px;
+      will-change: transform;
+    }
+
+    .story-track.is-animated {
+      animation: story-scroll var(--story-duration, 64s) linear infinite;
+    }
+
+    .story-list {
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    .story-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .story-card h2,
+    .story-card p,
+    .story-card cite {
+      margin: 0;
+    }
+
+    .story-card h2 {
+      font-family: var(--font-body);
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 24px;
+      letter-spacing: -0.6px;
+      font-style: normal;
+    }
+
+    .story-card p {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 24px;
+      letter-spacing: -0.6px;
+    }
+
+    .story-card cite {
+      font-size: 14px;
+      font-style: normal;
+      font-weight: 500;
+      opacity: 0.72;
+    }
+
+    .site-footer {
+      position: absolute;
+      bottom: 40px;
+      left: 0;
+      display: flex;
+      width: var(--copy-column);
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 20px 24px;
+      color: var(--color-muted);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: normal;
+      text-align: center;
+    }
+
+    .site-footer a,
+    .site-footer button {
+      color: inherit;
+      padding: 0;
+      background: none;
+      border: 0;
+      font: inherit;
+      text-decoration: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .site-footer a:hover,
+      .site-footer button:hover {
+        color: rgba(0, 0, 0, 0.72);
+      }
+
+      .cta-shell::before {
+        position: absolute;
+        z-index: 0;
+        right: 50%;
+        bottom: -4px;
+        width: 186px;
+        height: 70px;
+        border-radius: 1000px;
+        content: "";
+        transform: translateX(50%);
+      }
+
+      .cta-shell:hover::before,
+      .cta-shell:focus-within::before {
+        width: 272px;
+        height: 280px;
+        border-radius: 32px;
+      }
+
+      .cta-shell:hover .cta,
+      .cta-shell:focus-within .cta {
+        width: 264px;
+        height: 272px;
+        border-radius: 28px;
+        box-shadow:
+          0 60px 140px -20px rgba(0, 0, 0, 0.32),
+          0 30px 80px -10px rgba(0, 0, 0, 0.2),
+          0 8px 24px rgba(0, 0, 0, 0.16);
+      }
+
+      .cta-shell:hover .cta-text,
+      .cta-shell:focus-within .cta-text {
+        opacity: 0;
+      }
+
+      .cta-shell:hover .cta-expand,
+      .cta-shell:focus-within .cta-expand {
+        opacity: 1;
+      }
+    }
+
+    @keyframes story-scroll {
+      to { transform: translateY(var(--story-shift, 0px)); }
+    }
+
+    @media (min-width: 1164px) {
+      html, body { overscroll-behavior-y: none; }
+      .landing-page {
+        height: 100svh;
+        min-height: 600px;
+        grid-template-rows: minmax(0, 1fr);
+      }
+      .copy-pane,
+      .panel-viewport { min-height: 0; }
+    }
+
+    @media (max-width: 1163px) {
+      .landing-page {
+        display: flex;
+        min-height: 100svh;
+        flex-direction: column;
+        overflow: visible;
+      }
+
+      .copy-pane {
+        display: flex;
+        padding: 40px 24px 52px;
+        align-items: flex-start;
+        justify-content: center;
+      }
+
+      .hero-content {
+        position: static;
+        width: min(390px, 100%);
+        transform: none;
+      }
+
+      h1 {
+        font-size: clamp(42px, 13.33vw, 56px);
+        line-height: 1.125;
+        letter-spacing: -0.03em;
+      }
+
+      h1 span { white-space: normal; }
+
+      .message-group p {
+        font-size: clamp(18px, 4.65vw, 20px);
+        letter-spacing: -0.03em;
+      }
+
+      .panel-viewport {
+        display: flex;
+        min-height: 0;
+        margin: 0 24px;
+        flex-direction: column;
+        gap: 24px;
+        overflow: visible;
+      }
+
+      .media-panel {
+        height: auto;
+        padding: 52px 20px;
+        transform: none;
+      }
+
+      .story-panel {
+        position: relative;
+        inset: auto;
+        height: auto;
+        flex: none;
+        transform: none;
+        transition: none;
+      }
+
+      .wall-open .media-panel,
+      .wall-open .story-panel {
+        transform: none;
+      }
+
+      .story-close { display: none; }
+
+      .story-scroll {
+        position: relative;
+        inset: auto;
+        overflow: visible;
+        -webkit-mask-image: none;
+        mask-image: none;
+      }
+
+      .story-track {
+        width: auto;
+        padding: 40px 24px;
+        animation: none !important;
+        transform: none !important;
+      }
+
+      .story-list-clone,
+      .story-list .story-card:nth-child(n + 7) {
+        display: none;
+      }
+
+      .story-card h2,
+      .story-card p {
+        font-size: clamp(16px, 4.65vw, 20px);
+        line-height: 1.3;
+      }
+
+      .phone-art {
+        width: min(446px, 100%);
+        max-width: 100%;
+        max-height: none;
+      }
+
+      .site-footer {
+        position: static;
+        width: 100%;
+        padding: 40px 24px;
+      }
+
+      .site-footer .wall-toggle { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cta,
+      .cta-text,
+      .cta-expand,
+      .media-panel,
+      .story-panel,
+      .story-close {
+        transition: none !important;
+      }
+      .story-track.is-animated {
+        animation: none !important;
+      }
+      .story-scroll { overflow-y: auto; }
+      .story-list-clone { display: none; }
     }
   </style>
 </head>
 <body>
-  <a class="skip" href="#hero">Skip to content</a>
+  <a class="skip" href="#hero-title">Skip to content</a>
 
-  <header class="nav">
-    <a class="nav__brand" href="/">Routeva</a>
-    <ul class="nav__links" aria-label="Primary">
-      <li><a href="#beliefs">Beliefs</a></li>
-      <li><a href="#product">Product</a></li>
-      <li><a href="#how-it-works">How it works</a></li>
-      <li><a href="#trust">Trust</a></li>
-    </ul>
-    <a class="nav__cta" href="#how-it-works">How it works</a>
-  </header>
-
-  <main>
-    <section class="hero" id="hero" aria-labelledby="hero-title">
-      <div class="hero__copy">
-        <div class="hero__meta">
-          <p class="hero__kicker">Smart proxy client</p>
-          <span class="hero__status">iOS &amp; Android · not on the stores yet</span>
-        </div>
-        <h1 id="hero-title">Your subscription, <span class="mark">not ours.</span></h1>
-        <p class="hero__lede">
-          Paste a link you already have. Connect, see honest failure reasons, and repair only what the client can fix—with your OK.
-        </p>
-        <div class="hero__actions">
-          <a class="btn" href="#how-it-works">How it works</a>
-          <a class="link-quiet" href="#product">See the product</a>
-        </div>
-      </div>
-      <figure class="hero__figure">
+  <main class="landing-page">
+    <section class="copy-pane" aria-labelledby="hero-title">
+      <div class="hero-content">
         <img
-          src="/media/home-connected.png"
-          width="830"
-          height="1748"
-          alt="Routeva home screen connected: green field, session timer, tappable node row to Location, and STOP control."
-          decoding="async"
-          fetchpriority="high"
+          class="hero-icon"
+          src="/icons/icon-192.png"
+          width="86"
+          height="86"
+          alt=""
+          aria-hidden="true"
         />
-        <figcaption>Home · Connection Success</figcaption>
-      </figure>
-    </section>
 
-    <section class="section" id="beliefs" aria-labelledby="beliefs-title">
-      <h2 id="beliefs-title">What we stand for</h2>
-      <p class="section__lead">Soft glass instrument. Calm, honest, no node shop.</p>
-      <ul class="chips">
-        <li class="chip">
-          <span class="chip__n">01</span>
-          <h3>We do not sell nodes.</h3>
-          <p>Bring the subscription you already pay for. No provider recommendations.</p>
-        </li>
-        <li class="chip">
-          <span class="chip__n">02</span>
-          <h3>Failure in plain language.</h3>
-          <p>Buckets you can act on—not raw error codes.</p>
-        </li>
-        <li class="chip">
-          <span class="chip__n">03</span>
-          <h3>Repair with your OK.</h3>
-          <p>Snapshot first. Verify after. Roll back if needed.</p>
-        </li>
-        <li class="chip">
-          <span class="chip__n">04</span>
-          <h3>No silent cloud brain.</h3>
-          <p>Help cloud assist is default-on and optional.</p>
-        </li>
-      </ul>
-    </section>
+        <div class="message-group">
+          <h1 id="hero-title">
+            <span>Connect without</span>
+            <span>the maze.</span>
+          </h1>
+          <p>
+            Paste a subscription link, swipe once, and go online with a path that
+            actually checks out—no protocol setup.
+          </p>
+          <p class="hero-note">
+            Works with the subscription you already pay for. We don’t sell nodes.
+          </p>
+        </div>
 
-    <section class="section" id="product" aria-labelledby="product-title">
-      <h2 id="product-title">What it looks like</h2>
-      <p class="section__lead">
-        Design previews from the craft system—same Field Black, soft glass, and mint actions.
-      </p>
-      <ul class="duo">
-        <li>
-          <figure>
-            <img
-              src="/media/diagnostic-app-fix.png"
-              width="830"
-              height="1748"
-              alt="Diagnostic sheet with App can fix and Approve and repair."
-              loading="lazy"
-              decoding="async"
-            />
-            <figcaption>
-              <strong>Explain</strong>
-              <span>App can fix · Approve and repair</span>
-            </figcaption>
-          </figure>
-        </li>
-        <li>
-          <figure>
-            <img
-              src="/media/help-empty.png"
-              width="830"
-              height="1748"
-              alt="Help empty state with cloud assist on."
-              loading="lazy"
-              decoding="async"
-            />
-            <figcaption>
-              <strong>Help</strong>
-              <span>Cloud on by default · temporary analysis</span>
-            </figcaption>
-          </figure>
-        </li>
-      </ul>
-    </section>
-
-    <section class="section" id="how-it-works" aria-labelledby="loop-title">
-      <h2 id="loop-title">How it works</h2>
-      <p class="section__lead">One self-healing loop. Not a longer settings list.</p>
-      <ol class="rail">
-        <li>
-          <strong>Paste</strong>
-          <span>Import a link, QR, or file you already own.</span>
-        </li>
-        <li>
-          <strong>Connect</strong>
-          <span>System VPN + real connectivity probe.</span>
-        </li>
-        <li>
-          <strong>Explain</strong>
-          <span>App · Provider · Network · Not sure.</span>
-        </li>
-        <li>
-          <strong>Repair</strong>
-          <span>Consent · snapshot · verify · roll back.</span>
-        </li>
-      </ol>
-    </section>
-
-    <section class="section" id="trust" aria-labelledby="trust-title">
-      <div class="trust-card">
-        <h2 id="trust-title">Trust, without theatre</h2>
-        <p>
-          Data on device by default. Help cloud assist is temporary analysis only—and you can turn it off.
-        </p>
-        <nav aria-label="Legal">
-          <a href="/privacy/">Privacy Policy</a>
-          <a href="/terms/">Terms of Use</a>
-          <a href="/privacy/#contact">Contact</a>
-        </nav>
+        <div class="cta-shell">
+          <a
+            class="cta"
+            href="#highlights"
+            aria-label="See what you get with Routeva — not on the stores yet"
+          >
+            <span class="cta-text">What you get</span>
+            <span class="cta-expand" aria-hidden="true">
+              <strong>What you get</strong>
+              <span>One swipe to connect. A real online check. iOS &amp; Android—not on the stores yet.</span>
+            </span>
+          </a>
+        </div>
       </div>
+
+      <footer class="site-footer">
+        <a href="/privacy/">Privacy</a>
+        <a href="/terms/">Terms</a>
+        <a href="mailto:privacy@yilinglabs.com">Contact</a>
+        <button
+          class="wall-toggle"
+          type="button"
+          aria-controls="highlights"
+          aria-expanded="false"
+        >
+          What you get
+        </button>
+      </footer>
     </section>
+
+    <div class="panel-viewport">
+      <section class="media-panel" aria-label="Routeva app preview">
+        <video
+          class="phone-art phone-video"
+          muted
+          loop
+          playsinline
+          autoplay
+          preload="metadata"
+          poster="/media/home-connect-swipe-poster.jpg"
+          width="1080"
+          height="1920"
+          aria-label="Preview: swipe once to go from offline to really online."
+        >
+          <source src="/media/home-connect-swipe.mp4" type="video/mp4" />
+          <img
+            src="/media/home-connected.png"
+            width="830"
+            height="1748"
+            alt="Routeva on a phone, showing Connected after a real online check."
+            decoding="async"
+            fetchpriority="high"
+          />
+        </video>
+      </section>
+
+      <section
+        class="story-panel"
+        id="highlights"
+        aria-label="What you get with Routeva"
+        aria-hidden="true"
+        inert
+      >
+        <button class="story-close" type="button" aria-label="Close">
+          <span aria-hidden="true"></span>
+        </button>
+
+        <div class="story-scroll">
+          <div class="story-track">
+            <div class="story-list">
+              <article class="story-card">
+                <h2>One swipe to connect.</h2>
+                <p>
+                  Swipe down on Home. Progress, then green when the path is live—
+                  so you can tell at a glance.
+                </p>
+                <cite>Day to day</cite>
+              </article>
+
+              <article class="story-card">
+                <h2>Import a link. That’s the setup.</h2>
+                <p>
+                  No protocol picker, no routing rules. Paste the link from your provider—
+                  the app takes care of the rest.
+                </p>
+                <cite>For you</cite>
+              </article>
+
+              <article class="story-card">
+                <h2>Green means it works.</h2>
+                <p>
+                  Routeva verifies you’re reachable through the path—
+                  not only that a tunnel is up.
+                </p>
+                <cite>Trust</cite>
+              </article>
+
+              <article class="story-card">
+                <h2>Clear failures. Steady connection.</h2>
+                <p>
+                  Short messages, not error codes. Try again anytime.
+                  If a path drops, Routeva can switch quietly so you stay online.
+                </p>
+                <cite>When it breaks</cite>
+              </article>
+
+              <article class="story-card">
+                <h2>Coming next: help that waits for your OK.</h2>
+                <p>
+                  When you’re stuck, a clear explanation first—and a safe fix only after you approve.
+                  Not in the first release.
+                </p>
+                <cite>What’s next</cite>
+              </article>
+
+              <article class="story-card">
+                <h2>On the way for iOS &amp; Android.</h2>
+                <p>
+                  This is the product you’ll get: paste → swipe → stay online.
+                  Not on the stores yet.
+                </p>
+                <cite>Status</cite>
+              </article>
+
+              <article class="story-card">
+                <h2>Your subscription. Your nodes.</h2>
+                <p>
+                  Use the plan you already pay for. We don’t sell nodes.
+                  Setup stays on your phone by default.
+                </p>
+                <cite>Note</cite>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
-  <footer class="foot">
-    <span>Routeva · Yiling Labs · we don’t sell nodes.</span>
-    <nav class="foot__links" aria-label="Footer">
-      <a href="#how-it-works">How it works</a>
-      <a href="/privacy/">Privacy</a>
-      <a href="/terms/">Terms</a>
-      <a href="mailto:privacy@yilinglabs.com">Contact</a>
-    </nav>
-    <span>© <span id="y"></span> · Brand Presence</span>
-  </footer>
   <script>
-    document.getElementById("y").textContent = new Date().getFullYear();
+    (function () {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const mobileLayout = window.matchMedia("(max-width: 1163px)");
+      const mediaPanel = document.querySelector(".media-panel");
+      const storyPanel = document.querySelector(".story-panel");
+      const wallToggle = document.querySelector(".wall-toggle");
+      const storyClose = document.querySelector(".story-close");
+      const storyTrack = document.querySelector(".story-track");
+      const storyList = document.querySelector(".story-list");
+      const cta = document.querySelector(".cta");
+      const phoneVideo = document.querySelector(".phone-video");
+      let wallIsOpen = false;
+      let wheelDistance = 0;
+      let wheelDirection = 0;
+      let wheelResetTimer;
+
+      function syncPhoneVideo() {
+        if (!phoneVideo) return;
+        if (reducedMotion.matches || document.hidden || wallIsOpen) {
+          phoneVideo.pause();
+          return;
+        }
+        phoneVideo.play().catch(function () {
+          /* poster remains if autoplay is blocked */
+        });
+      }
+
+      if (phoneVideo) {
+        syncPhoneVideo();
+        document.addEventListener("visibilitychange", syncPhoneVideo);
+        reducedMotion.addEventListener("change", syncPhoneVideo);
+      }
+
+      if (!storyList || !storyTrack) return;
+
+      const listClone = storyList.cloneNode(true);
+      listClone.classList.add("story-list-clone");
+      listClone.setAttribute("aria-hidden", "true");
+      listClone.inert = true;
+      storyTrack.append(listClone);
+      storyTrack.classList.add("is-animated");
+
+      function syncStoryShift() {
+        const shift = storyList.offsetHeight + 40;
+        storyTrack.style.setProperty("--story-shift", `-${shift}px`);
+        storyTrack.style.setProperty(
+          "--story-duration",
+          `${Math.max(56, shift / 14)}s`
+        );
+      }
+
+      syncStoryShift();
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(syncStoryShift);
+      }
+      window.addEventListener("resize", syncStoryShift);
+
+      function restartStoryScroll() {
+        syncStoryShift();
+        storyTrack.classList.remove("is-animated");
+        void storyTrack.offsetWidth;
+        if (!reducedMotion.matches) {
+          storyTrack.classList.add("is-animated");
+        }
+      }
+
+      function setWallOpen(shouldOpen, returnFocus) {
+        wallIsOpen = shouldOpen;
+        document.body.classList.toggle("wall-open", shouldOpen);
+        if (wallToggle) {
+          wallToggle.setAttribute("aria-expanded", String(shouldOpen));
+        }
+        storyPanel.setAttribute("aria-hidden", String(!shouldOpen));
+        storyPanel.inert = !shouldOpen;
+        mediaPanel.setAttribute("aria-hidden", String(shouldOpen));
+        mediaPanel.inert = shouldOpen;
+
+        if (shouldOpen) {
+          restartStoryScroll();
+        } else if (returnFocus && wallToggle) {
+          wallToggle.focus();
+        }
+
+        syncPhoneVideo();
+      }
+
+      function handleWallWheel(event) {
+        if (
+          mobileLayout.matches ||
+          event.ctrlKey ||
+          Math.abs(event.deltaY) <= Math.abs(event.deltaX)
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+
+        const direction = Math.sign(event.deltaY);
+        const isAlreadyThere = direction > 0 ? wallIsOpen : !wallIsOpen;
+
+        if (isAlreadyThere) {
+          wheelDistance = 0;
+          wheelDirection = 0;
+          return;
+        }
+
+        if (direction !== wheelDirection) {
+          wheelDirection = direction;
+          wheelDistance = 0;
+        }
+
+        wheelDistance += Math.abs(event.deltaY);
+        window.clearTimeout(wheelResetTimer);
+        wheelResetTimer = window.setTimeout(function () {
+          wheelDistance = 0;
+          wheelDirection = 0;
+        }, 180);
+
+        if (wheelDistance >= 90) {
+          setWallOpen(direction > 0);
+          wheelDistance = 0;
+          wheelDirection = 0;
+        }
+      }
+
+      if (wallToggle) {
+        wallToggle.addEventListener("click", function () {
+          setWallOpen(!wallIsOpen);
+        });
+      }
+
+      if (storyClose) {
+        storyClose.addEventListener("click", function () {
+          setWallOpen(false, true);
+        });
+      }
+
+      if (cta) {
+        cta.addEventListener("click", function (event) {
+          if (mobileLayout.matches) {
+            return;
+          }
+          event.preventDefault();
+          setWallOpen(true);
+        });
+      }
+
+      window.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && wallIsOpen) {
+          setWallOpen(false, true);
+        }
+      });
+
+      document.addEventListener("wheel", handleWallWheel, { passive: false });
+
+      if (reducedMotion.matches) {
+        storyTrack.classList.remove("is-animated");
+      }
+
+      reducedMotion.addEventListener("change", function () {
+        if (reducedMotion.matches) {
+          storyTrack.classList.remove("is-animated");
+        } else if (wallIsOpen || mobileLayout.matches) {
+          restartStoryScroll();
+        }
+      });
+    })();
   </script>
 </body>
 </html>

@@ -1,0 +1,12 @@
+# video capture dumps (raw frames; keep final mp4)
+public/media/swipe-demo-raw/
+public/media/swipe-demo-raw-q2/
+public/media/swipe-live-raw/
+public/media/_qa-live/
+public/media/_qa-imagine/
+public/media/home-connect-swipe-prev.mp4
+
+# local design explores — not production
+public/_explore/
+
+.deploy-staging/
