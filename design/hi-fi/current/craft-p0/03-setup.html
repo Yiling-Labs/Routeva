@@ -106,7 +106,7 @@
 
   <script type="text/babel">
     const {
-      IconHelp, IconSubscriptions, IconSettings, IconClose, IconQr, IconFile, IconClipboard,
+      IconSubscriptions, IconSettings, IconClose, IconQr, IconFile, IconClipboard,
       IconPlus, IconPower, IconAlert, IconCheck, IconMapPin, IconChevron,
       STROKE: ICON_STROKE,
     } = window.RoutevaIcons;
@@ -234,33 +234,7 @@
         WebkitBackdropFilter: 'blur(16px) saturate(1.2)',
       };
     }
-    function HelpPill() {
-      return (
-        <button
-          type="button"
-          className="press"
-          aria-label="Help"
-          style={{
-            height: 40, padding: '0 13px 0 10px', borderRadius: 999,
-            border: 'none', cursor: 'pointer', color: T.icon,
-            display: 'flex', alignItems: 'center', gap: 6,
-            ...glassSurface(),
-            fontFamily: TYPE.font,
-          }}
-        >
-          <span style={{ display: 'flex', marginTop: 0.5 }}><IconHelp color={ICON_COLOR} /></span>
-          <span style={{
-            fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.01em',
-            color: 'rgba(255,255,255,0.9)', lineHeight: 1, paddingBottom: 0.5,
-          }}>
-            Help
-          </span>
-        </button>
-      );
-    }
-
-
-    /* ADR 0020 + 0036: Empty = Help+Settings only; Idle+ = Help+Subscriptions+Settings */
+    /* ADR 0063 MVP: Empty = Settings only; Idle+ = Subscriptions + Settings · no Help */
     function HomeChrome({ empty }) {
       return (
         <div style={{
@@ -268,8 +242,7 @@
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '8px 22px 0',
         }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <HelpPill />
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 40 }}>
             {!empty && (
               <GlassOrb label="Subscriptions"><IconSubscriptions color={ICON_COLOR} /></GlassOrb>
             )}
@@ -1057,7 +1030,7 @@
             <Welcome />
           </div>
           <div className="phone-col">
-            <div className="lab">2 · Home Empty<span>Help + Settings only · Add CTA</span></div>
+            <div className="lab">2 · Home Empty<span>Settings only · Add CTA · no Help</span></div>
             <HomeEmpty />
           </div>
           <div className="phone-col">

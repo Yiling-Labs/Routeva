@@ -5,7 +5,9 @@
 本文件 = **Home 像素与连接故事板**规格。全 craft-p0 屏索引见 [`_index.md`](./_index.md)；IA 见 [`00-ia.md`](../../wireframes/current/craft-p0/00-ia.md)。
 
 主文件：[`02-home.html`](./02-home.html)。  
-**全 app 风格源：** 本目录 `02-home.html` + [`visual-system.md`](./visual-system.md)（Setup / Subscriptions / Settings / Help / Diagnostic 已出稿，均须遵循）。
+**Mode-invariant + fail toast（ADR 0058 / 0059）：** 已并入权威 [`02-home.html`](./02-home.html)。Auto/Global **同骨架**；弱 Mode chip + sheet；失败 = Idle + toast；**不**在 Home 展开策略组。  
+**全 app 风格源：** 本目录 `02-home.html` + [`visual-system.md`](./visual-system.md)。  
+**MVP 屏：** Setup / Subscriptions / Settings / Location（**无** Help / Diagnostic · ADR **0063**）。
 
 ## 锚点
 
@@ -20,8 +22,8 @@
 | 规则 | 说明 |
 |---|---|
 | Root | **仅 Home** |
-| Help / Subscriptions / Settings | 顶栏：**Help** glass pill + Subscriptions/Settings orbs（Empty 无 Subscriptions · ADR 0036） |
-| Activity | **不**进顶栏、**不**进 Settings 根页（ADR **0051**）；Help / 诊断·Repair 上下文 |
+| Subscriptions / Settings | 顶栏：有订阅 Subscriptions + Settings；Empty **仅** Settings（**无** Help · ADR **0063**） |
+| Activity | **不**进顶栏 / Settings（**0051**）；MVP 无用户列表 |
 | Location | 黑场 Idle/Can’t：**Cover Flow 下节点名+弱协议+› 可点**（无中部 Location pill）；Swipe/Connecting 节点名锁定；绿场：**中部节点行可点**（无 Cover Flow） |
 | 禁止 | 底部 Tab；Go Premium |
 
@@ -29,7 +31,7 @@
 
 | 皮肤 | 触发 |
 |---|---|
-| **Black** | Idle / Swipe / Connecting / Can’t connect / Setup |
+| **Black** | Idle / Swipe / Connecting / Fail-toast Idle / Setup |
 | **Green** | **仅** Connection Success（整屏含状态栏连续绿场） |
 
 ## 连接故事板（左→右）
@@ -52,7 +54,7 @@ Interactive 列可拖/点完整流程。
 - 选中项下方文案 = **节点名**（订阅原文，**不是**国家名；可含 emoji/中文/脏长名）  
 - 节点名旁 **弱化协议**：`· VMess`（次要字重/透明度，无彩色大徽章）  
 - **长名截断：** 单行；**仅名** tail ellipsis；**协议 + › 不缩**；a11y 全量原文；不发明短码、不双行、不跑马灯  
-- **Idle / Can’t connect：** 节点名行 **可点** 进 Location；右侧弱 **›**（无 glass pill、无 *Location* 可见字）  
+- **Idle**（含失败回退 Idle）：节点名行 **可点** 进 Location；右侧弱 **›**（无 glass pill、无 *Location* 可见字）  
 - **Swipe / Connecting：** 同文案 **锁定**（无 ›、弱化 opacity）  
 - 横滑 alone = 临时焦点（≠ Preferred）  
 - 示例须含：短 `HKG-01` · 脏长 `🇨🇳 台湾A01 | IEPL | x2`（Cover Flow 旗 = **PRC / cn**，**禁止** 🇹🇼 / tw）· 极长营销串（验收截断）  

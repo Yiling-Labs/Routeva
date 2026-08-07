@@ -77,18 +77,18 @@
   <div class="meta">
     <h1>Home · Connect storyboard</h1>
     <p>
-      Sequence: <strong>Idle</strong> (no dots) → <strong>Swipe ⅓</strong> (1 ring) →
-      <strong>Swipe ⅔</strong> (2 rings) → <strong>Connecting</strong> (3 rings) →
-      <strong>Connected</strong> (green field · <strong>tappable node row → Location</strong>).
-      Black Idle/Can’t: Cover Flow caption <strong>node + ›</strong> opens Location (no mid Location pill).
-      Swipe/Connecting: caption locked. Green: mid node row only — no Cover Flow.
-      <strong>Auto demo</strong> loops START↓ connect → STOP↑ disconnect;
-      <strong>Interactive</strong> is drag/tap.
+      Single authority (ADR <strong>0058</strong> · <strong>0059</strong>).
+      Sequence: <strong>Idle</strong> → <strong>Swipe ⅓</strong> → <strong>Swipe ⅔</strong> →
+      <strong>Connecting</strong> → <strong>Connected</strong> (green · node row → Location).
+      Mode: weak <strong>Smart / Global</strong> under status (Idle / Connected); sheet <strong>Mode</strong>;
+      hidden mid-swipe/connecting; Direct Settings-only. Fail: <strong>Idle + toast</strong> (no Can’t connect).
+      <strong>Auto demo</strong> + <strong>Interactive</strong> preserve capsule craft.
     </p>
     <div class="tags">
       <span class="tag">HOME FIRST</span>
+      <span class="tag">MODE-INVARIANT</span>
+      <span class="tag">FAIL = IDLE + TOAST</span>
       <span class="tag">3-RING IGNITE</span>
-      <span class="tag">AUTO DEMO LOOP</span>
       <span class="tag">BLACK → GREEN</span>
     </div>
   </div>
@@ -97,7 +97,7 @@
   <script type="text/babel">
     const { useState, useRef, useEffect, useCallback } = React;
     const {
-      IconHelp, IconSubscriptions, IconGear, IconPower, IconChevronDir,
+      IconSubscriptions, IconGear, IconPower, IconChevronDir,
       IconMapPin, IconChevron, IconArrowDown, IconArrowUp,
       STROKE: ICON_STROKE,
     } = window.RoutevaIcons;
@@ -449,53 +449,15 @@
       );
     }
 
-    function HelpPill({ light }) {
-      // ADR 0036: glass pill — refined type + icon spacing
-      const g = glassSurface(light);
-      const c = ICON_COLOR;
-      return (
-        <div
-          role="button"
-          aria-label="Help"
-          tabIndex={0}
-          style={{
-            height: 40,
-            padding: '0 13px 0 10px',
-            borderRadius: 999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            ...g,
-            fontFamily: TYPE.font,
-          }}
-        >
-          <span style={{ display: 'flex', marginTop: 0.5 }}>
-            <IconHelp color={c} />
-          </span>
-          <span style={{
-            fontSize: 13.5,
-            fontWeight: 600,
-            letterSpacing: '-0.01em',
-            color: 'rgba(255,255,255,0.9)',
-            lineHeight: 1,
-            paddingBottom: 0.5,
-          }}>
-            Help
-          </span>
-        </div>
-      );
-    }
-
     function TopChrome({ light, empty }) {
-      // ADR 0020 + 0036: [Help][Subscriptions]…[Settings]; Empty hides Subscriptions
+      // ADR 0063 MVP: [Subscriptions]…[Settings]; Empty = Settings only · no Help
       return (
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '8px 22px 0', height: 48, position: 'relative', zIndex: 6,
           background: 'transparent',
         }}>
-          <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
-            <HelpPill light={light} />
+          <div style={{ display: 'flex', gap: 9, alignItems: 'center', minWidth: 40 }}>
             {!empty && (
               <GlassOrb light={light} ariaLabel="Subscriptions"><IconSubscriptions color={ICON_COLOR} /></GlassOrb>
             )}
@@ -1326,14 +1288,238 @@
       );
     }
 
+    /* home.mode.chip.* · home.mode.sheet.* — Smart / Global (internal ids auto / global) */
+    const MODE_COPY = {
+      auto: {
+        chip: 'Smart',
+        a11y: 'Mode, Smart. Change mode.',
+        title: 'Smart',
+        sub: 'Provider rules; your node when proxied',
+      },
+      global: {
+        chip: 'Global',
+        a11y: 'Mode, Global. Change mode.',
+        title: 'Global',
+        sub: 'All traffic via current node',
+      },
+    };
+
+    /** Short fail toast — 2–3s pattern · Home stays Idle (Not Connected) · ADR 0059 */
+    function FailToast({ message = "Couldn’t connect. Try again." }) {
+      return (
+        <div
+          role="status"
+          style={{
+            position: 'absolute',
+            left: 20,
+            right: 20,
+            bottom: 120,
+            zIndex: 50,
+            padding: '12px 16px',
+            borderRadius: 14,
+            background: 'rgba(22,22,24,0.92)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            fontFamily: TYPE.font,
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: '0.01em',
+            lineHeight: 1.35,
+            color: 'rgba(255,255,255,0.92)',
+            textAlign: 'center',
+          }}
+        >
+          {message}
+        </div>
+      );
+    }
+
     /**
-     * Story states:
-     *  idle | swipe01 | swipe02 | connecting | connected | cant | setup
-     * demo: auto-loop START↓ → connect → STOP↑ (design board explanation)
+     * Secondary mode control — always BELOW primary exit (node), never peer glass.
+     * Smart & Global: same quiet chrome; only label changes. ADR 0058.
      */
-    function HomeScreen({ state, modeHint = null, interactive = false, demo = false }) {
+    function ModeChip({ routingMode, light }) {
+      const copy = MODE_COPY[routingMode] || MODE_COPY.auto;
+      return (
+        <button
+          type="button"
+          aria-label={copy.a11y}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            minHeight: 36,
+            padding: '6px 10px',
+            fontFamily: TYPE.font,
+            fontSize: 13,
+            fontWeight: 500,
+            letterSpacing: '0.01em',
+            lineHeight: 1.25,
+            color: light ? 'rgba(255,255,255,0.58)' : 'rgba(255,255,255,0.50)',
+            background: 'transparent',
+            border: 'none',
+            borderRadius: 8,
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <span>{copy.chip}</span>
+          <span style={{ opacity: 0.5, display: 'flex', flexShrink: 0 }} aria-hidden="true">
+            <IconChevron size={11} stroke={ICON_STROKE.cta} />
+          </span>
+        </button>
+      );
+    }
+
+    /** Bottom sheet: Smart vs Global only (Direct stays in Settings) */
+    function RoutingModeSheet({ selected = 'global', light }) {
+      const options = [
+        { id: 'auto', ...MODE_COPY.auto },
+        { id: 'global', ...MODE_COPY.global },
+      ];
+      return (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 40,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.48)',
+            }}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-label="Mode"
+            style={{
+              position: 'relative',
+              margin: '0 10px 12px',
+              borderRadius: 22,
+              background: light
+                ? 'linear-gradient(165deg, rgba(28,48,40,0.97) 0%, rgba(12,22,18,0.98) 100%)'
+                : 'linear-gradient(165deg, rgba(38,38,40,0.98) 0%, rgba(18,18,20,0.99) 100%)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)',
+              padding: '10px 10px 12px',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+            }}
+          >
+            <div style={{
+              width: 36, height: 4, borderRadius: 2,
+              background: 'rgba(255,255,255,0.22)',
+              margin: '2px auto 12px',
+            }} />
+            <div style={{
+              fontFamily: TYPE.font,
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+              color: 'rgba(255,255,255,0.55)',
+              textAlign: 'center',
+              marginBottom: 10,
+            }}>
+              Mode
+            </div>
+            {options.map((opt) => {
+              const on = opt.id === selected;
+              return (
+                <div
+                  key={opt.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    padding: '14px 14px',
+                    borderRadius: 16,
+                    marginBottom: 6,
+                    background: on ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
+                    border: on
+                      ? '1px solid rgba(140,220,190,0.35)'
+                      : '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                    <div style={{
+                      fontFamily: TYPE.font,
+                      fontSize: 16,
+                      fontWeight: 650,
+                      letterSpacing: '-0.01em',
+                      color: 'rgba(255,255,255,0.94)',
+                    }}>
+                      {opt.title}
+                    </div>
+                    <div style={{
+                      marginTop: 4,
+                      fontFamily: TYPE.font,
+                      fontSize: 13,
+                      fontWeight: 400,
+                      lineHeight: 1.35,
+                      color: 'rgba(255,255,255,0.52)',
+                    }}>
+                      {opt.sub}
+                    </div>
+                  </div>
+                  {on && (
+                    <div style={{
+                      width: 22, height: 22, borderRadius: 11, flexShrink: 0, marginTop: 2,
+                      background: 'linear-gradient(145deg, #8fe8c0 0%, #3db88a 100%)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#0a1f18', fontSize: 13, fontWeight: 800,
+                    }} aria-hidden="true">
+                      ✓
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div style={{
+              marginTop: 6,
+              padding: '8px 10px 4px',
+              fontFamily: TYPE.font,
+              fontSize: 11,
+              fontWeight: 500,
+              lineHeight: 1.4,
+              color: 'rgba(255,255,255,0.38)',
+              textAlign: 'center',
+            }}>
+              Exceptions still apply · Direct stays in Settings
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /**
+     * Story states: idle | swipe01 | swipe02 | connecting | connected | setup
+     * Legacy 'cant' → Idle (ADR 0059). Use failToast for post-fail frame.
+     * demo: auto-loop START↓ → connect → STOP↑
+     * Mode chip (ADR 0058): Idle / Connected only; hidden mid-swipe / connecting.
+     */
+    function HomeScreen({
+      state,
+      interactive = false,
+      demo = false,
+      routingMode = 'auto',
+      modeSheetOpen = false,
+      showModeChip = true,
+      failToast = false,
+    }) {
       const [live, setLive] = useState(state === 'swipe01' || state === 'swipe02' ? 'idle' : state);
-      const s = (interactive || demo) ? live : state;
+      const raw = (interactive || demo) ? live : state;
+      // Legacy 'cant' → Idle (ADR 0059)
+      const s = raw === 'cant' ? 'idle' : raw;
       const defaultNodeIdx = NODES.findIndex((n) => n.id === DEFAULT_NODE_ID);
       const [nodeIdx, setNodeIdx] = useState(defaultNodeIdx >= 0 ? defaultNodeIdx : 2);
       const node = NODES[nodeIdx] || NODES[defaultNodeIdx >= 0 ? defaultNodeIdx : 2];
@@ -1341,7 +1527,6 @@
       const [secs, setSecs] = useState(state === 'connected' ? 45 * 60 + 29 : 0);
       const [down, setDown] = useState(12.4);
       const [up, setUp] = useState(23.6);
-      // Demo-driven capsule progress (0 top START → 1 bottom STOP)
       const [demoProgress, setDemoProgress] = useState(0);
       const [demoIgnite, setDemoIgnite] = useState(0);
 
@@ -1360,7 +1545,6 @@
         if (s === 'idle') setSecs(0);
       }, [s]);
 
-      // —— Auto demo: swipe progress + ignite 1:1 so rings light gradually (⅓ · ⅔ · full) ——
       useEffect(() => {
         if (!demo) return;
         let cancelled = false;
@@ -1370,11 +1554,9 @@
           && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         const wait = (ms) => new Promise((r) => {
-          const t = setTimeout(r, reduce ? Math.min(ms, 200) : ms);
-          // store not needed; cancelled checked after await
+          setTimeout(r, reduce ? Math.min(ms, 200) : ms);
         });
 
-        // Linear travel — ease-out was front-loading progress so all rings seemed to pop at once
         const animateTravel = (from, to, ms) => new Promise((resolve) => {
           if (reduce || ms <= 0) {
             setDemoProgress(to);
@@ -1386,10 +1568,8 @@
           const tick = (now) => {
             if (cancelled) return;
             const u = Math.min(1, (now - t0) / ms);
-            // slight ease-in-out so motion isn’t robotic, but stays near-linear for ring timing
             const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
             const p = from + (to - from) * e;
-            // Thumb progress and ring ignite stay locked (same as real drag preview)
             setDemoProgress(p);
             setDemoIgnite(p);
             if (u < 1) raf = requestAnimationFrame(tick);
@@ -1404,39 +1584,28 @@
 
         (async () => {
           while (!cancelled) {
-            // Idle — no dots
             setLive('idle');
             setDemoProgress(0);
             setDemoIgnite(0);
             await wait(800);
             if (cancelled) break;
-
-            // Swipe down: ignite grows with travel → ring1 @~⅓, ring2 @~⅔, ring3 @ full
-            // Longer than before so gradual light-up is readable
             await animateTravel(0, 1, 1400);
             if (cancelled) break;
-
-            // Hold full rings at bottom briefly before “connecting” label
             await wait(200);
             if (cancelled) break;
-
             setLive('connecting');
             setDemoProgress(1);
             setDemoIgnite(1);
             await wait(900);
             if (cancelled) break;
-
             setLive('connected');
             setSecs(0);
             setDemoProgress(1);
             setDemoIgnite(1);
             await wait(2200);
             if (cancelled) break;
-
-            // Swipe up: rings extinguish gradually as thumb rises
             await animateTravel(1, 0, 900);
             if (cancelled) break;
-
             setLive('idle');
             setDemoProgress(0);
             setDemoIgnite(0);
@@ -1462,19 +1631,15 @@
       const light = s === 'connected';
       const sk = light ? SKIN.green : SKIN.black;
 
-      // Storyboard capsule: thumb progress + ring ignite
-      // swipe01: ~1/3 travel, ring 1 · swipe02: ~2/3, rings 1–2 · connecting: bottom, all 3
       const story = {
         idle:       { progress: 0,    ignite: 0,    capMode: 'idle',       frozen: true },
         swipe01:    { progress: 0.34, ignite: 0.34, capMode: 'idle',       frozen: true },
         swipe02:    { progress: 0.67, ignite: 0.67, capMode: 'idle',       frozen: true },
         connecting: { progress: 1,    ignite: 1,    capMode: 'connecting', frozen: true },
         connected:  { progress: 1,    ignite: 1,    capMode: 'connected',  frozen: true },
-        cant:       { progress: 0,    ignite: 0,    capMode: 'idle',       frozen: true },
         setup:      { progress: 0,    ignite: 0,    capMode: 'idle',       frozen: true },
       };
 
-      // During demo swipe, keep thumb dark (capMode idle) until connecting/connected
       let demoCapMode = 'idle';
       if (s === 'connecting') demoCapMode = 'connecting';
       else if (s === 'connected') demoCapMode = 'connected';
@@ -1495,24 +1660,26 @@
             }
           : (story[s] || story.idle);
 
-      // Mid-swipe: still Not Connected; full slide + busy: Connecting…; success: Connected
       const midTitle =
         s === 'connecting' ? 'Connecting…'
         : s === 'connected' ? 'Connected'
         : s === 'setup' ? 'Add subscription'
-        : s === 'cant' ? 'Can’t connect'
         : 'Not Connected';
 
       const showCapsule = s !== 'setup';
-      const showCoverFlow = s === 'idle' || s === 'cant' || s === 'connecting' || s === 'swipe01' || s === 'swipe02';
+      const showCoverFlow = s === 'idle' || s === 'connecting' || s === 'swipe01' || s === 'swipe02';
       const showSession = s === 'connected';
-      // Location entry via Cover Flow caption — only Idle / Can’t (not Swipe / Connecting)
-      const nodeCaptionOpen = s === 'idle' || s === 'cant';
+      const nodeCaptionOpen = s === 'idle';
+      const chipVisible = showModeChip
+        && s !== 'setup'
+        && s !== 'swipe01'
+        && s !== 'swipe02'
+        && s !== 'connecting';
+      const rm = routingMode === 'global' ? 'global' : 'auto';
 
       return (
         <IosFrame field={light ? 'green' : 'black'}>
           <div style={{ height: '100%', position: 'relative' }}>
-            {/* Full-screen grain — same opacity top→bottom so no “header slab” */}
             <div className="noise" style={{ opacity: light ? 0.04 : 0.06, zIndex: 1 }} />
             <div style={{
               position: 'absolute', inset: 0, zIndex: 1,
@@ -1520,7 +1687,6 @@
             }}>
               <MapWash light={light} />
             </div>
-            {/* Halftone only lower half — pin style, not a top block */}
             <div className="halftone" style={{
               color: sk.halftone,
               opacity: light ? 0.2 : 0.17,
@@ -1533,14 +1699,13 @@
             <div style={{ position: 'relative', zIndex: 2, height: '100%' }}>
             <TopChrome light={light} empty={s === 'setup'} />
 
-            {/* ===== UPPER BAND (pin layout) ===== */}
             {showSession && (
               <div style={{
                 position: 'absolute', top: 72, left: 0, right: 0,
                 padding: '0 24px', textAlign: 'center', zIndex: 3,
               }}>
                 <SessionStats
-                  seconds={interactive && s === 'connected' ? secs : (secs || 45 * 60 + 29)}
+                  seconds={(interactive || demo) && s === 'connected' ? secs : (secs || 45 * 60 + 29)}
                   downMbps={down}
                   upMbps={up}
                   light
@@ -1556,7 +1721,7 @@
                   nodes={NODES}
                   index={nodeIdx}
                   onChange={setNodeIdx}
-                  interactive={interactive || s === 'idle' || s === 'cant'}
+                  interactive={interactive || s === 'idle'}
                 />
                 <NodeCaptionEntry
                   node={node}
@@ -1568,15 +1733,20 @@
               </div>
             )}
 
-            {/* ===== MID STATUS (pin vertical band) ===== */}
+            {/* Mid: column stack — status → (node primary) → mode secondary · never side-by-side pills */}
             <div style={{
               position: 'absolute',
               top: showSession ? '38%' : '42%',
               left: 0, right: 0,
-              textAlign: 'center', padding: '0 28px', zIndex: 2,
+              zIndex: 2,
               transform: 'translateY(-50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: '0 28px',
+              boxSizing: 'border-box',
+              width: '100%',
             }}>
-              {/* Connected mid: status only — no region/country line (identity lives in node chip) */}
               <div style={{
                 fontFamily: TYPE.font,
                 fontSize: TYPE.status.size,
@@ -1584,6 +1754,7 @@
                 letterSpacing: TYPE.status.tracking,
                 lineHeight: TYPE.status.lineHeight,
                 color: sk.title,
+                textAlign: 'center',
                 textShadow: light
                   ? '0 1px 12px rgba(0,0,0,0.12)'
                   : '0 1px 18px rgba(0,0,0,0.35)',
@@ -1592,7 +1763,6 @@
                 {midTitle}
               </div>
 
-              {/* Connected: mid soft-glass node row → Location (only green entry) */}
               {showSession && (
                 <button
                   type="button"
@@ -1603,8 +1773,10 @@
                     /* Storyboard affordance — product: full-screen Location push */
                   }}
                   style={{
-                    marginTop: 12,
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    marginTop: 14,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
                     fontFamily: TYPE.font,
                     fontSize: 12,
                     fontWeight: 600,
@@ -1615,19 +1787,18 @@
                     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22), 0 8px 20px rgba(0,0,0,0.18)',
                     backdropFilter: 'blur(16px)',
                     WebkitBackdropFilter: 'blur(16px)',
-                    padding: '9px 14px 9px 12px',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
+                    padding: '10px 14px 10px 12px',
                     borderRadius: 999,
                     cursor: 'pointer',
                     WebkitTapHighlightColor: 'transparent',
-                    minHeight: 40,
-                    maxWidth: 'min(300px, calc(100% - 48px))',
+                    minHeight: 44,
+                    width: '100%',
+                    maxWidth: 320,
                     minWidth: 0,
                     boxSizing: 'border-box',
+                    justifyContent: 'center',
                   }}
                 >
-                  {/* Identity once: provider name (may include emoji) + protocol; no extra country line / second flag */}
                   <NodeLabel node={node} size="sm" />
                   <span style={{ opacity: 0.55, display: 'flex', marginLeft: 2, flexShrink: 0 }} aria-hidden="true">
                     <IconChevron size={12} stroke={ICON_STROKE.cta} />
@@ -1635,15 +1806,14 @@
                 </button>
               )}
 
-              {modeHint && s !== 'setup' && (
+              {chipVisible && (
                 <div style={{
-                  marginTop: 10,
-                  fontFamily: TYPE.font,
-                  fontSize: TYPE.meta.size,
-                  fontWeight: TYPE.meta.weight,
-                  color: sk.mute,
+                  marginTop: showSession ? 6 : 10,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  width: '100%',
                 }}>
-                  {modeHint}
+                  <ModeChip routingMode={rm} light={light} />
                 </div>
               )}
 
@@ -1653,13 +1823,13 @@
                   fontFamily: TYPE.font,
                   fontSize: TYPE.secondary.size,
                   color: sk.secondary,
+                  textAlign: 'center',
                 }}>
                   Paste a link you already have
                 </div>
               )}
             </div>
 
-            {/* Capsule */}
             <div style={{
               position: 'absolute', left: 0, right: 0, bottom: s === 'setup' ? 56 : 20,
               display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 5,
@@ -1687,48 +1857,124 @@
               )}
             </div>
             </div>
+
+            {modeSheetOpen && (
+              <RoutingModeSheet selected={rm} light={light} />
+            )}
+            {failToast && s === 'idle' && (
+              <FailToast message="Couldn’t connect. Try again." />
+            )}
           </div>
         </IosFrame>
       );
     }
 
     function App() {
-      // Connect storyboard (left → right) + auto demo + interactive
       return (
         <>
+          {/* —— Live craft —— */}
           <div className="row" style={{ marginBottom: 48 }}>
             <div className="phone-col">
               <div className="lab">
                 Auto demo · START / STOP
-                <span>Loop: swipe down → connect → swipe up · reduced-motion: step cuts</span>
+                <span>Loop: swipe down → connect → swipe up · mode chip Idle/Connected</span>
               </div>
               <HomeScreen state="idle" demo />
             </div>
             <div className="phone-col">
-              <div className="lab">Interactive<span>Drag / tap yourself</span></div>
+              <div className="lab">Interactive<span>Drag / tap · Smart chip when idle/up</span></div>
               <HomeScreen state="idle" interactive />
             </div>
           </div>
+
+          {/* —— Connect sequence (mode-invariant) —— */}
+          <div className="row" style={{ marginBottom: 20, maxWidth: 1480, marginLeft: 'auto', marginRight: 'auto' }}>
+            <p style={{
+              width: '100%', fontSize: 13, color: '#2a2a2a', lineHeight: 1.5,
+              marginBottom: 8, maxWidth: '72ch',
+            }}>
+              <strong>Connect sequence</strong> — same skeleton · Smart under status (Idle/Connected) ·
+              chip hidden mid-swipe / connecting · node row → Location on green.
+            </p>
+          </div>
+          <div className="row" style={{ marginBottom: 48 }}>
+            <div className="phone-col">
+              <div className="lab">1 · Idle<span>Smart chip · caption › → Location · no dots</span></div>
+              <HomeScreen state="idle" routingMode="auto" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">2 · Swipe ~⅓<span>Ring 1 · caption locked · no chip</span></div>
+              <HomeScreen state="swipe01" routingMode="auto" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">3 · Swipe ~⅔<span>Rings 1–2 · caption locked · no chip</span></div>
+              <HomeScreen state="swipe02" routingMode="auto" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">4 · Connecting<span>3 rings · no chip · Connecting…</span></div>
+              <HomeScreen state="connecting" routingMode="auto" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">5 · Connected<span>Green · node glass → Smart › below</span></div>
+              <HomeScreen state="connected" routingMode="auto" />
+            </div>
+          </div>
+
+          {/* —— Mode variants —— */}
+          <div className="row" style={{ marginBottom: 20, maxWidth: 1480, marginLeft: 'auto', marginRight: 'auto' }}>
+            <p style={{
+              width: '100%', fontSize: 13, color: '#2a2a2a', lineHeight: 1.5,
+              marginBottom: 8, maxWidth: '72ch',
+            }}>
+              <strong>Mode (ADR 0058)</strong> — column stack only; Smart/Global quiet text (not peer glass).
+              Sheet title <em>Mode</em>. Internal ids auto/global. Direct = Settings only.
+            </p>
+          </div>
+          <div className="row" style={{ marginBottom: 48 }}>
+            <div className="phone-col">
+              <div className="lab">A1 · Smart · Idle<span>Same chrome · label Smart</span></div>
+              <HomeScreen state="idle" routingMode="auto" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">A2 · Global · Idle<span>Same chrome · label Global</span></div>
+              <HomeScreen state="idle" routingMode="global" />
+            </div>
+            <div className="phone-col">
+              <div className="lab">A3 · Sheet · from Global<span>Pick Smart</span></div>
+              <HomeScreen state="idle" routingMode="global" modeSheetOpen />
+            </div>
+            <div className="phone-col">
+              <div className="lab">A4 · Sheet · from Smart<span>Pick Global</span></div>
+              <HomeScreen state="idle" routingMode="auto" modeSheetOpen />
+            </div>
+            <div className="phone-col">
+              <div className="lab">A5 · Connected · Global<span>Node → Global ›</span></div>
+              <HomeScreen state="connected" routingMode="global" />
+            </div>
+          </div>
+
+          {/* —— Edges —— */}
+          <div className="row" style={{ marginBottom: 20, maxWidth: 1480, marginLeft: 'auto', marginRight: 'auto' }}>
+            <p style={{
+              width: '100%', fontSize: 13, color: '#2a2a2a', lineHeight: 1.5,
+              marginBottom: 8, maxWidth: '72ch',
+            }}>
+              <strong>Edges (ADR 0059)</strong> — fail = Idle (<em>Not Connected</em>) + short toast ·
+              no mid <em>Can’t connect</em>. Empty has no mode chip.
+            </p>
+          </div>
           <div className="row">
             <div className="phone-col">
-              <div className="lab">1 · Idle<span>Long name ellipsis · caption › → Location · mid status only</span></div>
-              <HomeScreen state="idle" />
+              <div className="lab">C1 · Connect failed<span>Idle + toast · can swipe again</span></div>
+              <HomeScreen state="idle" routingMode="auto" failToast />
             </div>
             <div className="phone-col">
-              <div className="lab">2 · Swipe ~⅓<span>Thumb mid · ring 1 · caption locked</span></div>
-              <HomeScreen state="swipe01" />
+              <div className="lab">C2 · Global · mode sheet<span>Connected · pick Smart</span></div>
+              <HomeScreen state="connected" routingMode="global" modeSheetOpen />
             </div>
             <div className="phone-col">
-              <div className="lab">3 · Swipe ~⅔<span>Thumb lower · rings 1–2 · caption locked</span></div>
-              <HomeScreen state="swipe02" />
-            </div>
-            <div className="phone-col">
-              <div className="lab">4 · Connecting<span>3 rings · caption locked · Connecting…</span></div>
-              <HomeScreen state="connecting" />
-            </div>
-            <div className="phone-col">
-              <div className="lab">5 · Connected<span>Green · mid node row → Location</span></div>
-              <HomeScreen state="connected" />
+              <div className="lab">C3 · Empty<span>Settings only · no mode chip · no Help</span></div>
+              <HomeScreen state="setup" />
             </div>
           </div>
         </>

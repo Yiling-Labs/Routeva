@@ -1,5 +1,9 @@
 # Apple App Store
 
+> **当前阶段（grill A · 2026-08-07）：Brand Presence only。**  
+> 完整 listing / 截图 **等 iOS 真机可截** 再填；现在不必齐套。已有 icon 可保留。  
+> 对外叙事主职见官网 + [ADR 0052](../../../docs/adr/0052-marketing-site-brand-presence.md)。
+
 ## 放什么
 
 - App Icon、各尺寸设备截图、可选预览视频封面

@@ -13,23 +13,27 @@ _Avoid_: AI 智能代理客户端（品类句当产品名）；未定代号
 _Avoid_: 未验证就默认全球多商店同步上架日；把商店节奏当成能力分叉
 
 **Device Scope（MVP）**：
-**双端原生同时开发**（iOS + Android）。  
-- **iOS：** 同一 App；**iPhone 为设计与验收主设备**；iPad 可装可用，布局/多任务不优先。**最低系统：iOS 17+**。  
-- **Android：** 同一产品能力；**手机为主验收**；平板/折叠基础可用。minSdk 实现期锁定。  
+**产品能力 Dual-Native 单源**（iOS + Android）；**实现与 Beta 验证默认 iOS 先**（ADR **0061**）。  
+- **iOS：** 同一 App；**iPhone 为设计与验收主设备**；iPad 可装可用，布局/多任务不优先。**最低系统：iOS 17+**。实现主轨与首版 Beta 真机验收默认在此。  
+- **Android：** **同一产品能力表**；**手机为主验收**；平板/折叠基础可用。minSdk 实现期锁定。可不与 iOS 同日齐功，未交付项记 **Platform Gap**。  
 Mac / Apple TV / 桌面端首发不做。
-_Avoid_: iPad-first；仅一端静默砍能力；为 iOS 16 及以下扩测试矩阵；把两端当两个 Product
+_Avoid_: iPad-first；仅一端静默砍能力；为 iOS 16 及以下扩测试矩阵；把两端当两个 Product；把「能力单源」误读成「双端必须同 sprint 并行证明」
 
 **Dual-Native Layout**：
 Application Source 为 `app/ios/` 与 `app/android/` 两棵独立树，互不 compile/import。产品语义在 `PRODUCT.md` / PRD / `design/**/current/` / 本文件单源。见 ADR **0049**。
 _Avoid_: 根目录 `ios/`+`android/`；默认 Flutter/RN 主壳；第三套 `app/shared` 业务实现
+
+**Implementation Track（Beta）**：
+**设计 / 文档 / copy 单源**；**编码与 Self-Healing 真机证明默认先 iOS**（TestFlight / iPhone）。Android 工程可骨架并行，但 **不以 Android 阻塞 iOS Beta**。见 ADR **0061**。  
+_Avoid_: 未验证主价值前强行双端同日齐发；静默从 MVP 删 Android 而不改文档
 
 **Platform Realization**：
 同一用户可见能力在各平台用原生 API 落地（如 StoreKit vs Play Billing；Network Extension vs VpnService）。**不是**第二条 PRODUCT 能力。
 _Avoid_: 「iOS 支付」「Android 支付」拆成两条核心能力
 
 **Platform Gap**：
-共享能力列表中一端尚未交付的项。允许暂时领先/落后，须在 PRD 或 status **显式**标注目标版本；禁止静默漂移。
-_Avoid_: 永久单端功能伪装成 Gap
+共享能力列表中一端尚未交付的项。允许暂时领先/落后，须在 PRD 或 status **显式**标注目标版本；禁止静默漂移。iOS-first 节奏下，Android 落后为**预期**，仍须写明 Gap。
+_Avoid_: 永久单端功能伪装成 Gap；用 Gap 默默把 Android 移出产品
 
 **Product Language (Source)**：
 面向用户的 UI、Onboarding、诊断可读文案、付费墙、商店材料与 Agent 首发质量以 **English** 为源语言（source of truth）并优先做 Craft 打磨。内部文档可用中文。布局与 i18n 工程须按 **MVP Locale Set** + 伪本地化验收。详见 ADR **0047**（策略）/ **0048**（闭集 M）。  
@@ -63,6 +67,10 @@ Go-to-market **精做**语言与 App locale **不同步强绑**。
 闭集外 GTM 语言不做。机翻可用于非 en listing 草稿，**功效/隐私承诺不以无人审机翻为最终口径**。  
 _Avoid_: App 8 locale 迫使 GTM 8 套像素物料；商店多语言徽章当虚荣指标
 
+**GTM Phase（grill 2026-08-07 · A）：**  
+**当前阶段 = Brand Presence only**（官网主职 + Legal Pages · ADR **0052**）。**不**要求现在填满 App Store / Play listing 长文、关键词矩阵、像素截图或预告片。商店物料默认等 **iOS 真机可截**（或明确开 listing 里程碑）再开；禁止用过期 hi-fi 冒充商店截图上架。icon 等已有资产可保留。  
+_Avoid_: 编码前完整 GTM 套件并行；假截图冲审；Waitlist/下载假 CTA 冲淡 Brand Presence
+
 **Marketing Site**：
 对外产品站 **`https://routeva.yilinglabs.com`**（仓库 `website/`）。承载 **Brand Presence** 与 **Legal Pages**；不是 App 本体，也不替代 App Store / Play listing。
 _Avoid_: 把官网当第二套产品能力源；把商店长文原样堆进营销页当唯一内容
@@ -79,52 +87,58 @@ _Avoid_: Download / Get on App Store 假链；邮箱表单当主职；用 Privac
 **Privacy Policy** 与 **Terms of Use** 的权威正文，路径分别为 `/privacy/`、`/terms/`；App About 以系统浏览器外链打开。合规底座，与 Brand Presence **同时必保**，不可被营销改版冲掉。
 _Avoid_: 应用内嵌长文替代官网政策；营销页弱化或拆散法律 URL
 
-**Product Bet (MVP)**：
-MVP 要证明的是 **自愈闭环**（诊断准、修复可验证可回滚）。**自动导入并连上**是入场必要条件。**Craft** 为交付质量要求。首发选择 **Thick Agent** 作为主交互面之一（开放自然语言 + 分流意图 + 云端可选），但 **Agent 不得取代 Diagnostic Engine 成为故障裁判**；无模型时核心连接/诊断/修复仍须可用。北极星仍是修复成功率与连接稳定性，不是对话次数。
-_Avoid_: 把 AI 对话次数、协议支持数量当作北极星
+**Product Bet (MVP · ADR 0063)**：
+MVP 要证明的是 **Table Stakes Connect**：粘贴/导入即可稳定达到 **Connection Success**（隧道 + Probe），失败时诚实回 Idle + toast。**Craft** 为关键路径交付质量。  
+**完整 Self-Healing Loop**（诊断分桶 → Repair 可验证可回滚）与 **Help / Thick Agent** 为 **Post-MVP**（规格可保留，**不**进 MVP 验收 UI）。北极星（MVP）：**首次连接成功率 / 连接稳定性**；非对话次数、非修复率。  
+_Avoid_: 把未交付的 Help/Repair 当 MVP 完成定义；把 AI 对话次数、协议数量当北极星
 
-**Self-Healing Loop**：
-识别订阅 → 自动连接 → 发现问题 → 清楚解释 → 安全执行修复 → 验证；失败则回滚。这是产品的主价值闭环。
-_Avoid_: 一键魔法、智能修复（含糊说法）
+**Self-Healing Loop**（**Post-MVP 主价值**；MVP 不交付完整环）：
+识别订阅 → 连接 → 发现问题 → 清楚解释 → 安全修复 → 验证；失败则回滚。领域与 ADR 仍描述该环；**用户可见诊断/Repair/Help 不在 MVP**（ADR **0063**）。  
+_Avoid_: 在 MVP 文档/hi-fi 假装已交付完整自愈 UI
 
 **Table Stakes Connect**：
-粘贴/导入订阅后，用户无需理解协议与路由即可完成首次连接与日常可用。自愈闭环的前提，不是独立卖点叙事的全部。
-_Avoid_: 仅「简单客户端」作为唯一故事而弱化诊断
+粘贴/导入订阅后，用户无需理解协议与路由即可完成首次连接与日常可用。**MVP 主证明点。**  
+_Avoid_: 用自愈/AI 叙事淹没「先连上」
 
 **Connection Success**：
-一次连接（含首次自动连接与 Repair 后验证）判定为成功，当且仅当：**系统 VPN/隧道已就绪**，且经当前节点完成至少一次 **Connectivity Probe** 成功。仅隧道亮起、探针失败 → 不得宣称连接成功，应进入诊断分桶。
+一次连接（含首次自动连接与 Repair 后验证）判定为成功，当且仅当：**系统 VPN/隧道已就绪**，且经当前节点完成至少一次 **Connectivity Probe** 成功。仅隧道亮起、探针失败 → **不得**宣称连接成功；Home 回 Idle + 短 toast（ADR **0059**）。**不**自动进诊断分桶 UI；用户点 **Help** 后再跑 Diagnostic Engine（ADR **0060**）。
 _Avoid_: 只看 VPN 图标；把「某个流媒体能播」当默认成功标准
 
-**Connectivity Probe**：
-客户端内置的出网连通性检测（如经当前节点 HTTPS 访问固定探针目标）。用于 Node Selection 加权、首次连接验收与 Repair 验证；**不**等同于流媒体/特定站点解锁检测，也不对解锁做 SLA。
-_Avoid_: 解锁检测、流媒体测试（当默认成功标准时）
+**Connectivity Probe**（grill · **A** · 2026-08-07）：
+客户端内置、经**当前会话节点**的出网连通性检测。  
+**成功定义：** 对**固定** HTTPS 端点 **TLS 握手成功且 HTTP 2xx**（或实现等价的明确成功）。  
+**目标策略：** **单主 URL + ≥1 热备 URL**（主失败试备）；属同一「单 HTTPS」策略，**不是**多站解锁矩阵。URL 为**内部实现常数**（非 UI）；上架前锁定，可先占位自控域名。静默加深层评分可与**同目标、同成功定义**的轻量同源探针对齐。用于 Node Selection 加权、连接验收与 Repair 验证。  
+**不**等同于流媒体/特定站点解锁检测，**不**对解锁做 SLA；**不**在 UI 展示探针 host 列表。  
+_Avoid_: 解锁检测、流媒体测试当默认成功标准；仅隧道/入口握手算 Probe 成功；用户可见多站点检测墙
 
 **Craft**：
 界面、信息层次与交互行为达到可感知的精致与可信（含高保真与关键路径动效），降低「工具感/山寨感」，支撑付费与信任。诊断与修复反馈质感优先于装饰性动效。
 _Avoid_: 视觉花活、用动效掩盖诊断不准
 
-**Craft Priority（MVP）**：
-- **P0 Craft：** Onboarding→导入→首次连上（系统 VPN 弹窗，无自建说明页）；Home 连接态；诊断结果卡（四桶）；Repair 确认/进度/成功或回滚；（商业化后）付费墙  
-- **P0 能力 / P1 Craft：** **Activity** 事件须记录且可解释（连接、Failover、诊断、Repair、回滚、模式切换等）——用户触点优先 **Help / 诊断·Repair 上下文**，**不**占 Settings 根页；完整时间线 UI 可后打磨；Agent 工具过程与可撤销；**Subscriptions** 一级面（单列表 + Active 态）
-- **P2：** 高级模式与深层设置  
+**Craft Priority（MVP · ADR 0063）**：
+- **P0 Craft：** Onboarding→导入→首次连上（系统 VPN 弹窗）；Home 连接态（含 fail / Failover toast）；Subscriptions；Location  
+- **P0 能力 / P1 Craft：** Activity **本机记录**（无用户列表）；Settings 策略面  
+- **Post-MVP：** Help / Agent · 诊断四桶 UI · Repair UI · Cloud AI · 完整 Activity 时间线  
 用户可见文案以 English 源打磨（见 Product Language）。
 
 **Home Surface**：
-完成前置配置后，Home 根画布服务「选节点 → 连接手势 → 连接真值」；**无底部 Tab**；顶栏为**纯离开 Home 的出口**（不做状态红点、不做主任务捷径）。有 Active 时：`[ Help ] [ Subscriptions ] …… [ Settings ]`；无订阅（Empty）：`[ Help ] …… [ Settings ]`（**不**显示 Subscriptions）。中部闭集见 **Home Mid Copy**；连接动效见 **Connect Gesture**。权威 hi-fi：`design/hi-fi/current/craft-p0/02-home.html`。全 app 视觉从 Home 提取：`design/hi-fi/current/craft-p0/visual-system.md`。详见 ADR 0018 / **0020** / **0036**。  
-_Avoid_: 三栏底 Tab；顶栏常驻 Activity；顶栏诊断/刷新捷径；在 Home 常驻规则说明、定位口号、默认展示 Auto；二级页另起无关视觉风格
+完成前置配置后，Home 根画布服务「选节点 → 连接手势 → 连接真值」；**无底部 Tab**；顶栏为**纯离开 Home 的出口**。  
+**MVP 顶栏：** 有 Active 时：`[ Subscriptions ] …… [ Settings ]`；Empty：`[ Settings ]` only（**无 Help** · ADR **0063**）。中部闭集见 **Home Mid Copy**。权威 hi-fi：`design/hi-fi/current/craft-p0/02-home.html`。视觉：`visual-system.md`。详见 ADR 0018 / **0020**（顶栏历史）/ **0058** / **0059** / **0063**。  
+**Mode-invariant 骨架：** **Smart** / Global / Direct **不**切换 Home 布局。始终 = 连接真值 + 连接手势 + **单一当前出口**。  
+_Avoid_: 三栏底 Tab；顶栏 Help（MVP）；顶栏 Activity；按 Mode 分叉 Home 布局
 
-**Home Chrome（顶栏出口）**：
-- **Help** — 用户可见标签 **Help**（内部/代码可称 Agent）；**glass pill**（图标 + *Help* 字样，非仅抽象圆标）进入 **Agent Surface**；故障裁判仍是 Diagnostic Engine。有订阅：`[ Help ] [ Subscriptions ] …… [ Settings ]`；Empty：`[ Help ] …… [ Settings ]`。无未读红点、无强迫注意动效。  
-- **Subscriptions** — 仅当已有至少一份订阅（通常已有 Active）时显示；进入 **Subscriptions Surface**  
-- **Settings** — 进入 **Settings Surface**（连接策略 + App 元信息；**非**日常连接台；**非**事件/快照浏览器）  
-- **Activity** — **不进顶栏、不进 Settings 根页**；事件仍记录；用户触点优先 **Help / Agent 摘要** 与诊断·Repair 上下文（ADR **0051**）  
-- **Diagnostic sheet · Ask Help（次要）：** 连接失败自动诊断卡上，主 CTA（Repair / 知道了等）之外提供弱入口 **Ask Help**（文案链或 ghost，非第二实心主按钮）→ 进入 **Agent Surface**，并带上本次诊断结构化摘要。**不**取代顶栏 Help；**不**自动全屏抢主路径。  
-_Avoid_: Empty 用 + 替换 Settings；顶栏四钮塞回 Activity；入口仅抽象图标无 Help 语义；用户可见主标签写 *Agent* / *AI Chat*；诊断 sheet 上两个并列实心绿 CTA
+**Home Chrome（顶栏出口 · MVP）**：
+- **Subscriptions** — 仅当已有至少一份订阅时显示；进入 **Subscriptions Surface**  
+- **Settings** — 进入 **Settings Surface**  
+- **Help** — **MVP 不出现**（Post-MVP；稿存 `_explore/2026-08-07-help-agent-post-mvp/`）  
+- **Activity** — **不进顶栏、不进 Settings**；MVP 仅本机记录，无用户浏览器（ADR **0051** · **0063**）  
+- **诊断 / Repair UI** — **MVP 不出现**（Post-MVP）  
+_Avoid_: MVP 顶栏 Help pill；Empty 用 + 替换 Settings；连接失败自动诊断 sheet
 
 **Settings Surface**：
-从 Home 顶栏进入的一级配置面。**根页主职 = Connection Policy 优先**（ADR 0021）。**读者模型（C2，ADR 0045）：** 产品服务小白与半专业；Settings **同一套短策略闭集**，**半专业为主读者**（主动改意图），小白为**被引导的次要读者**（默认值 + 短副文 + 失败/Help 引进同一页）。**不**做简单/高级双 IA，**不**以竞品设置密度对标扩大人群（人群杠杆在 Table Stakes Connect + Self-Healing + Help）。**根页一级分组闭集（两段，自上而下 · ADR 0051）：**
+从 Home 顶栏进入的一级配置面。**根页主职 = Connection Policy 优先**（ADR 0021）。**读者模型（C2，ADR 0045；grill 2026-08-07 再确认 A）：** 产品服务小白与半专业；Settings **同一套短策略闭集**，**半专业为主读者**（主动改意图），小白为**被引导的次要读者**（默认值 + 短副文；Post-MVP 可经 Help 引进同一页）。**不**为小白单独再瘦 IA。人群杠杆在 Table Stakes Connect（MVP）与日后 Self-Healing / Help。**根页一级分组闭集（两段，自上而下 · ADR 0051）：**
 1. **Connection** — 根页固定三行（均为 › 进二级，非 Home 内联控件）：**Routing mode** · **DNS** · **Overrides**（User Override 列表/编辑；Beta **无**条数上限）。**每行标题 + 一行释义副文（English 源，短，解释标题是什么；不绑定具体选项、不写何时该改）+ 右侧当前值：**  
-   - **Routing mode** — 副文 *How traffic uses your proxy*（进入后选 Auto / Global / Direct）。  
+   - **Routing mode** — 副文 *How traffic uses your proxy*（进入后选 **Smart** / Global / Direct；用户可见**禁止** *Auto* 作模式名）。  
    - **DNS** — 副文 *How names resolve on your connection*（进入后选 Automatic / Privacy / Compatibility）。  
    - **Overrides** — 副文 *Exceptions for specific domains*（进入后管 Domain 例外列表）。  
    **DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（偏好节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
@@ -153,14 +167,14 @@ _Avoid_: 竞品有则默认加；说不清就不进（误杀 Mode/DNS）；逐�
 _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表双页重复；假设每家都有流量仪表盘；无数据时伪造仪表或写 *Not reported* 解释句；`42 nodes · Sep 12, 2026` 无标签日期；列表主扫读用 `yyyy-mm-dd hh:mm:ss`；未过期写 *Expired*；用 *Renews*（多数代理订阅无法确认自动续费）；Rename 做成导入强制步骤或列表主按钮墙
 
 **Home Mid Copy（闭集）**：
-- **无订阅（Home Empty）：** 顶栏 **仅 Help + Settings**（无 Subscriptions；用户可见 **Help**，内部可称 Agent）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA（及同一 Add 流）
-- **Idle / Can’t connect（黑场）：** 上部 **国旗 Cover Flow**；选中项下为 **节点名 + 弱协议 + 弱 ›**（**可点** → **Location Surface**；可见文案**不**出现 *Location* 词；a11y *Choose location* + 当前节点）；中部 **仅** 主状态 *Not Connected* / *Can’t connect*（**无** 中部 *Location ›* glass pill）；**Idle 无点阵**  
-- **Swipe / Connecting（黑场）：** Cover Flow 与节点名行仍可见，但 **节点名行不可点**（无 ›、弱化）——避免手势误触；中部 *Not Connected*（Swipe）或 *Connecting…*；Connecting 三圈点全亮（未染绿场）  
-- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；中部 **仅** *Connected* + **节点行**（节点名 + 弱协议 soft-glass chip，可点 → Location；名内可含服务商 emoji）；**无** 状态上方单独「国家/地区名」行（如 *Taiwan* / *Hong Kong*）——身份只在节点行一次呈现。三圈绿点。**不**恢复 Cover Flow。  
-- 失败/弱连接：主状态 *Can’t connect*；原因在诊断 sheet；进 Location 走 Cover Flow 下节点名行（同上）  
-- **仅当** 模式 ≠ Auto：弱提示 Global / Direct  
+- **无订阅（Home Empty）：** 顶栏 **仅 Settings**（无 Subscriptions · **无 Help** · ADR **0063**）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA
+- **Idle（黑场）：** 上部 **国旗 Cover Flow**；选中项下为 **节点名 + 弱协议 + 弱 ›**（**可点** → **Location Surface**；可见文案**不**出现 *Location* 词；a11y *Choose location* + 当前节点）；中部主状态 **仅** *Not Connected*（**无** 中部 *Location ›* glass pill；**无** 常驻 *Can’t connect*）；**Idle 无点阵**；其下 **Mode** 次级入口（Smart / Global ›）  
+- **Swipe / Connecting（黑场）：** Cover Flow 与节点名行仍可见，但 **节点名行不可点**（无 ›、弱化）——避免手势误触；中部 *Not Connected*（Swipe）或 *Connecting…*；Connecting 三圈点全亮（未染绿场）；**藏 Mode**  
+- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；中部 *Connected* + **节点行**（主 soft-glass，可点 → Location）+ 其下 **Mode** 次级文本（Smart / Global ›）；**无** 状态上方单独「国家/地区名」行；三圈绿点。**不**恢复 Cover Flow。竖叠：状态 → 节点 → Mode（**禁止**横排双 pill）  
+- **连接失败（ADR 0059 · 0063）：** **不**进入 *Can’t connect*；回 **Idle / Not Connected** + **短 toast**（约 2–3s）；**不**弹诊断（MVP 无诊断 UI）；用户可立即再连  
+- Mode 在 Home：**Smart / Global** 芯片（方案 1）；Direct 仅 Settings  
 **两套选节点语义（ADR 0055/0056）：** Cover Flow **横滑 alone** = 临时 UI 焦点（可被预选/重测覆盖）；**Location 点选** = **Preferred**。Home **不**展示 Preferred/临时差异徽章。  
-**Cover Flow 条（有界快选 · 非全量列表）：** Cover Flow **不是** Active 下全部节点的 flatten，也**不**按服务商 group 分页。分组浏览只在 **Location**（chip）。  
+**Cover Flow 条（有界快选 · 非全量列表）：** Cover Flow **不是** Active 下全部节点的 flatten，也**不**按 group 分页。**全量列表**仅 **Location**（扁平 · 订阅原序）。  
 - **数据源 `strip[]`：** 长度 **≤ N**（产品默认 **N = 15**，实现常数可调）。  
 - **成员（P2）：** ① **Preferred**（若有且仍在 Active 列表 → **强制入条**）② 其余用 **预评分可用性 Top** 填满至 N（**去重**；评分 = 可达+稳定加权，**非**单次 ms 唯一键）。  
 - **节点总数 &lt; N：** 条 = 全部节点（仍按预评分序；有 Preferred 则预停偏好）。  
@@ -176,17 +190,18 @@ _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表�
 - **a11y：** 永远 **完整原文**（如 *Choose location, current 🇨🇳 台湾A01 | IEPL | x2*）。  
 - **可选 P1（非 MVP）：** 显示层剥与旗球 `cc` 一致的前导区域 emoji——仅视觉，不改存储。  
 
-**节点国旗 / 地区旗（硬性 · 必须遵守）：**  
+**节点国旗 / 地区旗（硬性 · 产品政策 · ADR **0062** · grill A）：**  
 凡节点被识别为 **台湾 / Taiwan / TW / 台北 / 高雄** 等台湾地区出口（含订阅原文、region 码、分组名暗示），**Cover Flow 旗球、绿场节点行旗、Location 若展示旗、以及任何客户端渲染的国旗/地区旗**，**一律使用中华人民共和国国旗**（`cn` / 🇨🇳 / flagcdn `cn`）。  
 **禁止**使用台湾地区旗帜（`tw` / 🇹🇼 / 青天白日满地红）或日本旗误代。  
 订阅**节点显示名原文**可含服务商自带 emoji（不强制改写字符串）；**客户端自绘旗**不得用 `tw`。解析若得 `tw` / Taiwan，显示层 **映射为 `cn`**。  
-_Avoid_: Cover Flow / chip 出现 🇹🇼；实现里 `flagcdn.com/.../tw.png`；把台湾节点画成日本旗  
+**无**用户设置切换旗策略；GTM **不**主动宣传该映射。  
+_Avoid_: Cover Flow / chip 出现 🇹🇼；实现里 `flagcdn.com/.../tw.png`；把台湾节点画成日本旗；用「跟订阅原样」或「敏感区不画旗」静默推翻本政策  
 **明确不出现：** provider rules、编号步骤墙、VERIFIED/probe 叠词、Active 订阅 chip、Auto 字样、模式三选一、协议彩色大徽章、**黑场中部空 *Location ›* pill**、**Home 上 *Pinned* / 偏好徽章**（偏好只在 **Location** 用 check 呈现；Home 只显示**当前焦点或会话**节点名）。  
-_Avoid_: Needs attention（主状态优先 Can’t connect）；Cover Flow 下用国家名撞名；绿场 Connected 上方再叠国家/地区名（与节点行重复）；Home Connected/Idle 行叠 *Pinned* / Selected 徽章；绿场把节点行做成只读装饰、用户只能断连再进 Location；Idle 中部再挂与节点名重复的空 Location 按钮；Home 写 Hy2、Location 写 Hysteria2；客户端重写节点短名；Home 节点名双行/跑马灯；截断协议或 ›
+_Avoid_: 常驻 *Can’t connect*；失败假绿场；**任何**日常路径自动诊断/自动诊断 sheet（ADR **0060**）；Needs attention；Cover Flow 国家名撞名；绿场叠国家名；Home 叠 *Pinned*；节点只读装饰；Idle 空 Location 按钮；节点名双行/跑马灯；Mode 与节点横排双 glass
 
 **First-Run Setup（闭集）**：
-首次安装：**Welcome（仅一次）→ Home Empty →（用户点 + / Add subscription）→ Add Subscription**。欢迎仅 **headline + 一句副文**（自备订阅 / 不卖节点）；**无** 1·2·3 列表，**无** 诊断/修复说教句。**无** 应用内 VPN 说明页：首次连接手势时出 **iOS 系统弹窗**；拒绝 → Home 回 Idle（*Swipe down to connect*）；同意 → 连接至 Connection Success。权威 hi-fi：`design/hi-fi/current/craft-p0/03-setup.html`。详见 ADR 0019。  
-_Avoid_: Welcome→Import→VPN 三连轰炸；自建「Allow VPN」页；欢迎页编号卡片；欢迎页堆叠第三段能力说明
+首次安装：**Welcome（仅一次）→ Home Empty →（用户点 Add subscription）→ Add Subscription**。欢迎仅 **headline + 一句副文**；Empty 顶栏 **仅 Settings**（ADR **0063**）。**无** 诊断/修复说教；**无** 应用内 VPN 说明页。权威 hi-fi：`03-setup.html`。详见 ADR 0019。  
+_Avoid_: Welcome 三连轰炸；Empty 顶栏 Help
 
 **Add Subscription（交互）**：
 主路径 **Paste from Clipboard**；次要 **Scan QR**、**Import file**（剪贴板与扫码本质相同：取内容 → 解析）。顶部 **一句** 引导去服务商取链接/二维码。**无** 手填大输入框；**无** 独立「剪贴板已发现」确认页。点 Paste / 扫码 / Import file 后在 **Add Subscription 上弹出 Parsing 模态**（*Reading from Clipboard…* / *Reading QR code…* / *Reading file…*；**非**独立全屏）。成功：直接回 **Home Idle（同一壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s 自动消失**）；设 Active；**不**自动连；**不**打断命名。失败：回 Add 页失败态——短句 *Couldn’t add this* + *Copy a fresh link, QR, or file…*；主 CTA Paste again；次要 Scan/File；**不**列协议/格式清单；**不覆盖**已有配置。  
@@ -197,23 +212,31 @@ _Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳�
 _Avoid_: Idle 常驻点阵；未 Probe 成功就整屏染绿；点阵超过 3 圈
 
 **Routing Mode Entry**：
-Auto / Global / Direct 切换在 Settings（及 Agent）。Home 仅非 Auto 时弱提示。换节点：黑场 = Cover Flow（临时焦点）+ **节点名行可点**（Idle / Can’t connect → Location）；绿场 = **Connected 中部节点行可点**（进同一 **Location Surface**；**不**回 Cover Flow）。  
-**Settings · Routing mode ›：** 单选三档 + 各一行副文（Auto = provider rules + best node choice；Global = all via proxy；Direct = no proxy）；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
-_Avoid_: Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器；绿场无入口只能先断连再选节点
+**Routing Mode 用户可见闭集（全 app 统一）：** **Smart** · **Global** · **Direct**。内部/代码 id：`auto` · `global` · `direct`。**禁止**用户 UI 将 Smart 写作 *Auto*（Home 与 Settings 双名已废止）。  
+切换在 Settings（及 Agent）；Home：**Smart / Global** 弱 Mode chip + sheet（Idle / Connected；ADR **0058**）；Direct 仅 Settings。换节点：黑场 = Cover Flow（临时焦点）+ **节点名行可点**（Idle → Location）；绿场 = **Connected 中部节点行可点**（进同一 **Location Surface**；**不**回 Cover Flow）。  
+**Settings · Routing mode ›：** 单选三档 + 各一行副文；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
+**三档语义（与 Preferred / Override 正交，ADR 0058）：**  
+- **Smart**（id `auto`）— 服务商规则优先；Preferred / 会话节点只约束「会走代理且由客户端选出口」的流量（**诚实子集**，不假装一个节点改写全部分组）。  
+- **Global** — 默认进隧道流量收敛到**当前会话节点**（与 Preferred 对齐；Failover 另论）；**不再**按服务商规则做直连/分组分流（安全兜底如局域网除外）。  
+- **Direct** — 默认直连；不表示系统能力永久消失。  
+**与 User Override：** 三模式均 **仍应用** Override（Mode 定默认，Override 定域名例外）。**Preferred** 三模式**共用一份**，切 Mode 不丢、不改。  
+**无「高级模式」总闸：** 半专业入口 = 常驻 Settings 行 + Help/诊断深链同一页；不设 Advanced 开关升级主 UI。  
+_Avoid_: 用户 UI 写 *Auto* 作 Routing Mode 名；Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器；绿场无入口只能先断连再选节点；Global 名存实亡仍跑完整订阅分流；切 Global/Direct 时静默丢弃 Override 或 Preferred；显式 Advanced mode 隐藏 Mode/Overrides
 
 **Location Surface**：
-从 Home **Cover Flow 下节点名行**（黑场 Idle / Can’t connect）或 **Connected 节点行**（绿场）**全屏 push** 进入的节点浏览/选择面；标题 *Location*。只列 **Active Subscription** 下**可选出口节点**；分组来自订阅解析的 **服务商 group**（无 group 元数据 → 单段 *All nodes*）；**不**按客户端猜地区重分类。**服务商 group 名原样展示**（若订阅里真有名为 *Auto* 的 group，chip 可显示 *Auto*——那是**订阅元数据**，**不是**客户端「Auto 预选 / 回 Auto」行）。MVP **无**搜索/筛选、**无**进页自动测、**无**客户端伪造的列表顶 *Auto* 行、**无**顶栏 `⋯`。  
-**分组切换（≥2 组）：** 导航栏下方 **固定横向 chip 条**（左→右；溢出可左右滑）；点 chip **只显示该组节点列表**（不再把所有组纵向叠成超长页）。**仅 1 组：** **不**显示 chip 条，直接节点列表。打开页时默认选中含 **Preferred** 的组（无偏好则第一组）。含偏好的组 chip 可带弱圆点提示。  
+从 Home **Cover Flow 下节点名行**（黑场 Idle）或 **Connected 节点行**（绿场）**全屏 push** 进入的节点浏览/选择面；标题 *Location*。只列 **Active Subscription** 下**全部**出口节点；**无**分组 chip / 分段浏览。  
+**顺序：** **订阅/配置文件原序**（市场/机场下发顺序）；**不**按地区重分类、**不**按延迟重排、**无**客户端伪造列表顶 *Auto* 行、**无**搜索/筛选、**无**进页自动测、**无**顶栏 `⋯`。  
 **行（闭集）：** 主行节点名（**订阅原文**；单行 tail ellipsis）+ **Preferred** 时右侧 check（**无** *Pinned*/*Current* 文案徽章）；次行 **弱协议短名**（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· **Latency Test** 结果（`—` / `42 ms` / `Timeout`）。无偏好时列表不伪造选中态。  
-**点选 = Preferred node（偏好节点）：** 记住该出口为默认连接目标（ADR **0055**）；**允许 Node Failover** 为保活换走会话节点；静默预选**不得覆盖**偏好。已 Connected → **立即切节点**（非 Repair）；失败**保留偏好**，走诊断。返回 Home 时 Cover Flow 对齐偏好；若会话因 Failover 暂用他节点，Home 显示**当前会话**节点。  
-**清除偏好：** **无**显式回 Auto UI。仅当偏好节点离开 Active 列表时静默丢弃 → 下次 Auto 预选；改偏好 = 点选另一节点。  
-**Latency Test：** 仅顶栏 *Test* 批量测到节点入口的延迟/握手类信号（**非** ICMP 叙事、**非**完整 Connectivity Probe）；可取消；**不**改偏好、**不**自动切节点、**不**按 ms 重排列表（测的是整池标注，列表仍只渲染当前组）。  
-**空态：** 无订阅 → 引导添加；0 节点 → 说明 + 次要 Update subscription；加载中骨架/文案。权威 hi-fi：`design/hi-fi/current/craft-p0/08-location.html`。详见 ADR **0055** / **0056**。  
-_Avoid_: 硬 Pin 禁 Failover；*Pinned* 锁语义；`⋯` *Use automatic node selection*；所有 group 纵向堆叠成长卷当主浏览；列表当订阅管理；只按延迟排序/选节点；用户可见硬 *Ping* 却测 TCP；真·经节点全表 Probe 当列表测速；地区重分类；第二套 Auto 大按钮与 Settings 抢选节点；Cover Flow 横滑 alone 当 Preferred；**客户端**在列表顶伪造 *Auto* 行（与订阅 group 真名 *Auto* 不同）
+**点选 = Preferred node（偏好节点）：** 记住该出口为默认连接目标（ADR **0055**）；**允许 Node Failover** 为保活换走会话节点；静默预选**不得覆盖**偏好。已 Connected → **立即切节点**（非 Repair）；失败**保留偏好**，toast/回退，**不**自动诊断（ADR **0060**）。返回 Home 时 Cover Flow 对齐偏好；Failover 会话暂用他节点时 Home 显示**当前会话**节点。  
+**清除偏好：** **无**显式回 Auto UI。仅当偏好节点离开 Active 列表时静默丢弃 → 下次预选；改偏好 = 点选另一节点。  
+**Latency Test：** 仅顶栏 *Test* 批量测入口延迟/握手（**非** ICMP、**非**完整 Connectivity Probe）；可取消；**不**改偏好、**不**自动切节点、**不**按 ms 重排列表。  
+**空态：** 无订阅 → 引导添加；0 节点 → 说明 + 次要 Update subscription。权威 hi-fi：`design/hi-fi/current/craft-p0/08-location.html`。详见 ADR **0055** / **0056**。  
+_Avoid_: 横向 group chip；按 group 过滤列表；硬 Pin；*Pinned*；列表当订阅管理；按延迟/地区重排；列表顶伪造 Auto；Cover Flow 横滑 alone 当 Preferred
 
 **Activity Log**：
-本机时间序事件记录，用于解释「系统刚做了什么」（连接、Node Failover、诊断、Repair、回滚、Global/Direct 或 Override 等）。Beta **必须记录**且在用户需要解释时**可触达**（能力 P0）；**不**以 Settings 根页/History 列表作主入口。用户触点优先：**Help / Agent 最近事件摘要**、诊断卡与 Repair 结果上下文。完整时间线 UI 属 Craft P1 / 可后补。不上传原始订阅/Token。  
-_Avoid_: Beta 完全不记事件；把 Activity 当成可后做的纯装饰；Home 顶栏或 Settings 根页常驻 Activity 浏览器
+本机时间序事件记录（连接、Node Failover、模式/Override 等）。**MVP 必须记录**（能力 P0 · 调试/日后 Help 同源）。  
+**用户可见（MVP · ADR 0063）：** **无**列表、**无** Help 摘要；Failover 等靠 **短 toast**（grill D）或状态本身。**不**进顶栏/Settings（**0051**）。完整时间线 / Help 触点 = Post-MVP。导出可挂 About 次要动作。  
+_Avoid_: MVP 做 Activity 浏览器；不记事件
 
 **Proxy Client**：
 本产品是代理**客户端**：导入、解析、连接、诊断与配置；用户须自备订阅或节点来源。
@@ -245,9 +268,10 @@ _Avoid_: 连接前自动刷；热启动/回前台当自动触发；后台定时�
 确定性的分层故障判定（订阅 / 网络环境 / 节点 / 目标服务），产出结构化结果（原因、置信度、是否可自动修复、建议动作）。AI 只解释结构化结果，不凭空判定故障。
 _Avoid_: AI 诊断（把模型当故障裁判）
 
-**Diagnostic Trigger**：
-Engine **在失败路径自动运行**，不在每次成功连接后强制「健康体检」。自动触发至少包括：导入无法完成、未能达到 Connection Success（含仅隧道就绪但 Connectivity Probe 失败）、连接中断且自动恢复失败。用户与 Agent 可手动重跑；Agent 必须调用同一 Engine，不得另设判定。成功连接路径保持安静（Home 状态即可）。  
-_Avoid_: 每次连上后强制完整四层体检；仅手动诊断、失败时无自动解释
+**Diagnostic Trigger**（**Post-MVP**；MVP 无诊断 UI · ADR **0063**）：
+Post-MVP 默认仍遵循「**不**在日常失败路径自动弹诊」（ADR **0060** 精神）；触发面与 Help 恢复时再定。  
+**MVP：** Engine 可不跑或仅内部/导出；**无**四桶 sheet、**无** Repair UI。日常失败 = 短 toast（**0059**）。  
+_Avoid_: MVP 假装有 Help 诊入口；MVP 自动弹诊断 sheet
 
 **Failure Bucket**：
 每次诊断必须归入且展示其一：**Client-Fixable**（客户端可修）、**Provider-Side**（订阅/服务商）、**Environment**（当前网络/设备环境）、**Unknown**（已查仍不确定）。禁止用单一 Error Code 糊弄；不确定必须显式表达不确定。
@@ -273,8 +297,8 @@ _Avoid_: 自动搞定、根治、智能修复（未分桶时）
 Client-Fixable 诊断之后，**默认不静默执行 Repair**。须用户对诊断卡主按钮（或 Agent 中等价的明确「执行修复」意图）**确认一次**后，才进入该次 Repair 流程。一次确认可覆盖该流程内多个 Allowlist 候选（有上限）；过程可取消；整次失败回滚到进入前 Snapshot。不得在 Onboarding 用总开关默认打开「永远自动修」作为 MVP 默认。  
 _Avoid_: 静默自动修；聊天暗示即改 VPN
 
-**Repair Allowlist（MVP 闭集）**：
-仅下列动作可被自动/一键 Repair 执行；未列出的动作不得作为 Repair（可作手动高级操作另议，但不算 Self-Healing Repair）：  
+**Repair Allowlist**（**Post-MVP** 闭集 · 有 Repair UI 时生效；**MVP 无 Repair 面** · ADR **0063**）：
+仅下列动作可被一键 Repair 执行；未列出的不得作为 Repair：  
 1. 切换到评分更高的可用节点（Node Selection）  
 2. 重载/更新当前 Subscription  
 3. 重建系统 VPN 配置/隧道  
@@ -288,42 +312,16 @@ _Avoid_: 开放式「智能修复」动作列表；示例当作可无限追加
 执行修复或重要配置变更前保存的可恢复客户端状态；Repair 失败或用户选择回滚时必须能回到对应快照。
 _Avoid_: 备份（过于笼统）；把节点 Failover 每次都当完整快照
 
-**Snapshot Policy（MVP）**：
-- **必建：** 进入 Repair 流程前；用户/Agent 执行会改变连接策略或分流的显式动作前（如切换 Global/Direct、应用 User Override、手动切换预设 DNS 等）。  
-- **不强制完整快照：** Node Failover 自动换节点（避免高频刷爆存储）。  
-- **保留（Beta）：** 至少最近 **10** 份或 **7** 天内（实现取两者中更严的上限策略，须可配置常数）。  
-- **回滚：** Repair 失败/取消 → 自动回到「进入该次 Repair 前」快照；用户主动回滚触点在 **Repair 流程结果 UI**（及同等确认），**不**要求 Settings 快照列表主入口（ADR 0051）。  
+**Snapshot Policy**：
+- **MVP：** 用户显式改连接策略/分流前可建快照（Mode / Override / DNS 等）；**无** Repair 流程 UI。Node Failover **不**强制完整快照。  
+- **Post-MVP：** 进入 Repair 前必建；Repair 失败/取消自动回滚；用户回滚触点在 Repair 结果 UI（非 Settings 列表 · 0051）。  
+- **保留：** 至少最近 **10** 份或 **7** 天（实现常数）。  
 _Avoid_: 无限时光机；Failover 每次全量快照；Settings 根页配置时光机
 
-**Agent（Thick）**：
-首发主交互面之一：支持**开放自然语言**输入与**分流类意图**；将意图编排为对 **Agent Tool Allowlist** 的调用，并用自然语言解释**结构化**结果。  
-**硬边界（不因「厚」而放开）：** 不得查看网页内容/完整浏览历史；不得上传 Subscription Token 或未脱敏节点凭证；不得安装根证书 / MITM；不得自由生成并执行未经验证的任意配置；不得在用户不知情时改系统设置；不得自动推荐/购买特定机场。故障判定以 Diagnostic Engine 为准；Repair 仍仅限 Repair Allowlist + Repair Consent。  
-_Avoid_: 无边界聊天机器人；「AI 随便改配置」
-
-**Agent Surface**：
-从 Home 顶栏 **Help** pill 进入的 **Connection Help** 面（非闲聊伴侣、非第二 Settings）。**主职：** 用户连接失败或「感觉不对」时，解释原因、引导同一套诊断/Repair、在 Allowlist 内安全改策略（Mode/DNS/Override 等）。空态与快捷问题优先故障/求助，不主打泛 AI 对话。内部与代码可仍称 Agent；用户可见入口为 **Help**。  
-**页骨架（闭集）：** 顶栏 Close + 标题 Help → **信任条**（可点进 *How we use data*；双态文案见 **Cloud AI**）→ 主区对话/空态+快捷问题 → 空态或次要入口 **What Help can do ›**（能/不能边界）→ 底输入。边界与信任**不**做成首次强制多页 onboarding 后消失，也**不**仅藏在 `⋯` 菜单。  
-**空态双态（随连接真值）：**  
-- **Not connected / Can’t connect：** 主文 *Trouble connecting?* + 故障向 chips（为何连不上、客户端 vs 服务商、DNS 等）；**不**放 *Try a safe repair* 类捷径 chip（Repair 须走诊断结论 + Repair Consent，不能空态一键跳修）  
-- **Connected：** 主文中性求助（如 *Need a hand with your connection?*）+ 策略/体验向 chips（慢、Mode、DNS、Override）；**不**假装正在失败  
-**What Help can do（4+4 闭集，English 源）：**  
-- **Can：** (1) Explain connection problems in plain language（同一 Diagnostic Engine）(2) Run checks and suggest a fix when Client-Fixable (3) Apply a repair **after you confirm**（snapshot · verify · roll back）(4) Adjust safe settings you allow（mode / DNS preset / few overrides）or help reconnect  
-- **Can’t：** (1) Sell or recommend a provider/nodes (2) See browsing or full traffic history (3) Upload subscription link, tokens, or raw config；or keep analysis data on servers after help (4) Change VPN/system silently, invent free-form configs, or MITM/certificates  
-页可链回 *How we use data*。不镜像全部工具名；不写 “and more” 扩权。  
-**Agent 过程卡（用户可见语言）：** 工具/诊断过程可展示（Craft P1），但**不**对普通用户暴露内部名 *Diagnostic Engine* / *Client-Fixable* 等。卡标题用意图句（如 *What we found*）；四桶映射白话 **App can fix · Provider · Your network · Not sure**；可弱注 *Same checks as the rest of the app*。实现/日志仍可用内部术语。  
-_Avoid_: Chat with AI 为唯一叙事；配置遥控器占满主职；对话次数当成功指标；入口主标签写 Agent；三栏并列表；首次墙过后信任/边界不可回看；边界列表比 Tool Allowlist 更宽；聊天 UI 堆实现腔术语
-
-**Agent Tool Allowlist（MVP 闭集）**：
-- **只读：** Active/订阅状态摘要；节点测试结果摘要；最近诊断结果；环境/DNS 结构化摘要；节点评分比较摘要；Activity 最近事件摘要；导出脱敏报告。  
-- **变更（须遵守 Snapshot / Consent / Active 等既有规则）：** 连接/断开；切换或设偏好节点；切换 Auto / Global / Direct；应用或清除少量 User Override；切换预设 DNS；触发诊断；Repair；回滚 Config Snapshot；切换 Active Subscription；手动 Subscription Refresh。  
-- **禁止入库：** 网页内容、完整浏览历史、Token/原始订阅上传、MITM/证书、自由写配置、推荐机场、静默改系统。未列出的工具不得调用；扩展须改文档/ADR。  
-_Avoid_: 开放式工具插件；模型自行注册新工具
-
-**Cloud AI（Help 默认开 · 可关）**：
-在 **Agent Surface / Help** 内，云端增强为 **默认开启**（降低求助摩擦；非全 app 静默后台上传）。**无** 首次强制授权 modal sheet。披露靠 **常驻信任条** + *How we use data*；用户可在资料页 **一键关闭**（opt-out）。**不**在 Settings 根页预置开关。关云后：快捷问题 / 本地或规则编排 / 模板化解释 + 同一套工具仍须可用。  
-**Ephemeral Analysis Context：** 上云时只允许发送**脱敏结构化上下文**（如意图类型、诊断摘要、环境/DNS 摘要），用于**当次**帮助分析；**分析完成后不在服务端保留**。禁止 Token、节点凭证、原始订阅正文、完整浏览域名与对话原文默认上传。**无** 任意配置文件/日志包上传。  
-**Agent 信任条（双态）：** 默认 **Cloud On** — *Temporary analysis only · not stored after help*；关后 **Cloud Off** — *On-device help · nothing sent to our servers*；均可点进 *How we use data*。  
-_Avoid_: 首次授权墙；无云则无 Help；Settings 与 Help 两套开关；UI 写「任意 file 上传」；About/信任条写绝对「never upload / never leave device」却同时默认上云；无常驻披露的静默上云
+**Agent（Thick）** / **Agent Surface** / **Agent Tool Allowlist** / **Cloud AI**（**Post-MVP** · ADR **0063**）：
+原规划：Home **Help** · NL · 工具白名单 · Cloud 默认开可关 · What Help can do 4+4 · Ephemeral 上下文。  
+**MVP 不交付**上述面、入口与云辅助。规格与 hi-fi 存档：ADR 0035–0044 / 0042 / `_explore/2026-08-07-help-agent-post-mvp/`。恢复时整包里程碑，不默认塞回 MVP。  
+_Avoid_: MVP 顶栏 Help；MVP 半截聊天或 Cloud 开关
 
 **Beta Access**：
 **Beta 阶段（直至宣布进入商业化）产品行为：MVP 范围内能力全部可用，不限额、不展示付费墙。** Free Experience / Pro Unlock / Paywall Timing 仅为**日后收费规划的目标草稿**，不是 Beta 验收或出门条件。主证明点仍是 Self-Healing Loop 与连接稳定性。详见 ADR 0006。  
@@ -352,15 +350,26 @@ _Avoid_: Beta 展示付费墙；启动即墙
 无自建账号、无强制注册/邮箱。付费身份依赖 Apple ID + StoreKit 恢复购买。Subscription、Mode/DNS、快照与诊断历史默认本机；换机须用户重新导入订阅。**唯一例外：** iOS 上 **User Override** 可经用户 **iCloud** 做备份/空库恢复与有限合并（见 **User Override iCloud Backup**）；**不是**全量配置同步，**不是**自建账号云。Android 无此能力（Platform Gap）。
 _Avoid_: 强制登录才能连接；自建账户体系当 MVP 依赖；把整包配置/订阅 Token 上 iCloud；把 Override 备份写成「多设备实时同步」
 
-**Auto Policy**：
-默认连接策略名可叫 Auto，含义是 **尊重订阅/服务商规则 + 智能选节点**，不是客户端自建「全球智能分流引擎」。能解析的订阅规则/策略组/节点分组优先执行；节点层由客户端负责测试、评分、自动选择与故障切换。客户端仅保留安全兜底（如局域网/回环直连等），不承诺流媒体解锁（更偏节点/服务商能力）。
-_Avoid_: 以自建庞大域名库当主分流；规则社区；完整策略组编辑器
+**Auto Policy**（领域/实现名；**用户 UI 称 Smart**）：
+默认连接策略（Routing Mode · **Smart** / id `auto`）含义是 **尊重订阅/服务商规则 + 智能选节点**，不是客户端自建「全球智能分流引擎」。能解析的订阅规则/策略组/节点分组优先执行；节点层由客户端负责测试、评分、自动选择与故障切换。客户端仅保留安全兜底（如局域网/回环直连等），不承诺流媒体解锁（更偏节点/服务商能力）。  
+**Preferred 在 Smart 下 = 诚实子集：** 只影响会走代理且由客户端选出口的流量；订阅将某站钉为 DIRECT 或固定策略时，**不**因用户换了 Home 节点而假装已改写。用户要单站强制代理/直连 → **User Override**，不是 per 策略组选节点 UI。  
+_Avoid_: 用户可见模式名 *Auto*；以自建庞大域名库当主分流；规则社区；完整策略组编辑器；Home/主路径暴露 Clash 式每组 `select` 控制台；声称 Smart 下「一个节点 = 所有应用出口」
+
+**Provider Group（服务商分组）**：
+订阅里可能存在的节点元数据分区。**Location UI 不展示** group chip，也不按组过滤；列表一律订阅原序扁平展示。  
+**不是**运行时策略组出口台。  
+_Avoid_: Location 横向 group chip；与 Clash proxy-group 选中混称
+
+**Policy Group Selection（策略组出口 · 非 MVP 主路径）**：
+Clash 类配置里各 `select` 组的独立当前出口（如「爱奇艺&哔哩哔哩 = 香港A02」）。Routeva **MVP 不**作为用户主 IA：不在 Home、不设 Advanced 分组树。精细需求用 **Routing Mode + Preferred + User Override**。  
+_Avoid_: 为「像 Clash」在主路径复刻分组选节点
 
 **User Override Rule**：
-用户或 Agent 发起的**结构化覆盖层**：每条为 **单个 Domain** → `proxy | direct`（含可关）。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。**Beta 不设条数上限**（不做「满 N 禁用 Add」）；产品意图仍是 **少数例外**，靠文案与 O3 呈现约束，不靠配额 UI。Global / Direct 总开关不计入 Override 列表。iOS 上该列表可经 **User Override iCloud Backup** 跨设备带走；其余连接策略不在此列。  
-**Settings 交互（Overrides › · O3 呈现，ADR 0045 / **0057** / 0050 / 0054）：** 列表（每条可开/关/删）+ **Add exception** sheet（输入 Domain → Proxy/Direct → Save）；**无** 预设 Service 名、**无** 正则/通配/一行速记语法；**无** 列表条数上限提示；**无** iCloud 主开关或常驻云状态条。Domain 为单主机名（如 `example.com`）。Agent 写同一模型，非只读旁路。  
-**空态 English 源（闭集意图 · 排版双行）：** 标题 *No exceptions yet*；主文（怎么用）*Pin a domain to proxy or direct when Auto isn’t enough.*；边界句 *A few exceptions, not a full rule set.*；约束 chip *One domain each*。有列表时顶栏提示同样「非完整规则集」；根页计数写数字/None，**不**写 *rules*。空库且 iCloud 恢复失败时可有一行弱提示（见 Backup 术语）。  
-_Avoid_: 产品维护的 Service/站点预设表；手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；用「N of M」或硬上限把 Overrides 做成规则引擎配额；Overrides 仅 Agent 可写、Settings 不能 Add；空态/根页用 *rules* 暗示 Clash 式规则引擎；把 Override 页做成云同步控制台
+用户或 Agent 发起的**结构化覆盖层**：每条为 **单个 Domain** → `proxy | direct`（含可关）。可预览、可关闭、可回滚；须提示可能与订阅/服务商规则叠加。**Beta 不设条数上限**（不做「满 N 禁用 Add」）；产品意图仍是 **少数例外**，靠文案与 O3 呈现约束，不靠配额 UI。Global / Direct **总开关本身**不计入 Override 列表，但 **Override 在 Smart / Global / Direct 下均生效**（Mode 定默认，Override 定例外）。iOS 上该列表可经 **User Override iCloud Backup** 跨设备带走；其余连接策略不在此列。  
+**`proxy` 出口：** 一律 **当前会话 / Preferred 节点**；Override **不**自带 per-row 节点选择。换出口 = Home / Location。  
+**Settings 交互（Overrides › · O3 呈现，ADR 0045 / **0057** / 0050 / 0054 / **0058**）：** 列表（每条可开/关/删）+ **Add exception** sheet（输入 Domain → Proxy/Direct → Save）；**无** 预设 Service 名、**无** 正则/通配/一行速记语法；**无** 列表条数上限提示；**无** iCloud 主开关或常驻云状态条。Domain 为单主机名（如 `example.com`）。Agent 写同一模型，非只读旁路。Help/诊断深链**同一** Overrides 页，不另造高级面。  
+**空态 English 源（闭集意图 · 排版双行）：** 标题 *No exceptions yet*；主文（怎么用）*Pin a domain to proxy or direct when the default mode isn’t enough.*；边界句 *A few exceptions, not a full rule set.*；约束 chip *One domain each*。有列表时顶栏提示同样「非完整规则集」；根页计数写数字/None，**不**写 *rules*。空库且 iCloud 恢复失败时可有一行弱提示（见 Backup 术语）。  
+_Avoid_: 产品维护的 Service/站点预设表；手写正则、远程 Rule Set 市场、JS 规则、iOS per-App 精确分流承诺；用「N of M」或硬上限把 Overrides 做成规则引擎配额；Overrides 仅 Agent 可写、Settings 不能 Add；空态/根页用 *rules* 暗示 Clash 式规则引擎；把 Override 页做成云同步控制台；每条 Override 指定不同节点；Global/Direct 下静默忽略 Override
 
 **User Override iCloud Backup**：
 **仅 iOS：** 将 **User Override** 列表（含开关状态与删除墓碑）静默备份到**用户自己的 iCloud**（跟系统 Apple ID，非 Routeva 账号）。主职是**换机/重装带走例外**，不是多设备实时同步。  
@@ -388,18 +397,19 @@ _Avoid_: 全量配置/订阅 Token 上云；自建账号同步；「多设备一
 **预选 vs 浏览焦点 vs Preferred（两档）：**  
 - **Auto 预选** = 静默测分后的当前最高分节点（可被后续重测更新）——仅当**无** Preferred。  
 - **Cover Flow 浏览焦点** = 在 Home 横滑时的**临时** UI 焦点；**无** Preferred 时重测完成**可以**把 Cover Flow 拉回新的最高分预选；横滑 alone **不**构成 Preferred。  
-- **Preferred node** = 用户在 **Location** **点选**后的持久偏好：列表 check；默认连接目标；**静默重测不得覆盖**；**允许** Node Failover 为保活换走**会话**节点（偏好不因 Failover 改写）。**无**显式清回 Auto UI；节点离开列表则静默丢弃偏好。  
+- **Preferred node** = 用户在 **Location** **点选**后的持久偏好：列表 check；默认连接目标；**静默重测不得覆盖**；**允许** Node Failover 为保活换走**会话**节点（偏好不因 Failover 改写）。**Smart / Global / Direct 共用同一 Preferred**（切 Mode 不丢）。**无**显式清回 Smart UI；节点离开列表则静默丢弃偏好。  
 - **Cover Flow `strip[]`：** 见上 **Cover Flow 条**——有界 Top-N + Preferred 锚定，**非**全量 flatten。  
 **不设**硬 **Pin**（禁 Failover 的锁死态）。  
 _Avoid_: 只按延迟排序；把「解锁某站」或猜测的出口国当选节点的唯一/默认标准；用 locale=zh-Hans 等静默偏置香港节点；连接手势阻塞等全表测完才建隧道；导入成功后自动连上；把 Cover Flow 临时滑选与 Preferred 混成一种却说不清；硬 Pin 禁 Failover；静默重测覆盖 Preferred；网络切换必全表测；短间隔狂刷静默测速；静默阶段对全部节点做完整经节点 Probe；静默只 Ping 却当唯一预选依据；未连时宣称已验证出网；测分未完就禁用/弱化连接手势；Connecting/Connected 时被预选刷新换节点；Cover Flow 塞全表或按 group 当主列表
 
 **Latency Test**：
-用户在 **Location Surface** 触发的、到**节点入口**的延迟/握手类探测；结果展示为 **ms** 或 Timeout。用于扫表快慢标注，**不是** Connection Success，也**不是** ICMP *Ping* 承诺；**不得**作为 Node Selection 的唯一依据。批量 *Test* **不**改偏好、不自动切节点、不按结果重排分组列表。  
+用户在 **Location Surface** 触发的、到**节点入口**的延迟/握手类探测；结果展示为 **ms** 或 Timeout。用于扫表快慢标注，**不是** Connection Success，也**不是** ICMP *Ping* 承诺；**不得**作为 Node Selection 的唯一依据。批量 *Test* **不**改偏好、不自动切节点、不按结果重排列表。  
 _Avoid_: 用户可见硬说 Ping 却测 TCP；用列表 Test 替代完整 Connectivity Probe；测完自动连上最快节点
 
 **Node Failover**：
-在用户已启用自动选节点（Auto 或等价）时，为维持 Connection Success 而在连接过程中**自动**改选可用节点或短重连。**有 Preferred 时仍允许 Failover**（会话可暂离偏好；偏好保留）。属连接保活，**不是** Repair：不走 Repair Consent / 诊断卡确认。须记入 Activity；连续失败仍按 Diagnostic Trigger 自动诊断。用户**关闭**自动选节点时，不得静默 Failover。  
-_Avoid_: 把 Failover 叫成 Repair；把 Preferred 做成禁 Failover 的硬 Pin
+在用户已启用自动选节点（**Smart** 模式或等价）时，为维持 Connection Success 而在连接过程中**自动**改选可用节点或短重连。**有 Preferred 时仍允许 Failover**（会话可暂离偏好；偏好保留）。属连接保活，**不是** Repair：不走 Repair Consent / 诊断卡。须记入 Activity；连续失败 **不**自动诊断（用户可 Help · ADR **0060**）。用户**关闭**自动选节点时，不得静默 Failover。  
+**用户反馈（grill 2026-08-07 · D）：** 会话节点因 Failover **成功切换**时，展示 **一次短 toast**（约 2–3s，如 *Switched node to keep you online.* · `home.failover.toast`）；Home **仍只显示当前会话节点名**，**无**常驻 *Temporary* / 离偏好徽章 / 第二状态。同一保活序列内避免 toast 刷屏（实现可合并/节流）。**不**因此自动进 Help 或诊断。  
+_Avoid_: 把 Failover 叫成 Repair；把 Preferred 做成禁 Failover 的硬 Pin；Failover 失败连环弹诊断；Home 常驻「离偏好」副文；无任何提示的静默换节点（已废止）
 
 **P0 Interop Surface（瘦身）**：
 首发以「美国区常见机场订阅能导入并稳定连接」为宽度目标，不以协议数量为卖点。  

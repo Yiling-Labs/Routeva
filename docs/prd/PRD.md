@@ -14,7 +14,7 @@
 | code_layout | Dual-Native（ADR 0049） |
 | min_os | iOS 17+；Android minSdk 实现期锁定 |
 | updated | 2026-08-06 |
-| status | Grill 收口 v0.2 + Dual-Native；IA/Cloud 与 craft-p0 hi-fi 对齐；Beta 全免（ADR 0006） |
+| status | MVP = Connect（**无 Help/诊断 UI** · ADR **0063**）；iOS 先（0061）；Beta 全免（0006） |
 
 ## 1. 背景与目标
 
@@ -26,12 +26,11 @@
 
 | 优先级 | 内容 |
 |---|---|
-| **主证明点** | Self-Healing Loop：诊断准、解释清、Client-Fixable 可安全 Repair 并回滚 |
-| **必要条件** | Table Stakes Connect：粘贴/导入即可连上 |
-| **交付质量** | Craft：关键路径精致可信 |
-| **交互面** | Thick Agent（不得取代 Diagnostic Engine） |
+| **主证明点（MVP）** | Table Stakes Connect：粘贴/导入即可稳定 Connection Success |
+| **交付质量** | Craft：导入→连接路径精致可信 |
+| **Post-MVP** | Self-Healing Loop + Help/Agent（ADR **0063**） |
 
-**不证明：** 「我们有一个聊天机器人」或「支持最多协议」。
+**不证明（MVP）：** 完整自愈 UI、聊天机器人、协议数量军备。
 
 ### 1.3 成功标准（沿用初版方向，实现期可校准）
 
@@ -45,11 +44,11 @@
 
 ### 2.2 关键场景（JTBD）
 
-1. 粘贴订阅 → 自动连接成功（无需理解协议名）。
-2. 连接失败 → 看到 Failure Bucket、原因、下一步（非仅 Error Code）。
-3. Client-Fixable → 一键 Repair → 验证成功或回滚。
-4. 用 Agent 用自然语言问「为什么 YouTube 打不开 / 选最稳节点」→ 工具调用 → 可撤销。
-5. （商业化后）体验足够后在高价值动作处解锁 Pro；**Beta 无此门槛。**
+1. 粘贴订阅 → 达到 Connection Success（无需理解协议名）。
+2. 连接失败 → 回 Idle + 短 toast，可立即再连（ADR **0059**；**MVP 无** Help/诊断 UI · **0063**）。
+3. 选节点 / Mode / DNS / Overrides / 多订阅管理可用。
+4. （Post-MVP）诊断分桶 → Repair；Help NL。
+5. （商业化后）Pro；**Beta 无此门槛。**
 
 ## 3. 范围
 
@@ -60,15 +59,16 @@
 - Diagnostic Engine 四层检查 + Failure Bucket 展示
 - Repair 白名单 + Config Snapshot + 回滚
 - Thick Agent + Cloud AI（Help 内默认开、可关 · ADR 0042；非全 app 静默大脑）
-- Auto / Global / Direct；Auto = 服务商规则 + 选节点
+- Routing Mode：**Smart** / Global / Direct（用户可见；内部 id `auto`/global/direct）；Smart = 服务商规则 + 选节点
 - **Beta：全功能开放（无配额/无付费墙）**；目标 Free/Pro 与 $2.99 见 §4.8 草稿与 ADR 0001/0006
 - 无账号；本机数据；隐私边界（Token 不上云等）
 - Craft P0 路径英文化打磨
-- **iOS + Android 双端**（Dual-Native）：共享能力与 IA；平台 API 为 Realization
+- **iOS + Android 能力单源**（Dual-Native · 0049）；**实现 / Beta 默认 iOS 先**（0061）；平台 API 为 Realization
 - iPhone 主 + iPad 基础；iOS 17+；Android 手机主验收
 
 ### 3.2 Out of scope（MVP）
 
+- **Help / Agent Surface、诊断结果 UI、Repair UI、Cloud AI**（ADR **0063** · Post-MVP）
 - 节点销售/推荐机场
 - 完整 QX/Surge/Stash 高级语法；暂缓协议列表（SSH/ShadowTLS/MASQUE 等）
 - MITM / Rewrite / 根证书 / 远程脚本
@@ -115,8 +115,8 @@
 
 **Connection Success**
 
-- 系统 VPN/隧道就绪 **且** 至少一次 **Connectivity Probe** 成功。仅隧道就绪而探针失败 → 不宣称成功，进入 Diagnostic Engine 分桶。
-- Connectivity Probe：固定探针目标（实现期选定）；用于选节点**加权**、连接验收与 Repair 后验证；**不是**流媒体/站点解锁检测，不承诺解锁。
+- 系统 VPN/隧道就绪 **且** 至少一次 **Connectivity Probe** 成功。仅隧道就绪而探针失败 → **不得**宣称成功；Home 回 **Idle** + 短 toast（ADR **0059**）；**不**弹诊断 UI（MVP 无 · ADR **0063**）。
+- Connectivity Probe（grill **A**）：经当前节点 **HTTPS** 固定端点（TLS + **2xx**）；**主 URL + ≥1 热备**；内部常数、非 UI；用于选节点**加权**、连接验收与 Repair 验证；**不是**流媒体/站点解锁检测。
 - Wi‑Fi / 蜂窝切换后应能恢复连接（恢复后仍以 Probe 判定是否 Success）。
 
 **Node Selection 政策（ADR 0055）**
@@ -130,19 +130,19 @@
 | 测分未完 | **可连**；连接路径短确认 + 完整 Probe；Connecting/Connected **不被**后续预选换脚 |
 | 重测触发 | ① 节点集合实质变化 ② 长间隔缓存过期 S + 打开/回前台（弱）③ 失败/Failover **定向**重测 ④ 用户 Location *Test*；**禁止**仅网络切换就全表重测 |
 | 状态机 | **两档：** **Auto 预选** vs **Preferred node**。Cover Flow 横滑 = **临时浏览焦点**（无 Preferred 时可被预选覆盖）。**不设**硬 Pin（禁 Failover） |
-| Cover Flow 条 | **有界快选** `strip[]` ≤ **N=15**（默认）：**Preferred 强制入条** + 预评分可用性 Top 填满（去重）。**非**全量 flatten；**无** group UI（分组仅 Location）。总数 &lt;N → 全进条。测分未完：有分在前、无分订阅原序。初始预停 Preferred 否则 Top#1。Failover 不永久扩条 |
+| Cover Flow 条 | **有界快选** `strip[]` ≤ **N=15**（默认）：**Preferred 强制入条** + 预评分可用性 Top 填满（去重）。**非**全量 flatten；**无** group UI。总数 &lt;N → 全进条。测分未完：有分在前、无分订阅原序。初始预停 Preferred 否则 Top#1。Failover 不永久扩条 · 全量列表在 Location |
 
 **Preferred node（偏好节点）**
 
 - 默认连接目标；静默预选**不得覆盖**；**Node Failover 仍允许**为保活换走会话节点（偏好不因 Failover 改写）。
 - **入口：** **Location Surface** 点选 = 设 Preferred；返回 Home 时 Cover Flow 对齐偏好；会话因 Failover 暂用他节点时 Home 显示**当前会话**节点。
 - **清除：** **无** `⋯` / *Use automatic* UI。节点离开 Active 列表 → 静默丢弃偏好；改偏好 = 点另一节点。
-- 已 Connected 时点选另一节点：立即切换（非 Repair）；失败**保留偏好**，走诊断。
+- 已 Connected 时点选另一节点：立即切换（非 Repair）；失败**保留偏好**，toast/回退可连态，**不**自动诊断。
 - Home Cover Flow 横滑** alone 不构成 Preferred**。
 
 **Node Failover vs Repair**
 
-- **Failover：** 自动选节点开启时，为维持 Connection Success **自动**换节点/短重连（**含有 Preferred 时**）；不走 Repair 确认；记 Activity。
+- **Failover：** 自动选节点开启时，为维持 Connection Success **自动**换节点/短重连（**含有 Preferred 时**）；不走 Repair 确认；记 Activity；**成功换节点 → 一次短 toast**（grill D · 无常驻离偏好 UI）。
 - **Repair：** 仅 Client-Fixable + 用户确认的 Allowlist（其中也可换节点，语义是「修」不是「保活」）。
 - **关闭自动选节点** → 禁止静默 Failover。
 
@@ -150,83 +150,26 @@
 
 **Location Surface**
 
-- 从 Home **Cover Flow 下节点名行**（黑场 Idle / Can’t connect，可点）或 **Connected 中部节点行**（绿场，可点；**不**恢复 Cover Flow）全屏 push；标题 *Location*。Swipe / Connecting 节点名行锁定。
-- 只列 **Active** 订阅可选出口节点；分组来自订阅 **服务商 group**（无 group → *All nodes*）；**不**按客户端猜地区重分类；group 名原样展示（含订阅真名 *Auto*——≠ 客户端伪造 Auto 行）。
-- **分组 UI：** **≥2 组** → 导航下固定 **横向 chip**（可左右滑），点选后列表**仅显示该组**；**1 组** → **不**显示 chip，直接列表。默认打开含 Preferred 的组。
+- 从 Home **Cover Flow 下节点名行**（黑场 Idle，可点）或 **Connected 中部节点行**（绿场，可点；**不**恢复 Cover Flow）全屏 push；标题 *Location*。Swipe / Connecting 节点名行锁定。
+- 只列 **Active** 订阅**全部**出口节点；**无**分组 chip；顺序 = **订阅原序**；**不**按客户端猜地区重分类或按延迟重排；**无**列表顶伪造 Auto 行。
 - **行：** 主行节点名 + Preferred 时 check（**无** *Pinned* 文案）；次行弱协议短名（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· Latency（`—` / `{ms} ms` / `Timeout`）。
 - **Latency Test：** 顶栏 *Test* 批量入口延迟/握手标注（非 ICMP *Ping* 叙事、非完整 Probe）；可取消；**不**改偏好、**不**自动切、**不**按 ms 重排。
 - MVP：**无**搜索/筛选、**无**进页自动测、**无**客户端伪造的列表顶 *Auto* 行、**无**顶栏 `⋯`、**无**订阅 CRUD 主路径、**无**全部组纵向长卷主路径。
 - 权威 hi-fi：`design/hi-fi/current/craft-p0/08-location.html`。
 
-### 4.4 诊断与 Failure Bucket
+### 4.4–4.6 诊断 · Repair · Help / Agent（**Post-MVP** · ADR **0063**）
 
-**触发（Diagnostic Trigger）：失败才自动跑，成功不强制体检。**
+**MVP 不交付** Diagnostic 四桶 UI、Repair 流、Help/Agent Surface、Cloud AI。  
+领域闭集（Failure Bucket、Repair Allowlist、Tool Allowlist 等）见 CONTEXT 与历史 ADR（0002 / 0009 / 0010 / 0035–0044 / 0042 / 0060）；恢复时整包里程碑。  
+**MVP 失败路径：** Idle + toast（**0059**）· Failover toast（grill D）· 用户再连或检查订阅。
 
-| 自动触发（须跑 Engine 并展示四桶） | 不自动跑 |
-|---|---|
-| 导入无法完成（同时给具体格式/原因） | 达到 Connection Success 的静默成功 |
-| 未能达到 Connection Success（**含 Probe 失败**） | 纯状态刷新、用户未操作时的后台噪声 |
-| 连接中断且自动恢复失败 | |
-
-用户可手动「重新诊断」；Agent 只能调用**同一** Diagnostic Engine，不得平行判定。  
-**一次诊断** = 一次完整 Engine 跑完并产出四桶结构化结果（日后若启用配额，按此计数）。
-
-每次诊断归入其一并展示：
-
-| Bucket | 自动 Repair |
-|---|---|
-| Client-Fixable | ✅ 白名单 |
-| Provider-Side | ❌ |
-| Environment | ❌（可给客户端内退路建议） |
-| Unknown | ❌（禁止编造） |
-
-结果含：原因、影响、下一步、置信度；可简洁/展开技术细节。不上传原始订阅信息。
-
-### 4.5 Repair
-
-- 仅 Client-Fixable；**Repair Consent：一键确认，不静默修。**
-- 流程：诊断展示 Client-Fixable → 用户点主按钮「Repair」（或 Agent 中明确「执行修复」）→ Config Snapshot → 按上限尝试 Allowlist 候选 → 每步/结束以 **Connectivity Probe（Connection Success）** 验证 → 成功展示结果；失败或取消 → 回滚到进入前 Snapshot。
-- **一次确认**覆盖该次流程内多候选；**不是**每候选点一次；也**不是**判为 Client-Fixable 后自动开修。
-- Agent：仅当用户明确要修时才调用 Repair 工具；禁止因闲聊推断而改 VPN/配置。
-- **Repair Allowlist（MVP 闭集，仅此 6 类）：**
-
-| # | 允许的 Repair 动作 |
-|---|---|
-| 1 | 切换到评分更高的可用节点（Node Selection） |
-| 2 | 重载/更新当前 Subscription |
-| 3 | 重建系统 VPN 配置/隧道 |
-| 4 | 切换到客户端**预设 DNS** 之一 |
-| 5 | 节点能力允许时，优先更兼容出口参数（如 IPv4 / TCP 偏好；仍属选节点/连接参数） |
-| 6 | 回滚到 Config Snapshot |
-
-- **未列入闭集的动作不得作为 Repair**（不进一键修复/Agent Repair 工具）；要扩展必须先改 PRD/CONTEXT/ADR。
-- **禁止：** AI 或引擎自由写未校验配置全文；证书/MITM；静默改无关系统设置；对 Provider-Side / Environment / Unknown 执行「假 Repair」；无快照的修改；候选耗尽后死循环重试。
-- 单次 Repair 尝试的候选方案数量有上限（实现期定数，须有上限）。
-
-### 4.5.1 Config Snapshot 策略
+### 4.5.1 Config Snapshot（MVP 精简）
 
 | 规则 | 要求 |
 |---|---|
-| 必建时机 | 进入 Repair 前；显式变更连接策略/分流前（Global/Direct、User Override、手动切预设 DNS 等） |
-| 不强制 | Node Failover 自动换节点不建完整快照 |
-| Beta 保留 | 最近 **10** 份或 **7** 天（实现常数，取可执行的上限策略） |
-| 自动回滚 | Repair 失败或用户取消 → 回到进入该次 Repair 前的快照 |
-| 手动回滚 | 用户经 **Repair 流程结果 UI**（及 Agent 工具）恢复保留期内快照（Allowlist #6）；**不**要求 Settings 快照列表主入口（ADR 0051） |
-| 存储 | 本机；不含把原始 Token 明文写入分析通道 |
-
-### 4.6 Agent（Thick）与 Cloud AI
-
-- 开放 NL + 分流意图；**仅映射 Agent Tool Allowlist（闭集）**，不得由模型自行加工具。
-
-| 类 | MVP 允许的工具 |
-|---|---|
-| **只读** | Active/订阅状态摘要；节点测试结果摘要；最近诊断结果；环境/DNS 结构化摘要；节点评分比较摘要；Activity 最近事件摘要；导出脱敏报告 |
-| **变更** | 连接/断开；切换或设偏好节点；Auto/Global/Direct；应用/清除少量 User Override；预设 DNS；触发诊断；**Repair**（Repair Consent）；**回滚 Snapshot**；切换 Active Subscription；手动 Subscription Refresh |
-
-- 变更类一律遵守 Snapshot Policy、Active Subscription、Repair Consent、Failover≠Repair 等既有规则。
-- **硬边界 / 禁止工具：** 网页内容、完整浏览历史、Token/原始订阅上传、MITM/证书、自由写配置、推荐机场、静默改系统。
-- 故障裁判仍是 Diagnostic Engine；Agent 只解释与编排。
-- **Cloud AI（Help · ADR 0042）：** 在 **Agent Surface / Help** 内 **默认开启**（opt-out，可一键关）；**无** 首次授权 modal sheet；披露靠常驻信任条 + *How we use data*。**不**在 Settings 根页预置开关。仅脱敏结构化上下文（Ephemeral）；**关云后**快捷问题 / 本地或规则编排 / 模板解释 + 同一套工具仍可用。无云时核心连接/诊断/Repair 与 Agent 只读+本地编排不瘫。
+| MVP | 显式改 Mode / Override / DNS 等策略前可建快照；Failover 不强制全量快照 |
+| 保留 | 约 10 份或 7 天 |
+| Post-MVP | Repair 前必建；失败自动回滚 |
 
 ### 4.7 Auto Policy 与分流
 
@@ -278,31 +221,29 @@
 
 | 面 | 内容 |
 |---|---|
-| **Home** | 选节点（Cover Flow 临时焦点 + **节点名行可点 → Location**，Idle/Can’t）+ **竖直滑动胶囊**（START 顶下滑连 / STOP 底上滑断）+ 连接真值（Not Connected / Connecting… / Connected）+ 绿场 **可点节点行 → Location**；**无**黑场中部空 Location pill；黑/绿双皮肤（绿场 **仅** Connection Success）。顶栏出口：**Help** pill · **Subscriptions**（有订阅时）· **Settings**。**不**常驻策略切换、健康仪表、流量/到期、Active 订阅 chip、Auto 字样。权威 hi-fi：`02-home.html` |
-| **Location** | 全屏节点列表（ADR **0055**/**0056**）：服务商分组 · **点选 = Preferred**（记住偏好，Failover 仍允许）· 顶栏 Latency *Test* · **无** `⋯` / 清回 Auto；返回同步 Cover Flow。权威 hi-fi：`08-location.html` |
-| **Help（Agent Surface）** | 用户可见 **Help**；信任条 + 空态 chips（随连/断双态）+ 聊天 + *What Help can do* + *How we use data*；Cloud 默认开可关。能力接通；过程展示 Craft P1。权威：`06-agent.html` |
-| **Subscriptions** | 一级面单列表：全部订阅 + Active 高亮（有则流量/带标签 Expires·Expired + Update）；Set active；底 Add；可选 Rename（名旁铅笔 → sheet，ADR 0033）。权威：`04-subscriptions.html` |
-| **Settings** | 根页两段（ADR **0051**）：**Connection**（Routing mode · DNS · Overrides，各带释义副文）→ **App**（**Auto-update subscription** Toggle 默认开 · Subscriptions 深链 · About）。**无** History/Activity/Snapshots、Appearance、Advanced、Cloud 开关、根页 Privacy。隐私经 About → Privacy Policy 外链。权威：`05-settings.html` |
-| **Activity** | **能力 P0 / Craft P1：** 连接、Failover、诊断、Repair、回滚、模式/Override 等须**记录**且可解释；触点优先 Help / 诊断·Repair（**非** Settings 根页 · ADR 0051）；完整时间线 UI 可后打磨 |
-| **Diagnostic / Repair** | 失败底 sheet：四桶白话（App can fix / Provider / Your network / Not sure）+ Why/Impact/Next + 主 CTA；次要 *Ask Help*（ADR 0044）。Repair 仅 Client-Fixable + Consent + 快照/验证/回滚。权威：`07-diagnostic.html` |
+| **Home** | 选节点 + 竖直胶囊 + 连接真值；Mode Smart/Global；失败/Failover toast；顶栏 **Subscriptions · Settings**（**无 Help** · **0063**）。权威：`02-home.html` |
+| **Location** | 扁平全量 · Preferred · Test。权威：`08-location.html` |
+| **Subscriptions** | 单列表 + Active。权威：`04-subscriptions.html` |
+| **Settings** | Connection · App。权威：`05-settings.html` |
+| **Activity** | **仅本机记录**（无 UI · 0051 / 0063） |
+| **Help / Diagnostic / Repair** | **Post-MVP**（explore 存档 · 0063） |
 
 **Beta 不暴露：** Settings Advanced / 高级模式坟场（ADR 0027）。日后若加深层调试入口另议；Mode / DNS / Override / Export 等已落正式面或次要动作，不依赖 Advanced。
 
 ## 5. 用户故事（摘要）
 
 - 作为订阅用户，我粘贴链接后无需选协议即可达到 Connection Success（隧道 + Probe），而非仅看到 VPN 已连接。
-- 作为用户，失败时我能看懂是客户端、服务商、环境还是未知问题。
-- 作为用户，可修时我一键修复且失败会回滚。
-- 作为用户，我可以用自然语言驱动同一套诊断/修复工具。
-- 作为 Beta 用户，我能使用 MVP 内全部自愈与连接能力且无付费墙；商业化后的 Free/Pro 另议。
+- 作为用户，失败时我看到诚实 toast 并可再试（MVP **无**四桶解释 UI）。
+- 作为 Beta 用户，我能使用 MVP 连接能力且无付费墙。
+- （Post-MVP）诊断分桶、Repair、Help NL。
 
 ## 6. 交互与 Craft 优先级
 
 | 优先级 | 路径 |
 |---|---|
-| **P0 Craft** | Welcome→Home Empty→Add（Parsing 模态）→Home Idle+toast；首次连接出系统 VPN 弹窗（无自建说明页）→连上；Home 连接态；诊断结果卡；Repair 确认/进度/成功或回滚（Beta 无付费墙） |
-| **P0 能力 / P1 Craft** | **Activity 可解释**（事件记录全；Help/失败路径可触达；非 Settings History）；Agent 工具过程与撤销展示 |
-| **P2** | 深层设置 / 调试入口（若需要；Beta 正式 Settings 不露 Advanced） |
+| **P0 Craft** | Welcome→Empty→Add→Idle；VPN 系统弹窗→连上；Home / Location / Subs |
+| **P0 能力** | Activity 本机记录；Settings 策略 |
+| **Post-MVP** | Help / 诊断 / Repair / Agent |
 
 原则：诊断/修复反馈质感 ≥ 装饰动效。用户可见文案 English 源。高保真见 `design/`。
 
@@ -310,17 +251,17 @@
 
 - P0 协议真连测试通过；主要格式导入达标。
 - Connection Success 定义落地：自动化/手工验收均以隧道 + Connectivity Probe 为准；探针失败不得标为成功。
-- Diagnostic Trigger：导入失败、未达 Connection Success（含 Probe 失败）、中断且恢复失败须**自动**诊断并展示四桶；成功路径不强制体检；Agent 不另设判定。
+- **MVP 无**诊断/Repair/Help UI（ADR **0063**）；连接失败 = Idle + toast（**0059**）。
 - 无高频崩溃与 VPN 异常退出；配置修改可回滚。
 - 凭证不进分析通道；Cloud 仅脱敏临时上下文且可关；Agent **仅** Tool Allowlist；变更类无用户明确意图/Consent 不得改网。
 - 错误提示均有下一步；删除 App 不遗留失控 VPN 配置。
 - （商业化后）IAP 购买与恢复购买正常；**Beta 不验收 IAP。**
 - 四桶诊断与 Repair 边界行为符合 CONTEXT；Repair **仅** Allowlist 6 类；自动化测试覆盖「非白名单动作不可作为 Repair」。
 - Repair Consent：无用户确认不得执行 Repair；一次确认可多候选；失败/取消须回滚。
-- Node Failover：自动选节点开启时可自动换节点且不经 Repair 确认（**含有 Preferred 时**）；关闭自动后不得静默切换；Failover 记 Activity，连续失败走自动诊断。
-- Location Surface（ADR 0055/0056）：分组列表；**点选 = Preferred**；已连接立即切换；顶栏 Latency Test；**无** `⋯` 清回 Auto；静默重测**不**覆盖 Preferred；**无**硬 Pin 禁 Failover。
+- Node Failover：自动选节点开启时可自动换节点且不经 Repair 确认（**含有 Preferred 时**）；关闭自动后不得静默切换；记 Activity；**成功切换短 toast**（`home.failover.toast`）；连续失败 **不**自动诊断（用户可 Help）。
+- Location Surface（ADR 0055/0056）：扁平订阅原序列表；**点选 = Preferred**；已连接立即切换；顶栏 Latency Test；**无** group chip / `⋯`；静默重测**不**覆盖 Preferred；**无**硬 Pin 禁 Failover。
 - Snapshot Policy：Repair 前必有可回滚点；失败/取消自动回滚；Beta 至少 10 份或 7 天；Failover 不强制完整快照。
-- Activity：Beta 须记录连接 / Failover / 诊断 / Repair / 回滚 / 模式变更等事件，并在 Help / 诊断·Repair 上下文可解释；**不**要求 Settings 根页 History（ADR 0051）。
+- Activity：MVP 须**记录**连接 / Failover / 模式等；**无**用户列表（0063）。
 - Active Subscription：同时仅一份参与连接与自愈；切换显式；不合并节点池、不并行多隧道。
 - Subscription Refresh（ADR 0015）：Settings › App 全局 Auto-update 默认开；开时仅严格冷启动 + T=24h 刷可远程刷新的 Active；无连接前/后台周期；整包替换；自动失败安静不覆盖；手动 Update 在 Subscriptions。
 - **UI 态实现任务（open）：** 无远程源 Active **1d**、手动 Update 失败 **1e** — 见 [`features/subscription-refresh-ui-states.md`](./features/subscription-refresh-ui-states.md)（IMPL-SUB-1d / 1e）。
@@ -347,7 +288,7 @@
 | 后台不稳 | 稳定性优先于花活 |
 | 商业化时用户反弹 | 保留 0001 草稿；上线前单独 grill 价格与墙 |
 
-ADR：`0001`–`0005`（初轮）· `0006` Beta 全免 · `0007` Connection Success · `0008` 诊断触发 · `0009` Repair 闭集 · `0010` Repair 确认 · `0011` Failover · `0012` Snapshot · `0013` Activity · `0014` Active 订阅 · `0015` 订阅刷新 · `0016` Agent 工具 · `0017` Override 结构化 · `0042` Help Cloud 默认开 · `0049` Dual-Native · `0050` Override Beta 无条数上限 · `0051` Settings 无 History 段 · `0055`/`0056` Node/Location · `0057` Override Domain only。
+ADR：`0001`–`0005`（初轮）· `0006` Beta 全免 · `0007` Connection Success · `0008` 诊断触发 · `0009` Repair 闭集 · `0010` Repair 确认 · `0011` Failover · `0012` Snapshot · `0013` Activity · `0014` Active 订阅 · `0015` 订阅刷新 · `0016` Agent 工具 · `0017` Override 结构化 · `0042` Help Cloud 默认开 · `0049` Dual-Native · `0050` Override Beta 无条数上限 · `0051` Settings 无 History 段 · `0055`/`0056` Node/Location · `0057` Override Domain only · **`0061` 实现 iOS 先** · **`0062` 台湾节点旗 PRC** · **`0063` MVP 无 Help**。
 
 ## 10. 里程碑（建议）
 

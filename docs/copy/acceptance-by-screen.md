@@ -21,30 +21,35 @@
 
 ## 1 · Home · [`02-home.html`](../../design/hi-fi/current/craft-p0/02-home.html)
 
-> **走查 2026-08-06：** 主故事板 1–5 + Interactive/demo 源码；Empty / Can't connect 见备注。结果 **pass（附注）**。
+> **唯一权威**（已合并 ADR **0058** mode-invariant + **0059** fail toast；`02-home-new` 已删除）。  
+> 含：demo / interactive · 连接序列 1–5 · Mode 行 A · Edges 行 C。
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 Idle** | Cover Flow 节点名+› 可点 · 中部仅状态 · START · 手势提示 · 顶栏 · **无**中部 Location pill · **长名 ellipsis**（协议/› 完整） | `home.idle.status` S · `home.location.a11y` S（`{node}` **全量**）· `home.gesture.start` S · `home.gesture.swipe_label` S · `home.gesture.connect_hint` S · `home.chrome.help` S · `home.chrome.subscriptions` S · `home.chrome.settings` S | [x] |
-| **2 Swipe ~⅓** | 仍 Idle 状态文案；节点名**锁定**；SWIPE | 同上（无 location a11y 可点）+ `home.gesture.swipe_label` | [x] |
+| **1 Idle** | Cover Flow 节点名+› 可点 · 中部 *Not Connected* + **Smart ›** · START · 顶栏 · **无**中部 Location pill · **长名 ellipsis** | `home.idle.status` S · `home.mode.chip.auto` S · `.a11y.auto` S · `home.location.a11y` S（`{node}` **全量**）· `home.gesture.start` S · `home.gesture.swipe_label` S · `home.gesture.connect_hint` S · `home.chrome.subscriptions` S · `home.chrome.settings` S · **无** `home.chrome.help`（MVP · 0063） | [x] |
+| **2 Swipe ~⅓** | 仍 Idle 状态；节点名**锁定**；**无** Mode chip；SWIPE | 同上（无 location a11y 可点）+ `home.gesture.swipe_label` | [x] |
 | **3 Swipe ~⅔** | 同上 | 同上 | [x] |
-| **4 Connecting** | Connecting… · 节点名锁定 · a11y | `home.connecting.status` S · `home.gesture.a11y.connecting` S · 胶囊下 hint 亦为 *Connecting…* | [x] |
-| **5 Connected** | Connected · STOP · 断开提示 · Mb/s · **节点行 glass chip 可点 → Location** · **无**国家/地区名行 | `home.connected.status` S · `home.gesture.stop` S · `home.gesture.disconnect_hint` S · `home.gesture.a11y.disconnect` S · `home.speed.unit_mbs` S · `home.location.a11y` S | [x] |
-| **Can't connect**（副帧） | 失败主状态 · 节点名+› 可点（sheet 见 §6） | `home.cant_connect.status` S · `home.location.a11y` S | [x] |
-| **Empty / setup 态** | 无订阅中部 | `home.empty.cta` S · `home.empty.subtitle` S · 顶栏仅 Help+Settings（无 Subscriptions 键展示） | [x] |
-| **Mode ≠ Auto** | 弱提示 | `home.mode.hint.global` S · `home.mode.hint.direct` S | [x] |
-| **Interactive** | 手势 a11y 全集 | `home.gesture.a11y.connect` S · disconnect · connecting | [x] |
+| **4 Connecting** | Connecting… · 节点名锁定 · **无** Mode chip | `home.connecting.status` S · `home.gesture.a11y.connecting` S · 胶囊下 hint 亦为 *Connecting…* | [x] |
+| **5 Connected** | Connected · STOP · Mb/s · **竖叠** 节点 glass → Mode · **无**国家名行 · 禁横排双 pill | `home.connected.status` S · `home.mode.chip.auto` S · `home.gesture.stop` S · `home.gesture.disconnect_hint` S · `home.gesture.a11y.disconnect` S · `home.speed.unit_mbs` S · `home.location.a11y` S | [x] |
+| **A2 Global Idle** | 同骨架 · 文案 *Global ›* | `home.mode.chip.global` S · `.a11y.global` S | [ ] |
+| **A3–A4 Mode sheet** | 标题 *Mode* · Smart/Global · 勾选 · 脚注 | `home.mode.sheet.*` S | [ ] |
+| **A5 Connected Global** | 节点 → *Global ›* | chip global + `home.connected.*` | [ ] |
+| **C1 Connect failed** | Idle + *Couldn’t connect. Try again.* toast · **无** *Can’t connect* 中部 | `home.idle.status` S · `home.connect.failed.toast` S | [ ] |
+| **Failover toast** | 成功换节点一次 toast · **无**常驻离偏好 · 仍显示会话节点名 | `home.failover.toast` S | [ ] |
+| **C2 Global mode sheet** | 绿场 + Mode sheet | sheet + `home.connected.*` | [ ] |
+| **C3 Empty** | 无订阅 · **无** Mode chip · **无** Help | `home.empty.cta` S · `home.empty.subtitle` S · 顶栏仅 Settings | [x] |
+| **Interactive / Demo** | 手势 a11y；Idle/Connected 显 Mode | `home.gesture.a11y.connect` S · disconnect · connecting | [x] |
+
+**不应出现：** 常驻 *Can’t connect* · 顶栏 **Help**（MVP · 0063）· 自动诊断 sheet · 策略组树 · Mode/节点横排双 glass。
 
 **走查附注（Home）**
 
 | 项 | 结论 |
 |---|---|
-| 主故事板 1–5 | 文案与 key **逐字一致**（含 START/STOP/SWIPE、脚注 *Swipe down/up…*、*Mb/s*） |
-| 顶栏 Subscriptions / Settings | hi-fi 为 **图标 + aria-label**（无可见字）；Help 为 pill **可见 “Help”**。key 仍绑定 a11y / 实现标签 |
-| Can't connect 静态帧 | **02 故事板未挂** `state="cant"`；源码路径 + **07 HomeUnderlay** 主状态 *Can't connect* 已验 |
-| Empty 静态帧 | **02 故事板未挂** `state="setup"`；源码路径 + **03-setup** Empty 同源文案已验 |
-| Mode ≠ Auto | 源码 `modeHint` 插槽；**故事板默认帧未演示**；key 与 CONTEXT 闭集一致，实现按非 Auto 显示 |
-| 禁止项 | 未见 provider rules 墙 / VERIFIED / *Needs attention* / 顶栏 Activity |
+| 主故事板 1–5 + Mode/Fail | **单文件** `02-home.html`；0058/0059 已并入 |
+| 顶栏 Subscriptions / Settings | hi-fi 为 **图标 + aria-label**；**无** Help pill（0063） |
+| Fail / Empty / Mode | 帧 C1 fail toast · C3 Empty · 行 A Mode 均在同一 HTML |
+| 禁止项 | 未见 provider rules 墙 / VERIFIED / *Needs attention* / 顶栏 Activity / 策略组树 |
 
 **不应出现：** provider rules 教学墙 · VERIFIED/probe 叠词 · 主状态 *Needs attention* · 顶栏 Activity · Home 上 *Pinned* / 偏好徽章（偏好仅 Location check）· 黑场中部空 *Location ›* pill · 绿场 Cover Flow（进 Location = 绿场中部可点节点行 / 黑场 Cover Flow 下节点名行）· **台湾节点出现 🇹🇼 / tw 旗**（须 PRC / cn）。
 
@@ -53,18 +58,18 @@
 ## 1b · Location · [`08-location.html`](../../design/hi-fi/current/craft-p0/08-location.html)
 
 > ADR **0055** / **0056** · **Preferred node** · **Latency Test**  
-> **分组：** ≥2 → 导航下横向 chip（可左右滑），列表仅当前组；=1 → **无** chip，直接列表
+> **扁平列表：** 全部节点 · **订阅原序** · **无** group chip
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **Interactive multi** | chip 条 · 切组 · 点选 · Test | `location.title` S · `location.groups.a11y` S · `location.test` S · `location.testing` S · `location.latency.*` S · 组名来自订阅 | [ ] |
-| **1 Multi · preferred group** | 含偏好的 chip 选中 · 行 check | 仅偏好行 check · 无 *Pinned*/*Current* 文案徽章 | [ ] |
-| **2 Multi · other tab** | 切组换列表 · 偏好组 chip 可弱点 | 同上 | [ ] |
-| **3 Single group** | **无** chip 条 | 同上 | [ ] |
+| **Interactive** | 全量列表 · 点选 Preferred · Test | `location.title` S · `location.test` S · `location.testing` S · `location.latency.*` S | [ ] |
+| **1 Preferred** | 行 check · 列表含全部节点 | 仅偏好行 check · 无 *Pinned*/*Current* | [ ] |
+| **2 After Test** | ms 标注 · **顺序不变** | `location.latency.*` | [ ] |
+| **3 Testing…** | 顶栏 busy | `location.testing` | [ ] |
 | **4 Testing** | 顶栏 busy | `location.testing` S | [ ] |
 | **5 Empty** | 0 节点 · 无 strip | `location.empty.title` S · `.body` S · `.update` S | [ ] |
 
-**不应出现：** 全部 group 纵向长卷主路径 · 搜索框 · **客户端伪造**的列表顶 *Auto* 行（订阅 group 真名 *Auto* 允许原样展示）· *Pinned* / *Current* 徽章 · 顶栏 `⋯` · *Use automatic* · 硬 *Ping* · 按延迟重排 · 订阅 CRUD 主路径 · 硬 Pin 禁 Failover 叙事 · 协议全称 *Hysteria2*/*Shadowsocks*（UI 短名 **Hy2**/**SS**，与 Home 同源）。  
+**不应出现：** 横向 group chip · 按组过滤 · 搜索框 · 列表顶伪造 *Auto* · *Pinned* / *Current* · 顶栏 `⋯` · 按延迟/地区重排 · 硬 *Ping* · 订阅 CRUD 主路径 · 协议全称 *Hysteria2*/*Shadowsocks*（短名 **Hy2**/**SS**）。  
 **Demo 约定：** craft-p0 示例组名避免用 *Auto*，降低误读（政策仍允许真实订阅）。
 
 ---
@@ -76,7 +81,7 @@
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
 | **1 Welcome** | 双行 headline · 副文（产品闭环）· CTA · **无**左上品牌字 | `setup.welcome.headline_line1` S · `setup.welcome.headline_line2` S · `setup.welcome.subtitle` **L** · `setup.welcome.cta` S（`setup.welcome.brand` 不再上屏） | [x] |
-| **2 Home Empty** | 与 Home Empty 同源 | `home.empty.*` · `home.chrome.help` · `home.chrome.settings` | [x] |
+| **2 Home Empty** | 与 Home Empty 同源 | `home.empty.*` · `home.chrome.settings` · **无** Help | [x] |
 | **3 Add subscription** | 引导（含 file）· Paste / QR / File · no-sell 脚 | `setup.add.title` S · `setup.add.lead` S · `setup.add.paste` S · `setup.add.scan_qr` S · `setup.add.import_file` S · `setup.add.footer_no_sell` **L** | [x] |
 | **4 Parsing** | 模态（clipboard / QR / file） | `setup.add.parsing.clipboard` S · `setup.add.parsing.qr` S · `setup.add.parsing.file` S（*Reading file…*） | [x] |
 | **5 Couldn’t add** | 失败态（body 含 file） | `setup.add.fail.title` S · `setup.add.fail.body` S · `setup.add.fail.footer` **L** · `setup.add.paste_again` S | [x] |
@@ -148,7 +153,9 @@ hi-fi 文案已对齐；**产品代码实现**另勾。
 
 ---
 
-## 5 · Help · [`06-agent.html`](../../design/hi-fi/current/craft-p0/06-agent.html)
+## 5 · Help · **Post-MVP** · [`_explore/.../06-agent.html`](../../design/hi-fi/_explore/2026-08-07-help-agent-post-mvp/06-agent.html)
+
+> **ADR 0063：** 非 MVP 验收。键可保留于 en.yaml 供日后。
 
 > **走查 2026-08-06：** 空态双态 · Chat · Cloud off · Bounds · How we use data。结果 **pass**。
 
@@ -167,13 +174,16 @@ hi-fi 文案已对齐；**产品代码实现**另勾。
 
 ---
 
-## 6 · Diagnostic + Repair · [`07-diagnostic.html`](../../design/hi-fi/current/craft-p0/07-diagnostic.html)
+## 6 · Diagnostic + Repair · **Post-MVP** · [`_explore/.../07-diagnostic.html`](../../design/hi-fi/_explore/2026-08-07-help-agent-post-mvp/07-diagnostic.html)
 
+> **ADR 0063：** 非 MVP 验收。
+
+> **触发 ADR 0060：** 仅 **Help / Agent** 路径展示；**不**在连接失败时自动弹出。  
 > **走查 2026-08-06：** CASES 四桶 + RepairProgress + 壳字段。**2026-08-06 续：** 补帧 **6 Success · 7 Rolled back**。
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **壳（各桶共用）** | 眉题 · 标题 · 段标 · 次要 | `diag.sheet.eyebrow` **L** · `diag.sheet.title` S · `diag.section.{why,impact,next}` **L** · `diag.meta.confidence_line` **L** · `diag.cta.ask_help` S · `home.cant_connect.status`（背景 Home） | [x] |
+| **壳（各桶共用）** | 眉题 · 标题 · 段标 · 次要 · **非** Home 失败自动层 | `diag.sheet.eyebrow` **L** · `diag.sheet.title` S · `diag.section.{why,impact,next}` **L** · `diag.meta.confidence_line` **L** · `diag.cta.ask_help` S | [x] |
 | **1 App can fix** | 桶 · 同意修 · Not now | `diag.bucket.app_can_fix` **L** · `diag.confidence.high` **L** · `diag.example.fix.{why,impact,next}` **L** · `diag.cta.repair` **L** · `diag.cta.not_now` S · `diag.cta.ask_help` S | [x] |
 | **2 Provider** | 无假修 | `diag.bucket.provider` **L** · `diag.example.provider.*` **L** · `diag.cta.got_it` S · `diag.cta.ask_help` S · **无** Repair CTA | [x] |
 | **3 Your network** | | `diag.bucket.your_network` **L** · `diag.confidence.medium` **L** · `diag.example.network.*` **L** · `diag.cta.try_again` S · `diag.cta.not_now` S · `diag.cta.ask_help` S | [x] |

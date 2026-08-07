@@ -95,6 +95,7 @@ strings:
     en: Help
     tier: shell
     surface: home
+    notes: \"POST-MVP · ADR 0063 · not on Home chrome in MVP\"
     notes: "User-visible label; internal code may say Agent. ADR 0036."
 
   - key: home.chrome.subscriptions
@@ -127,7 +128,19 @@ strings:
     en: Can’t connect
     tier: shell
     surface: home
-    notes: "Prefer over 'Needs attention'"
+    notes: "DEPRECATED as Home mid status · ADR 0059 · use idle Not Connected + home.connect.failed.toast"
+
+  - key: home.connect.failed.toast
+    en: Couldn’t connect. Try again.
+    tier: shell
+    surface: home
+    notes: "ADR 0059 · after fail → Idle · ~2–3s toast · no sticky Can’t connect"
+
+  - key: home.failover.toast
+    en: Switched node to keep you online.
+    tier: shell
+    surface: home
+    notes: "grill D · 2026-08-07 · after successful Failover node change · ~2–3s · no sticky off-preferred UI · throttle in one keep-alive sequence"
 
   - key: home.location
     en: Location
@@ -152,7 +165,7 @@ strings:
     en: Node groups
     tier: shell
     surface: location
-    notes: "Horizontal group chip tablist · only when ≥2 groups"
+    notes: "DEPRECATED · Location is flat subscription-order list · no group chips (ADR 0056 update)"
 
   - key: location.test
     en: Test
@@ -282,15 +295,73 @@ strings:
     surface: home
 
   - key: home.mode.hint.global
+    en: Global — all via this node
+    tier: shell
+    surface: home
+    notes: "Legacy read-only hint · prefer home.mode.chip.global for 方案1 chip"
+
+  - key: home.mode.hint.direct
+    en: Direct — proxy only for exceptions
+    tier: shell
+    surface: home
+    notes: "Direct stays Settings-only in 方案1 Home · optional weak status if exposed"
+
+  # 方案 1 · Home mode chip + sheet — Smart / Global (→ auto / global)
+  - key: home.mode.chip.auto
+    en: Smart
+    tier: shell
+    surface: home
+    notes: "Quiet mid chip · user Smart · internal id auto · tap opens sheet · no 'Mode' on chip"
+
+  - key: home.mode.chip.global
     en: Global
     tier: shell
     surface: home
-    notes: "Weak hint only when mode ≠ Auto"
+    notes: "Emphasized mid chip · maps to Global"
 
-  - key: home.mode.hint.direct
-    en: Direct
+  - key: home.mode.chip.a11y.auto
+    en: Mode, Smart. Change mode.
     tier: shell
     surface: home
+
+  - key: home.mode.chip.a11y.global
+    en: Mode, Global. Change mode.
+    tier: shell
+    surface: home
+
+  - key: home.mode.sheet.title
+    en: Mode
+    tier: shell
+    surface: home
+    notes: "Sheet title · Mode once here, not on chip labels"
+
+  - key: home.mode.sheet.auto.title
+    en: Smart
+    tier: shell
+    surface: home
+    notes: "Maps to settings.routing.auto · user Smart · Auto Policy internal name"
+
+  - key: home.mode.sheet.auto.sub
+    en: Provider rules; your node when proxied
+    tier: shell
+    surface: home
+
+  - key: home.mode.sheet.global.title
+    en: Global
+    tier: shell
+    surface: home
+    notes: "Maps to settings.routing.global"
+
+  - key: home.mode.sheet.global.sub
+    en: All traffic via current node
+    tier: shell
+    surface: home
+
+  - key: home.mode.sheet.footnote
+    en: Exceptions still apply · Direct stays in Settings
+    tier: shell
+    surface: home
+    notes: "Override still on; Direct not in Home sheet"
 
   - key: home.speed.unit_mbs
     en: Mb/s
@@ -530,14 +601,16 @@ strings:
     notes: "CONTEXT Settings · explain title, not options"
 
   - key: settings.routing.auto.title
-    en: Auto
+    en: Smart
     tier: shell
     surface: settings
+    notes: "User-facing Smart · internal/auto id still Auto · aligns Home chip"
 
   - key: settings.routing.auto.sub
-    en: Provider rules + best node choice
+    en: Provider rules; your node when proxied
     tier: shell
     surface: settings
+    notes: "ADR 0058 · honest subset · same as home.mode.sheet.auto.sub"
 
   - key: settings.routing.global.title
     en: Global
@@ -545,9 +618,10 @@ strings:
     surface: settings
 
   - key: settings.routing.global.sub
-    en: All traffic via proxy
+    en: All traffic via current node
     tier: shell
     surface: settings
+    notes: "ADR 0058 · same as home.mode.sheet.global.sub; Overrides still apply"
 
   - key: settings.routing.direct.title
     en: Direct
@@ -555,9 +629,10 @@ strings:
     surface: settings
 
   - key: settings.routing.direct.sub
-    en: No proxy
+    en: No proxy by default
     tier: shell
     surface: settings
+    notes: "ADR 0058 · Overrides may still proxy selected domains"
 
   - key: settings.dns.title
     en: DNS
@@ -608,6 +683,7 @@ strings:
     en: Exceptions for specific domains
     tier: shell
     surface: settings
+    notes: "ADR 0058 · applies under Smart/Global/Direct; proxy uses Preferred node"
 
   - key: settings.overrides.empty.title
     en: No exceptions yet
@@ -616,9 +692,10 @@ strings:
     notes: "CONTEXT User Override empty closed set"
 
   - key: settings.overrides.empty.howto
-    en: Pin a domain to proxy or direct when Auto isn’t enough.
+    en: Pin a domain to proxy or direct when the default mode isn’t enough.
     tier: shell
     surface: settings
+    notes: "ADR 0058 · not Smart-only; Mode sets default, Override sets exception"
 
   - key: settings.overrides.empty.boundary
     en: A few exceptions, not a full rule set.
@@ -632,9 +709,10 @@ strings:
     surface: settings
 
   - key: settings.overrides.list.hint
-    en: Domain exceptions for Auto — not a full rule set.
+    en: Domain exceptions — not a full rule set.
     tier: lock-en
     surface: settings
+    notes: "Applies under Smart/Global/Direct · no mode name in banner"
 
   - key: settings.overrides.add
     en: Add exception
@@ -702,25 +780,28 @@ strings:
     surface: settings
 
   - key: settings.overrides.consequence.proxy
-    en: Send this domain through the proxy in Auto.
+    en: Send this domain through the proxy.
     tier: shell
     surface: settings
+    notes: "Mode-agnostic · Overrides apply under Smart/Global/Direct"
 
   - key: settings.overrides.consequence.direct
-    en: Bypass the proxy for this domain in Auto.
+    en: Bypass the proxy for this domain.
     tier: shell
     surface: settings
+    notes: "Mode-agnostic · Overrides apply under Smart/Global/Direct"
 
   - key: settings.overrides.consequence.proxy_compact
-    en: Via proxy in Auto
+    en: Via proxy
+    tier: shell
+    surface: settings
+    notes: "Compact sheet with keyboard open · same as action.proxy"
+
+  - key: settings.overrides.consequence.direct_compact
+    en: Direct
     tier: shell
     surface: settings
     notes: "Compact sheet with keyboard open"
-
-  - key: settings.overrides.consequence.direct_compact
-    en: Direct in Auto
-    tier: shell
-    surface: settings
 
   # iOS · User Override iCloud Backup (ADR 0054) — not Android
   - key: settings.overrides.icloud.restored_one

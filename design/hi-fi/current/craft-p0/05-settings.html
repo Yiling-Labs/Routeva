@@ -138,10 +138,11 @@
       groupShadow: '0 10px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.09)',
     };
 
+    /* Smart/Global user labels · id auto/global for internals · en.yaml settings.routing.* */
     const MODE_OPTS = [
-      { id: 'auto', title: 'Auto', sub: 'Provider rules + best node choice' },
-      { id: 'global', title: 'Global', sub: 'All traffic via proxy' },
-      { id: 'direct', title: 'Direct', sub: 'No proxy' },
+      { id: 'auto', title: 'Smart', sub: 'Provider rules; your node when proxied' },
+      { id: 'global', title: 'Global', sub: 'All traffic via current node' },
+      { id: 'direct', title: 'Direct', sub: 'No proxy by default' },
     ];
     const DNS_OPTS = [
       { id: 'automatic', title: 'Automatic', sub: 'System / tunnel default' },
@@ -654,7 +655,7 @@
                   color: T.secondary, lineHeight: 1.45,
                   maxWidth: '28ch', textWrap: 'pretty',
                 }}>
-                  Pin a domain to proxy or direct when Auto isn’t enough.
+                  Pin a domain to proxy or direct when the default mode isn’t enough.
                 </p>
                 {/* Boundary: quieter second beat — O3 “not a full rule set” */}
                 <p style={{
@@ -700,7 +701,7 @@
                 margin: '0 4px 2px', fontSize: 13, fontWeight: 500,
                 color: T.muted, lineHeight: 1.45, maxWidth: '42ch', textWrap: 'pretty',
               }}>
-                Domain exceptions for Auto — not a full rule set.
+                Domain exceptions — not a full rule set.
               </p>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {items.map((r) => {
@@ -1184,8 +1185,8 @@
               minHeight: compact ? '1.35em' : undefined,
             }}>
               {action === 'Proxy'
-                ? (compact ? 'Via proxy in Auto' : 'Send this domain through the proxy in Auto.')
-                : (compact ? 'Direct in Auto' : 'Bypass the proxy for this domain in Auto.')}
+                ? (compact ? 'Via proxy' : 'Send this domain through the proxy.')
+                : (compact ? 'Direct' : 'Bypass the proxy for this domain.')}
             </p>
 
             <Primary wide onClick={handleSave}>
@@ -1316,7 +1317,7 @@
       const [showAdd, setShowAdd] = useState(false);
       const [overrides, setOverrides] = useState(OVERRIDE_DEMO);
 
-      const modeLabel = MODE_OPTS.find((m) => m.id === mode)?.title || 'Auto';
+      const modeLabel = MODE_OPTS.find((m) => m.id === mode)?.title || 'Smart';
       const dnsLabel = DNS_OPTS.find((d) => d.id === dns)?.title || 'Automatic';
 
       let body = null;
@@ -1432,7 +1433,7 @@
               {frame(
                 <SettingsRoot
                   onNav={() => {}}
-                  modeLabel="Auto"
+                  modeLabel="Smart"
                   dnsLabel="Automatic"
                   overrideCount={2}
                   autoUpdate

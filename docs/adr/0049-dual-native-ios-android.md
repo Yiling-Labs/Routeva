@@ -19,6 +19,7 @@ Routeva 原 Primary Type 为仅 `ios`。产品需**同时开发 iOS 与 Android 
 3. **产品真源：** 能力与非目标在 `PRODUCT.md` / `docs/prd/`；UI 在 `design/**/current/`；领域词在 `CONTEXT.md`。  
 4. **实现差异：** 平台 API（VPN、IAP、权限文案、后台限制等）记为 **Platform Realization**，不拆能力条目。  
 5. **交付节奏：** 允许暂时 **Platform Gap**（一端领先），须在 PRD/status 显式；禁止静默漂移。  
+   **实现默认节奏（2026-08-07 · grill）：** 见 ADR **0061** — **设计单源 + iOS 先 Beta 验证**；非「双端同 sprint 必须齐功」。  
 6. **默认技术形态：** 双端原生（Swift/Kotlin 等与平台 API）；不以跨端 UI 壳为默认（若日后改用跨端，另开 ADR 推翻本条布局假设）。  
 7. **GTM：** `gtm/stores/app_store/` + `gtm/stores/play_store/` 及对应 specs 并存。  
 

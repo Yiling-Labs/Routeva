@@ -11,3 +11,5 @@
 **语言：** 站面 English（GTM P0）；中文站后置。
 
 **不采纳（本阶段）：** Launch Marketing 下载主职；邮箱 Waitlist 主职；假指标 / 协议军备竞赛 / 流媒体解锁 SLA。
+
+**GTM 商店物料（grill 2026-08-07 · A）：** 与本阶段一致——**不**要求现在填满 App Store / Play listing；等 iOS 真机可截后再开。icon 等已有资产除外。

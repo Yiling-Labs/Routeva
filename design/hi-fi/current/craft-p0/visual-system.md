@@ -1,7 +1,8 @@
 # Routeva Visual System · 提取自 Home
 
 > **权威视觉源：** [`02-home.html`](./02-home.html)  
-> **约束：** 后续所有屏幕（Onboarding / Diagnostic / Repair / Activity / Agent / Settings…）**必须**从此系统取色、材质、字阶、圆角与动效气质。  
+> **约束：** 后续所有屏幕（Onboarding / Settings / Location…）**必须**从此系统取色、材质、字阶、圆角与动效气质。  
+> **MVP（ADR 0063）：** **无** Help / Agent / Diagnostic / Repair UI；相关稿在 `_explore/2026-08-07-help-agent-post-mvp/`。  
 > 不必像素复制 Home 的每一个控件，但必须**协调统一、不违和**。禁止另起一套「扁平工具风 / 厚重卡片风 / 纯 iOS 默认列表风」与 Home 断裂。
 
 ## 1. 气质一句话
@@ -71,25 +72,21 @@
 
 - **无底部 Tab**  
 - 顶栏：左右 **glass orb**（与 Home 同款）  
-- **有订阅：** `[ Help ] [ Subscriptions ] …… [ Settings ]`（ADR 0020 / **0036**）  
-- **Empty：** `[ Help ] …… [ Settings ]`（无 Subscriptions）  
-- **Help** = soft glass **pill**（助手图标 + *Help* 字样），非抽象 Agent 圆标  
-- **Activity** 不进顶栏、**不进** Settings 根页（ADR **0051**）；触点优先 Help / 诊断·Repair  
+- **有订阅（MVP）：** `[ Subscriptions ] …… [ Settings ]`（ADR **0063**；**无** Help）  
+- **Empty（MVP）：** `[ Settings ]` only  
+- **Activity** 不进顶栏、**不进** Settings（ADR **0051**）；MVP 无用户可见列表  
 - 二级：push 或 sheet；关闭用 Close / 系统 back  
-- 诊断 / 修复：优先 **底 sheet 玻璃卡**（与早期 probe 诊断语言一致）  
+- **Post-MVP：** Help pill / 诊断·Repair sheet 见 `_explore/2026-08-07-help-agent-post-mvp/`  
 
 ## 8. 各屏如何「提取」而非复制
 
 | 屏幕 | 与 Home 的协调方式 |
 |---|---|
-| **Onboarding / Import** | Field Black；大标题 28–30；主 CTA 薄荷绿实心；少步骤。**Parsing** = 叠在 Add 上的玻璃 status 模态（非全屏）。成功 = Home Idle 同壳 + 短 toast（2–3s），不另起结果页 |
-| **Location / 节点列表** | Field Black；顶栏 Back + *Location* + *Test*；**≥2 组** 导航下横向 glass chip（可左右滑）；列表仅当前组；**1 组无 chip**；行：名 · Preferred check · 弱协议 · ms；权威 `08-location.html`（ADR **0055**/**0056**） |
-| **Diagnostic** | 叠在 dimmed Home（Can’t connect 黑场）；底 glass sheet；四桶白话；Why/Impact/Next；主 CTA；**次要 Ask Help**（Not sure 时可作主 CTA）。权威：`07-diagnostic.html` |
-| **Repair** | 同场材质进度卡；Snapshot 文案；Cancel = ghost；验证后回绿场或失败 sheet |
-| **Subscriptions** | Field Black；**单列表**（Active 行加强 + Update）；名旁轻量铅笔 → Rename sheet（非主 CTA · ADR 0033）；流量/到期有则显示、无则隐藏；**到期必带 Expires/Expired 标签**（已过期暖警示色，非连接绿）；手动 Update 失败 = 短 toast（非卡内错误条）；禁止裸日期贴 nodes；**少文案**；无 All 第二层 |
-| **Activity** | **非**独立一级/Settings 二级主入口（ADR **0051**）。若后续做完整时间线：Black 场；轻分割；图标线框、低饱和；优先从 Help / 诊断上下文进入 |
-| **Help / Agent** | Black 场；顶 **信任条**（Cloud 默认 On）；空态求助文案 + chips；气泡轻量；输入条 glass 胶囊；边界页 Can/Can’t。权威：`06-agent.html`（ADR 0035–0043） |
-| **Settings** | Black 场；分组标题弱字；glass Group 列表 + chevron；**Connection → App** 两段（**无** History · ADR **0051**）；**App 三行：** **Auto-update subscription**（Toggle，默认开 · ADR **0015**）· Subscriptions › · About ›；隐私经 About → Privacy Policy（含 iOS iCloud 披露 · Support · Export · ADR **0031**）；**无** 根页 Privacy / Appearance / Advanced / Cloud AI / Activity / Snapshots。**Overrides O3：** 空态/列表提示 *exceptions, not a full rule set*；CTA *Add exception*；根计数数字/None 不写 *rules*（ADR 0045）。权威：`05-settings.html` |
+| **Onboarding / Import** | Field Black；大标题 28–30；主 CTA 薄荷绿实心；少步骤。**Parsing** = 叠在 Add 上的玻璃 status 模态。成功 = Home Idle 同壳 + 短 toast（2–3s） |
+| **Location / 节点列表** | Field Black；顶栏 Back + *Location* + *Test*；**扁平**订阅原序；**无** group chip；行：名 · Preferred check · 弱协议 · ms；权威 `08-location.html` |
+| **Subscriptions** | Field Black；**单列表**；名旁铅笔 Rename；到期标签；Update 失败 toast；权威 `04-subscriptions.html` |
+| **Settings** | Black 场；**Connection → App**；Auto-update · Subscriptions › · About ›；权威 `05-settings.html` |
+| **Post-MVP Help / Diagnostic / Repair** | 非 MVP 权威；存档 `_explore/2026-08-07-help-agent-post-mvp/` |
 
 ## 9. 自检清单（新屏交付前）
 
@@ -105,7 +102,7 @@
 - **Hi-fi 共享：** [`icons.js`](./icons.js)（Lucide Static v0.469.0 · ISC · `currentColor` · stroke **1.6** chrome / **2** CTA）
 - **禁止**各页手绘 path 或混用 Heroicons / 多套库
 - **SwiftUI：** 用 `icons.js` 头注释中的 **SF Symbols** 名称映射；勿把 SF 资源嵌进 HTML
-- 主 Help 一律 `circle-help` / `questionmark.circle`（非 chat bubble）
+- （Post-MVP）Help 入口若恢复：`circle-help` / `questionmark.circle`（非 chat bubble）
 
 ## 11. 实现对照
 

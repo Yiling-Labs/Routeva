@@ -64,16 +64,6 @@
       mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
       -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 28px), transparent 100%);
     }
-    .group-strip {
-      display: flex; flex-direction: row; flex-wrap: nowrap; gap: 8px;
-      overflow-x: auto; overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      padding: 0 0 10px;
-      margin: 0 -22px;
-      padding-left: 22px; padding-right: 22px;
-    }
-    .group-strip::-webkit-scrollbar { display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; animation: none !important; }
@@ -83,18 +73,18 @@
 </head>
 <body>
   <div class="meta">
-    <h1>Location · Node list</h1>
+    <h1>Location · Flat node list</h1>
     <p>
-      ADR <strong>0055</strong> / <strong>0056</strong> · CONTEXT <strong>Location Surface</strong> · <strong>Preferred node</strong>.
-      Full-screen from Home <strong>node caption ›</strong> (Idle/Can’t) or <strong>Connected node row</strong>.
-      <strong>Groups ≥ 2:</strong> sticky horizontal chips under nav · tap chip → that group’s nodes only · overflow scrolls sideways.
-      <strong>Groups = 1:</strong> no chip strip · list only.
-      Tap node = <strong>preferred</strong> (Failover still ok) · top <strong>Test</strong> = Latency · no ⋯ · no search.
+      ADR <strong>0055</strong> / <strong>0056</strong> (list simplified) · <strong>Preferred node</strong>.
+      Full-screen from Home node caption / Connected node row.
+      <strong>No group chips</strong> — one scrollable list of <strong>all</strong> Active subscription nodes,
+      in <strong>subscription file order</strong> (no client re-sort by region/latency).
+      Tap = preferred · top <strong>Test</strong> = latency · no search · no ⋯.
     </p>
     <div class="tags">
       <span class="tag">LOCATION SURFACE</span>
-      <span class="tag">HORIZONTAL GROUPS</span>
-      <span class="tag">ADR 0055 · 0056</span>
+      <span class="tag">FLAT LIST</span>
+      <span class="tag">SUBSCRIPTION ORDER</span>
       <span class="tag">PREFERRED NODE</span>
       <span class="tag">LATENCY TEST</span>
     </div>
@@ -102,7 +92,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo } = React;
+    const { useState, useEffect, useRef } = React;
     const { IconBack, IconCheck, IconRefresh, IconList } = window.RoutevaIcons;
 
     const TYPE = {
@@ -131,74 +121,25 @@
       groupShadow: '0 10px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.09)',
     };
 
-    /** Multi-group demo — enough chips to need horizontal scroll */
-    /** Group names = provider metadata as-is. Demo avoids a group literally named "Auto"
-     *  so reviewers don’t confuse it with a client-forged “Auto select” row (ADR 0056). */
-    const DEMO_GROUPS_MULTI = [
-      {
-        id: 'hk',
-        name: 'Hong Kong',
-        nodes: [
-          { id: 'hk-01', name: 'HK-01 Edge', protocol: 'VLESS' },
-          { id: 'hk-02', name: 'HK-02 Metro', protocol: 'VMess' },
-          { id: 'hk-03', name: 'HK-03 Lite', protocol: 'Trojan' },
-        ],
-      },
-      {
-        id: 'tw',
-        name: 'Taiwan',
-        nodes: [
-          { id: 'tw-01', name: '🇨🇳 台湾A01 | IEPL | x2', protocol: 'VLESS' },
-          { id: 'tw-02', name: 'Taipei-02', protocol: 'Hy2' },
-          { id: 'tw-03', name: '[流媒体]美国奈飞专线-IEPL-x99-备用', protocol: 'VMess' },
-        ],
-      },
-      {
-        id: 'sg',
-        name: 'Singapore',
-        nodes: [
-          { id: 'sg-01', name: 'SG-01', protocol: 'VLESS' },
-          { id: 'sg-02', name: 'SG-02 Fast', protocol: 'Hy2' },
-        ],
-      },
-      {
-        id: 'us',
-        name: 'United States',
-        nodes: [
-          { id: 'us-01', name: 'LAX-01', protocol: 'VLESS' },
-          { id: 'us-02', name: 'SJC-02', protocol: 'Trojan' },
-        ],
-      },
-      {
-        id: 'stream',
-        name: 'Streaming',
-        nodes: [
-          { id: 'st-01', name: 'US West Media', protocol: 'VLESS' },
-          { id: 'st-02', name: 'SG Stream', protocol: 'Trojan' },
-        ],
-      },
-      {
-        id: 'game',
-        name: 'Gaming',
-        nodes: [
-          { id: 'gm-01', name: 'JP Game Lowping', protocol: 'Hy2' },
-          { id: 'gm-02', name: 'TW Game', protocol: 'VLESS' },
-        ],
-      },
-    ];
-
-    /** Single-group demo — chip strip hidden */
-    const DEMO_GROUPS_SINGLE = [
-      {
-        id: 'all',
-        name: 'All nodes',
-        nodes: [
-          { id: 'n-01', name: 'Node Alpha', protocol: 'VLESS' },
-          { id: 'n-02', name: 'Node Beta', protocol: 'VMess' },
-          { id: 'n-03', name: 'Node Gamma', protocol: 'Trojan' },
-          { id: 'n-04', name: 'Node Delta', protocol: 'Hy2' },
-        ],
-      },
+    /**
+     * Flat list in subscription / market order (as provided by the profile).
+     * No client re-group by region · no latency re-sort · no group chips.
+     */
+    const DEMO_NODES = [
+      { id: 'hk-01', name: 'HK-01 Edge', protocol: 'VLESS' },
+      { id: 'hk-02', name: 'HK-02 Metro', protocol: 'VMess' },
+      { id: 'hk-03', name: 'HK-03 Lite', protocol: 'Trojan' },
+      { id: 'tw-01', name: '🇨🇳 台湾A01 | IEPL | x2', protocol: 'VLESS' },
+      { id: 'tw-02', name: 'Taipei-02', protocol: 'Hy2' },
+      { id: 'tw-03', name: '[流媒体]美国奈飞专线-IEPL-x99-备用', protocol: 'VMess' },
+      { id: 'sg-01', name: 'SG-01', protocol: 'VLESS' },
+      { id: 'sg-02', name: 'SG-02 Fast', protocol: 'Hy2' },
+      { id: 'us-01', name: 'LAX-01', protocol: 'VLESS' },
+      { id: 'us-02', name: 'SJC-02', protocol: 'Trojan' },
+      { id: 'st-01', name: 'US West Media', protocol: 'VLESS' },
+      { id: 'st-02', name: 'SG Stream', protocol: 'Trojan' },
+      { id: 'gm-01', name: 'JP Game Lowping', protocol: 'Hy2' },
+      { id: 'gm-02', name: 'TW Game', protocol: 'VLESS' },
     ];
 
     const DEMO_LATENCIES = {
@@ -208,16 +149,7 @@
       'us-01': 168, 'us-02': 155,
       'st-01': 142, 'st-02': 98,
       'gm-01': 42, 'gm-02': 58,
-      'n-01': 40, 'n-02': 61, 'n-03': 73, 'n-04': 55,
     };
-
-    function groupIdForNode(groups, nodeId) {
-      if (!nodeId) return groups[0] && groups[0].id;
-      for (const g of groups) {
-        if (g.nodes.some((n) => n.id === nodeId)) return g.id;
-      }
-      return groups[0] && groups[0].id;
-    }
 
     function IosFrame({ children }) {
       const c = '#fff';
@@ -310,16 +242,7 @@
     }
 
     /**
-     * @param {{
-     *   interactive?: boolean,
-     *   preferredId?: string|null,
-     *   latencies?: object|null,
-     *   testing?: boolean,
-     *   empty?: boolean,
-     *   groupsData?: array,
-     *   activeGroupId?: string|null,
-     *   onBack?: function,
-     * }} props
+     * Flat list · subscription order · no group strip.
      */
     function LocationScreen({
       interactive = false,
@@ -327,57 +250,29 @@
       latencies: latProp = null,
       testing: testingProp = false,
       empty = false,
-      groupsData = DEMO_GROUPS_MULTI,
-      activeGroupId: groupProp = null,
+      nodesData = DEMO_NODES,
       onBack,
     }) {
-      const groups = empty ? [] : groupsData;
-      const showGroupStrip = groups.length > 1;
-
-      const initialGroup = groupProp || groupIdForNode(groups, prefProp) || (groups[0] && groups[0].id);
-
+      const nodes = empty ? [] : nodesData;
       const [preferredId, setPreferredId] = useState(prefProp);
-      const [activeGroupId, setActiveGroupId] = useState(initialGroup);
       const [latencies, setLatencies] = useState(latProp);
       const [testing, setTesting] = useState(testingProp);
       const [toast, setToast] = useState(null);
       const testTimer = useRef(null);
-      const stripRef = useRef(null);
-      const chipRefs = useRef({});
 
       useEffect(() => {
         if (!interactive) {
           setPreferredId(prefProp);
           setLatencies(latProp);
           setTesting(testingProp);
-          setActiveGroupId(groupProp || groupIdForNode(groups, prefProp) || (groups[0] && groups[0].id));
         }
-      }, [interactive, prefProp, latProp, testingProp, groupProp, groupsData, empty]);
+      }, [interactive, prefProp, latProp, testingProp, empty, nodesData]);
 
       useEffect(() => () => {
         if (testTimer.current) clearTimeout(testTimer.current);
       }, []);
 
-      /* Keep selected chip in view when group changes */
-      useEffect(() => {
-        if (!showGroupStrip || !activeGroupId) return;
-        const el = chipRefs.current[activeGroupId];
-        if (el && el.scrollIntoView) {
-          el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        }
-      }, [activeGroupId, showGroupStrip]);
-
-      const activeGroup = useMemo(
-        () => groups.find((g) => g.id === activeGroupId) || groups[0],
-        [groups, activeGroupId],
-      );
-      const nodes = (activeGroup && activeGroup.nodes) || [];
       const hasPreferred = preferredId != null;
-
-      function selectGroup(id) {
-        if (!interactive) return;
-        setActiveGroupId(id);
-      }
 
       function selectNode(id) {
         if (!interactive) return;
@@ -414,12 +309,11 @@
             display: 'flex', flexDirection: 'column',
             padding: `8px ${L.padX}px 26px`,
           }}>
-            {/* Nav */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              height: L.navH, marginBottom: showGroupStrip ? 2 : 4, flexShrink: 0, gap: 8,
+              height: L.navH, marginBottom: 6, flexShrink: 0, gap: 8,
             }}>
-              <div style={{ width: 40, display: 'flex', flexShrink: 0 }}>
+              <div style={{ width: 40, flexShrink: 0, display: 'flex' }}>
                 <GlassOrb label="Back" onClick={onBack || (() => {})}>
                   <IconBack />
                 </GlassOrb>
@@ -474,70 +368,7 @@
               </div>
             </div>
 
-            {/* Group strip — only when ≥ 2 groups */}
-            {showGroupStrip && (
-              <div
-                ref={stripRef}
-                className="group-strip"
-                role="tablist"
-                aria-label="Node groups"
-                style={{ flexShrink: 0 }}
-              >
-                {groups.map((g) => {
-                  const selected = g.id === activeGroupId;
-                  const hasPrefInGroup = preferredId && g.nodes.some((n) => n.id === preferredId);
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      ref={(el) => { chipRefs.current[g.id] = el; }}
-                      onClick={() => selectGroup(g.id)}
-                      style={{
-                        flex: '0 0 auto',
-                        border: selected
-                          ? `1px solid ${T.mintBorder}`
-                          : '1px solid rgba(255,255,255,0.12)',
-                        cursor: interactive ? 'pointer' : 'default',
-                        padding: '8px 14px',
-                        borderRadius: 999,
-                        background: selected
-                          ? T.mintSoft
-                          : 'linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)',
-                        boxShadow: selected
-                          ? 'inset 0 1px 0 rgba(255,255,255,0.12)'
-                          : 'inset 0 1px 0 rgba(255,255,255,0.08)',
-                        color: selected ? T.mint : 'rgba(255,255,255,0.82)',
-                        fontFamily: TYPE.font,
-                        fontSize: 13,
-                        fontWeight: selected ? 650 : 550,
-                        letterSpacing: '-0.01em',
-                        whiteSpace: 'nowrap',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      <span>{g.name}</span>
-                      {hasPrefInGroup && (
-                        <span
-                          aria-hidden="true"
-                          style={{
-                            width: 6, height: 6, borderRadius: 999,
-                            background: T.mint,
-                            flexShrink: 0,
-                            opacity: selected ? 1 : 0.75,
-                          }}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Node list for active group only */}
+            {/* All nodes · subscription order */}
             <div
               className="scroll-fade"
               style={{
@@ -593,7 +424,7 @@
                   background: T.card,
                   border: `1px solid ${T.cardBorder}`,
                   boxShadow: L.groupShadow,
-                  marginTop: showGroupStrip ? 2 : 6,
+                  marginTop: 2,
                 }}>
                   {nodes.map((n, ni) => {
                     const isPreferred = hasPreferred && preferredId === n.id;
@@ -634,7 +465,6 @@
                             <span>{n.protocol}</span>
                             <span aria-hidden="true" style={{ opacity: 0.5 }}>·</span>
                             <span style={{ color: latencyColor(lat) }}>
-                              {/* During Test: keep dash — top bar already says Testing…; avoid "…" looking like truncated protocol */}
                               {formatLatency(lat)}
                             </span>
                           </span>
@@ -687,26 +517,19 @@
     function App() {
       return (
         <div className="row">
-          <Phone label="Interactive · multi-group" sub="Chips under nav · swipe · tap group · tap node">
+          <Phone label="Interactive" sub="Flat list · subscription order · tap to prefer">
             <LocationScreen interactive preferredId="tw-01" latencies={null} />
           </Phone>
-          <Phone label="1 · Multi · Taiwan tab" sub="Preferred 🇨🇳 台湾A01… · chip strip">
-            <LocationScreen preferredId="tw-01" activeGroupId="tw" latencies={null} />
+          <Phone label="1 · Preferred" sub="🇨🇳 台湾A01… check · full list scroll">
+            <LocationScreen preferredId="tw-01" latencies={null} />
           </Phone>
-          <Phone label="2 · Multi · Streaming" sub="Switch group · preferred still in Taiwan">
-            <LocationScreen preferredId="tw-01" activeGroupId="stream" latencies={DEMO_LATENCIES} />
+          <Phone label="2 · After Test" sub="ms labels · order unchanged">
+            <LocationScreen preferredId="tw-01" latencies={DEMO_LATENCIES} />
           </Phone>
-          <Phone label="3 · Single group" sub="No chip strip · list only">
-            <LocationScreen
-              preferredId="n-02"
-              groupsData={DEMO_GROUPS_SINGLE}
-              latencies={DEMO_LATENCIES}
-            />
+          <Phone label="3 · Testing…" sub="Top busy · list keeps order">
+            <LocationScreen preferredId="tw-01" testing latencies={null} />
           </Phone>
-          <Phone label="4 · Testing…" sub="Test applies to full pool; UI shows active group">
-            <LocationScreen preferredId="tw-01" activeGroupId="tw" testing latencies={null} />
-          </Phone>
-          <Phone label="5 · Empty" sub="0 nodes · no strip">
+          <Phone label="4 · Empty" sub="0 nodes">
             <LocationScreen empty preferredId={null} />
           </Phone>
         </div>
