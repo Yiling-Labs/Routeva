@@ -1,0 +1,83 @@
+{
+  "chrome_mode": "source_chrome",
+  "source_chrome": true,
+  "brand": {
+    "bg": "#0b0e11",
+    "fg": "#f5f5f5",
+    "accent": "#4d7a6c",
+    "bg2": "#2e343a"
+  },
+  "frames": [
+    {
+      "nn": "01",
+      "role": "hook",
+      "recipe_id": "hand-context",
+      "layout": "hand-context",
+      "headline": "See the path, not the jargon",
+      "subhead": "Idle to connected with states you can actually read.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-connected.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    },
+    {
+      "nn": "02",
+      "role": "point",
+      "recipe_id": "dual-device-compare",
+      "layout": "dual-device-compare",
+      "headline": "Before maze, after craft",
+      "subhead": "Same job\u2014paste and connect\u2014without drowning in switches.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-idle.png",
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-connected.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    },
+    {
+      "nn": "03",
+      "role": "point",
+      "recipe_id": "solid-top-center",
+      "layout": "solid-top-center",
+      "headline": "Built for real subscription users",
+      "subhead": "If you can copy a link, you can reach a verified connection.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-connecting.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    },
+    {
+      "nn": "04",
+      "role": "point",
+      "recipe_id": "clean-white-top",
+      "layout": "clean-white-top",
+      "headline": "Latency-aware location pick",
+      "subhead": "Prefer faster nodes when you need a better path.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/location.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    },
+    {
+      "nn": "05",
+      "role": "close",
+      "recipe_id": "close-summary",
+      "layout": "close-summary",
+      "headline": "Ready when you are",
+      "subhead": "MVP Connect for people who just want the open internet.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-connected.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    }
+  ]
+}

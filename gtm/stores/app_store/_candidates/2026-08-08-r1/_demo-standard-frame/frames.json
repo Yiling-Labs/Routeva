@@ -1,0 +1,24 @@
+{
+  "chrome_mode": "standard_frame",
+  "source_chrome": false,
+  "brand": {
+    "bg": "#0b0e11",
+    "fg": "#f5f5f5",
+    "accent": "#4d7a6c",
+    "bg2": "#2e343a"
+  },
+  "frames": [
+    {
+      "nn": "01",
+      "recipe_id": "solid-top-center",
+      "headline": "Connect without the maze",
+      "subhead": "Standard frame \u00b7 screen hole composite",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r1/_demo-standard-frame/ui-inset.png"
+      ],
+      "chrome_mode": "standard_frame",
+      "source_chrome": false,
+      "fit": "cover"
+    }
+  ]
+}

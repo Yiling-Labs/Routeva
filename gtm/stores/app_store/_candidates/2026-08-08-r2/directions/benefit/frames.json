@@ -1,0 +1,83 @@
+{
+  "chrome_mode": "source_chrome",
+  "source_chrome": true,
+  "brand": {
+    "bg": "#0b0e11",
+    "fg": "#f5f5f5",
+    "accent": "#4d7a6c",
+    "bg2": "#2e343a"
+  },
+  "frames": [
+    {
+      "nn": "01",
+      "role": "hook",
+      "recipe_id": "dark-multi-stack",
+      "layout": "dark-multi-stack",
+      "headline": "Connect without the maze",
+      "subhead": "From paste to a real connectivity check\u2014no node sales.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-idle.png",
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-connected.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    },
+    {
+      "nn": "02",
+      "role": "point",
+      "recipe_id": "solid-top-center",
+      "layout": "solid-top-center",
+      "headline": "Paste. Connect. Verified.",
+      "subhead": "A considered path that ends in a real probe, not a green lie.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/setup.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    },
+    {
+      "nn": "03",
+      "role": "point",
+      "recipe_id": "solid-bottom-caption",
+      "layout": "solid-bottom-caption",
+      "headline": "Less config anxiety",
+      "subhead": "Built for people who already have a subscription\u2014not a protocol degree.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-idle.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    },
+    {
+      "nn": "04",
+      "role": "point",
+      "recipe_id": "accent-bar-side",
+      "layout": "accent-bar-side",
+      "headline": "Pick a path that holds",
+      "subhead": "Smart policy prefers stable routes so you stay on the internet.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/location.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    },
+    {
+      "nn": "05",
+      "role": "close",
+      "recipe_id": "close-summary",
+      "layout": "close-summary",
+      "headline": "Crafted Connect for everyday use",
+      "subhead": "Honest states. Calm controls. Made for ChatGPT, YouTube, Telegram days.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r2/_hifi-exports/home-connected.png"
+      ],
+      "fit": "cover",
+      "chrome_mode": "source_chrome",
+      "source_chrome": true
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "brand": {
+    "bg": "#0b0e11",
+    "fg": "#f5f5f5",
+    "accent": "#4d7a6c",
+    "bg2": "#2e343a"
+  },
+  "frames": [
+    {
+      "nn": "01",
+      "role": "hook",
+      "recipe_id": "solid-top-center",
+      "layout": "solid-top-center",
+      "headline": "Import. Test. Connect.",
+      "subhead": "Table-stakes VPN flow with a real connectivity probe.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r1/_hifi-exports/home-connected.png"
+      ],
+      "fit": "cover",
+      "source_chrome": true
+    },
+    {
+      "nn": "02",
+      "role": "point",
+      "recipe_id": "solid-text-left",
+      "layout": "solid-text-left",
+      "headline": "Add your subscription",
+      "subhead": "Bring the link you already have\u2014Routeva doesn\u2019t sell nodes.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r1/_hifi-exports/subscriptions.png"
+      ],
+      "fit": "cover",
+      "source_chrome": true
+    },
+    {
+      "nn": "03",
+      "role": "point",
+      "recipe_id": "solid-bottom-caption",
+      "layout": "solid-bottom-caption",
+      "headline": "Swipe to connect",
+      "subhead": "A crafted connect gesture with clear idle, connecting, and live states.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r1/_hifi-exports/home-idle.png"
+      ],
+      "fit": "cover",
+      "source_chrome": true
+    },
+    {
+      "nn": "04",
+      "role": "point",
+      "recipe_id": "split-tone",
+      "layout": "split-tone",
+      "headline": "Choose locations smartly",
+      "subhead": "Browse nodes, prefer latency, keep Smart or Global under control.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r1/_hifi-exports/location.png"
+      ],
+      "fit": "cover",
+      "source_chrome": true
+    },
+    {
+      "nn": "05",
+      "role": "close",
+      "recipe_id": "close-summary",
+      "layout": "close-summary",
+      "headline": "Everything you need to stay online",
+      "subhead": "Subscriptions, locations, settings\u2014without a power-user maze.",
+      "images": [
+        "/Users/yihang/Documents/Projects/Routeva/gtm/stores/app_store/_candidates/2026-08-08-r1/_hifi-exports/home-connected.png"
+      ],
+      "fit": "cover",
+      "source_chrome": true
+    }
+  ],
+  "source_chrome": true
+}
