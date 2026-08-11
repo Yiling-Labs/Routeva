@@ -48,7 +48,10 @@ jobs:
           echo "$tools_root/XcodeGen/.build/release" >> "$GITHUB_PATH"
       - name: Generate unsigned project
         working-directory: app/ios
-        run: xcodegen generate --spec project.yml
+        run: |
+          xcodegen generate --spec project.yml
+          mkdir -p Routeva.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+          cp Package.resolved Routeva.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
       - name: Build unsigned Simulator app
         working-directory: app/ios
         run: |
