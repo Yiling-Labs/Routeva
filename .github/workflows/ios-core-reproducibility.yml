@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build pinned XcodeGen
         run: |
           tools_root="$(mktemp -d)"
