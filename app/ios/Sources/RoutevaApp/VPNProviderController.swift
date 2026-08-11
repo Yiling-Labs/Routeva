@@ -5,7 +5,7 @@ import SharedKit
 
 enum ProviderBundleIdentifier {
     static func value(for core: CoreIdentifier) -> String {
-        "com.yilinglabs.routeva.PacketTunnel.SingBox"
+        "com.yilinglabs.routeva.SingBoxTunnel"
     }
 }
 

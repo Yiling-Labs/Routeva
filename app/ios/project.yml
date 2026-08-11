@@ -133,7 +133,7 @@ targets:
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.yilinglabs.routeva.PacketTunnel.SingBox
+        PRODUCT_BUNDLE_IDENTIFIER: com.yilinglabs.routeva.SingBoxTunnel
         PRODUCT_NAME: RoutevaPacketTunnelSingBox
         APPLICATION_EXTENSION_API_ONLY: YES
         SKIP_INSTALL: YES
