@@ -1,0 +1,7 @@
+.build/
+.swiftpm/
+DerivedData/
+Routeva.xcodeproj/
+Vendor/*.xcframework/
+Vendor/*.framework/
+Vendor/*.a
