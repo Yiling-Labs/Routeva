@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a reproducible Routeva problem without private configuration.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include real subscription URLs, node credentials, exported diagnostics, certificates, or profiles.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Routeva version
+      placeholder: 1.0 (1)
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: iOS version and device model
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use only synthetic example.invalid configuration.
+    validations:
+      required: true

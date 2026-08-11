@@ -1,0 +1,37 @@
+name: iOS Core Reproducibility
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild-libbox:
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build pinned XcodeGen
+        run: |
+          tools_root="$(mktemp -d)"
+          git clone --depth 1 --branch 2.45.4 https://github.com/yonaskolb/XcodeGen.git "$tools_root/XcodeGen"
+          swift build --package-path "$tools_root/XcodeGen" -c release
+          echo "$tools_root/XcodeGen/.build/release" >> "$GITHUB_PATH"
+      - name: Rebuild pinned Libbox
+        working-directory: app/ios
+        run: ./Scripts/build-cores.sh
+      - name: Verify reference device digest
+        working-directory: app/ios
+        run: |
+          expected="$(python3 -c 'import json; print(json.load(open("CoreVersions.json"))["cores"]["sing-box"]["deviceBinarySHA256"])')"
+          actual="$(shasum -a 256 Vendor/Libbox.xcframework/ios-arm64/Libbox.framework/Libbox | awk '{print $1}')"
+          test "$actual" = "$expected"
+      - name: Verify generated module manifest
+        working-directory: app/ios
+        run: |
+          ./Scripts/generate-go-module-manifest.sh
+          git diff --exit-code -- THIRD_PARTY_MODULES.txt
+      - name: Generate linked project
+        working-directory: app/ios
+        run: xcodegen generate --spec project.cores.yml

@@ -1,0 +1,119 @@
+diff --git a/tun.go b/tun.go
+--- a/tun.go
++++ b/tun.go
+@@ -113,6 +113,7 @@ type Options struct {
+ 	// For library usages.
+ 	EXP_DisableDNSHijack      bool
+ 	EXP_ExternalConfiguration bool
++	EXP_PacketFlowBridge      bool
+ 
+ 	// For gvisor stack, it should be enabled when MTU is less than 32768; otherwise it should be less than or equal to 8192.
+ 	// The above condition is just an estimate and not exact, calculated on M4 pro.
+diff --git a/tun_darwin_gvisor.go b/tun_darwin_gvisor.go
+--- a/tun_darwin_gvisor.go
++++ b/tun_darwin_gvisor.go
+@@ -42,11 +42,15 @@ func (t *NativeTun) WritePacket(pkt *stack.PacketBuffer) (int, error) {
+ }
+ 
+ func (t *NativeTun) NewEndpoint() (stack.LinkEndpoint, stack.NICOptions, error) {
++	packetDispatchMode := fdbased.RecvMMsg
++	if t.options.EXP_PacketFlowBridge {
++		packetDispatchMode = fdbased.Readv
++	}
+ 	ep, err := fdbased.New(&fdbased.Options{
+ 		FDs:                 []int{t.tunFd},
+ 		MTU:                 t.options.MTU,
+ 		RXChecksumOffload:   true,
+-		PacketDispatchMode:  fdbased.RecvMMsg,
++		PacketDispatchMode:  packetDispatchMode,
+ 		MultiPendingPackets: t.options.EXP_MultiPendingPackets,
+ 		SendMsgX:            t.options.EXP_SendMsgX,
+ 	})
+diff --git a/internal/fdbased_darwin/endpoint.go b/internal/fdbased_darwin/endpoint.go
+--- a/internal/fdbased_darwin/endpoint.go
++++ b/internal/fdbased_darwin/endpoint.go
+@@ -301,9 +301,18 @@ func New(opts *Options) (stack.LinkEndpoint, error) {
+ 			opts.ProcessorsPerChannel = common.Max(1, runtime.GOMAXPROCS(0)/len(opts.FDs))
+ 		}
+ 
+-		inboundDispatcher, err := newRecvMMsgDispatcher(fd, e, opts)
++		var inboundDispatcher linkDispatcher
++		var err error
++		switch opts.PacketDispatchMode {
++		case Readv:
++			inboundDispatcher, err = newReadVDispatcher(fd, e, opts)
++		case RecvMMsg:
++			inboundDispatcher, err = newRecvMMsgDispatcher(fd, e, opts)
++		default:
++			err = fmt.Errorf("unsupported packet dispatch mode: %s", opts.PacketDispatchMode)
++		}
+ 		if err != nil {
+-			return nil, fmt.Errorf("createInboundDispatcher(...) = %v", err)
++			return nil, fmt.Errorf("create inbound dispatcher: %v", err)
+ 		}
+ 		e.inboundDispatchers = append(e.inboundDispatchers, inboundDispatcher)
+ 	}
+diff --git a/internal/fdbased_darwin/packet_dispatchers.go b/internal/fdbased_darwin/packet_dispatchers.go
+--- a/internal/fdbased_darwin/packet_dispatchers.go
++++ b/internal/fdbased_darwin/packet_dispatchers.go
+@@ -79,6 +79,60 @@ func (b *iovecBuffer) release() {
+ 	}
+ }
+ 
++// readVDispatcher uses readv for one packet at a time. Unlike Darwin's
++// recvmsg_x batching path, readv also works with PacketFlow datagram
++// socketpairs while preserving the four-byte address-family header.
++type readVDispatcher struct {
++	stopfd.StopFD
++	fd  int
++	e   *endpoint
++	buf *iovecBuffer
++	mgr *processorManager
++}
++
++func newReadVDispatcher(fd int, e *endpoint, opts *Options) (linkDispatcher, error) {
++	stopFD, err := stopfd.New()
++	if err != nil {
++		return nil, err
++	}
++	d := &readVDispatcher{
++		StopFD: stopFD,
++		fd:     fd,
++		e:      e,
++		buf:    newIovecBuffer(opts.MTU),
++	}
++	d.mgr = newProcessorManager(opts, e)
++	d.mgr.start()
++	return d, nil
++}
++
++func (d *readVDispatcher) release() {
++	d.buf.release()
++	d.mgr.close()
++}
++
++func (d *readVDispatcher) dispatch() (bool, tcpip.Error) {
++	n, errno := rawfile.BlockingReadvUntilStopped(d.ReadFD, d.fd, d.buf.nextIovecs())
++	if n <= 0 || errno != 0 {
++		return false, TranslateErrno(errno)
++	}
++
++	pkt := stack.NewPacketBuffer(stack.PacketBufferOptions{
++		Payload: d.buf.pullBuffer(n),
++	})
++	defer pkt.DecRef()
++
++	d.e.mu.RLock()
++	addr := d.e.addr
++	d.e.mu.RUnlock()
++	if d.e.parseInboundHeader(pkt, addr) {
++		pkt.RXChecksumValidated = d.e.caps&stack.CapabilityRXChecksumOffload != 0
++		d.mgr.queuePacket(pkt, d.e.hdrSize > 0)
++		d.mgr.wakeReady()
++	}
++	return true, nil
++}
++
+ // recvMMsgDispatcher uses the recvmmsg system call to read inbound packets and
+ // dispatches them.
+ //

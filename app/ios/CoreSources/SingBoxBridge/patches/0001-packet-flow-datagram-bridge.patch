@@ -1,0 +1,34 @@
+diff --git a/experimental/libbox/platform.go b/experimental/libbox/platform.go
+--- a/experimental/libbox/platform.go
++++ b/experimental/libbox/platform.go
+@@ -4,6 +4,7 @@ import C "github.com/sagernet/sing-box/constant"
+ type PlatformInterface interface {
+ 	LocalDNSTransport() LocalDNSTransport
+ 	UsePlatformAutoDetectInterfaceControl() bool
++	UsePlatformPacketFlowBridge() bool
+ 	AutoDetectInterfaceControl(fd int32) error
+ 	OpenTun(options TunOptions) (int32, error)
+ 	UseProcFS() bool
+diff --git a/experimental/libbox/service.go b/experimental/libbox/service.go
+--- a/experimental/libbox/service.go
++++ b/experimental/libbox/service.go
+@@ -68,9 +68,16 @@ func (w *platformInterfaceWrapper) OpenInterface(options *tun.Options, platformO
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	options.Name, err = getTunnelName(tunFd)
+-	if err != nil {
+-		return nil, E.Cause(err, "query tun name")
++	if w.iif.UsePlatformPacketFlowBridge() {
++		options.Name = "routeva-packet-flow"
++		options.EXP_ExternalConfiguration = true
++		options.EXP_PacketFlowBridge = true
++		options.EXP_MultiPendingPackets = false
++	} else {
++		options.Name, err = getTunnelName(tunFd)
++		if err != nil {
++			return nil, E.Cause(err, "query tun name")
++		}
+ 	}
+ 	options.InterfaceMonitor.RegisterMyInterface(options.Name)
+ 	dupFd, err := dup(int(tunFd))
