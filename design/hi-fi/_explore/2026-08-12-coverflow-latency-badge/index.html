@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="design_doc_mode" content="canvas" />
+  <title>Routeva · Cover Flow latency badge</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --field-top: #2e343a;
+      --field-bot: #0b0e11;
+      --mint: #6ed4a6;
+      --warn: oklch(0.78 0.12 75);
+      --quiet: rgba(255,255,255,0.38);
+      --secondary: rgba(255,255,255,0.72);
+      --primary: rgba(255,255,255,0.94);
+    }
+    * { box-sizing: border-box; }
+    html, body, #root { height: 100%; margin: 0; }
+    body {
+      font-family: -apple-system, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+      background: #121417;
+      color: var(--primary);
+    }
+    .notes {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 28px 24px 8px;
+    }
+    .notes h1 {
+      font-size: 22px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+    }
+    .notes p {
+      margin: 0 0 10px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.58);
+      font-weight: 500;
+    }
+    .notes code {
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      background: rgba(255,255,255,0.06);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+    .assumptions {
+      margin: 14px 0 0;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 0.5px solid rgba(255,255,255,0.08);
+      font-size: 13px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.62);
+    }
+    .assumptions strong { color: rgba(255,255,255,0.88); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="notes" data-screen-label="brief">
+    <h1>Cover Flow · latency badge</h1>
+    <p>
+      Soft-glass flag orbs on Field Black. Latency is <strong style="color:rgba(255,255,255,0.78);font-weight:600">secondary scan data</strong> —
+      never competes with connection state or selected chrome. Four levels (ADR 0068): untested · testing · measured · timeout.
+    </p>
+    <div class="assumptions">
+      <strong>Assumptions</strong><br />
+      • Match <code>visual-system.md</code> / <code>02-home</code> orb language (specular glass, perfect circle).<br />
+      • Measured = monospaced <code>NNms</code> on the orb; Location list keeps “97 ms” spacing style.<br />
+      • Tier colors (TCP RTT): <strong style="color:oklch(0.82 0.08 155)">&lt;100 green</strong> · <strong style="color:oklch(0.86 0.08 85)">100–200 yellow</strong> · <strong style="color:oklch(0.82 0.08 25)">&gt;200 / timeout soft red</strong>. Soft glass tints — not harsh traffic lights.<br />
+      • Untested = no badge. Testing = quiet ellipsis (neutral glass).<br />
+      • <strong>Recommended ship:</strong> <code>B2</code> — inset glass + ms + tier color.
+    </div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel">
+    const { useState } = React;
+
+    function flagSrc(cc) {
+      return `https://flagcdn.com/w160/${cc.toLowerCase()}.png`;
+    }
+
+    function FlagOrb({ cc, flag, selected, dim, badge }) {
+      const size = 60;
+      return (
+        <div style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          position: "relative",
+          flexShrink: 0,
+          background: selected
+            ? "linear-gradient(155deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.08) 55%, rgba(0,0,0,0.12) 100%)"
+            : "linear-gradient(155deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 100%)",
+          boxShadow: selected
+            ? "0 0 0 1.5px rgba(255,255,255,0.55), 0 0 0 5px rgba(255,255,255,0.10), 0 16px 36px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.55)"
+            : "0 0 0 1px rgba(255,255,255,0.12), 0 8px 18px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.18)",
+        }}>
+          <div style={{
+            position: "absolute",
+            inset: selected ? 4 : 3.5,
+            borderRadius: "50%",
+            overflow: "hidden",
+            background: "#1a2228",
+            boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.25)",
+          }}>
+            <img
+              src={flagSrc(cc)}
+              alt=""
+              draggable={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                filter: dim ? "saturate(0.75) brightness(0.78)" : "saturate(1.05) brightness(1.02)",
+                transform: "scale(1.08)",
+                display: "block",
+              }}
+            />
+            {badge}
+          </div>
+          <div style={{
+            position: "absolute",
+            left: "12%",
+            right: "12%",
+            top: selected ? 5 : 4,
+            height: "38%",
+            borderRadius: "50% 50% 40% 40%",
+            background: "linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.06) 55%, transparent 100%)",
+            pointerEvents: "none",
+          }} />
+        </div>
+      );
+    }
+
+    /* ——— Badge variants ——— */
+
+    /** A: capsule hanging under orb (code baseline, refined) */
+    function BadgeUnder({ kind, ms, strong }) {
+      if (kind === "none") return null;
+      const label = kind === "testing" ? "…" : kind === "timeout" ? "—" : String(ms);
+      const color = kind === "timeout" ? "var(--warn)" : "rgba(255,255,255,0.78)";
+      return (
+        <div style={{
+          position: "absolute",
+          left: "50%",
+          bottom: -11,
+          transform: "translateX(-50%)",
+          fontSize: strong ? 10 : 9,
+          fontWeight: kind === "measured" ? 700 : 600,
+          fontVariantNumeric: "tabular-nums",
+          letterSpacing: kind === "measured" ? "-0.02em" : "0",
+          color,
+          padding: "2px 7px",
+          borderRadius: 999,
+          background: "rgba(8,10,12,0.72)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: kind === "timeout"
+            ? "0.5px solid oklch(0.78 0.12 75 / 0.35)"
+            : "0.5px solid rgba(255,255,255,0.14)",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+          lineHeight: 1.15,
+          whiteSpace: "nowrap",
+        }}>{label}</div>
+      );
+    }
+
+    /** B: inset glass on disc (neutral) */
+    function BadgeInset({ kind, ms, strong }) {
+      if (kind === "none") return null;
+      const label = kind === "testing" ? "…" : kind === "timeout" ? "—" : String(ms);
+      const color = kind === "timeout"
+        ? "oklch(0.86 0.1 75)"
+        : kind === "testing"
+          ? "rgba(255,255,255,0.55)"
+          : "rgba(255,255,255,0.92)";
+      return (
+        <div style={{
+          position: "absolute",
+          left: 5,
+          right: 5,
+          bottom: 5,
+          height: strong ? 16 : 14,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 999,
+          background: kind === "timeout"
+            ? "linear-gradient(180deg, oklch(0.35 0.04 75 / 0.75), oklch(0.22 0.03 75 / 0.88))"
+            : "linear-gradient(180deg, rgba(255,255,255,0.22), rgba(8,12,14,0.55))",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          boxShadow: "inset 0 0.5px 0 rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.25)",
+          border: "0.5px solid rgba(255,255,255,0.16)",
+          fontSize: strong ? 10 : 9,
+          fontWeight: 700,
+          fontVariantNumeric: "tabular-nums",
+          letterSpacing: "-0.03em",
+          color,
+          lineHeight: 1,
+        }}>{label}</div>
+      );
+    }
+
+    /**
+     * B2 · ship: inset glass + “ms” + tier colors
+     * good &lt;100 · fair 100–200 · poor &gt;200 / timeout
+     */
+    function latencyTier(kind, ms) {
+      if (kind === "timeout") return "poor";
+      if (kind === "testing" || kind === "none") return "neutral";
+      if (ms < 100) return "good";
+      if (ms <= 200) return "fair";
+      return "poor";
+    }
+
+    function BadgeInsetMs({ kind, ms, strong }) {
+      if (kind === "none") return null;
+      const tier = latencyTier(kind, ms);
+      const label = kind === "testing" ? "…" : kind === "timeout" ? "—" : `${ms}ms`;
+      const theme = {
+        good: {
+          fg: "oklch(0.92 0.06 155)",
+          bg: "linear-gradient(180deg, oklch(0.48 0.09 155 / 0.88), oklch(0.28 0.07 155 / 0.92))",
+          border: "oklch(0.78 0.1 155 / 0.5)",
+          glow: "0 0 10px oklch(0.7 0.12 155 / 0.35)",
+        },
+        fair: {
+          fg: "oklch(0.94 0.06 85)",
+          bg: "linear-gradient(180deg, oklch(0.52 0.1 85 / 0.85), oklch(0.32 0.08 75 / 0.92))",
+          border: "oklch(0.8 0.1 85 / 0.45)",
+          glow: "0 0 8px oklch(0.72 0.1 85 / 0.28)",
+        },
+        poor: {
+          fg: "oklch(0.92 0.06 25)",
+          bg: "linear-gradient(180deg, oklch(0.48 0.1 25 / 0.82), oklch(0.28 0.08 20 / 0.92))",
+          border: "oklch(0.72 0.12 25 / 0.42)",
+          glow: "0 0 8px oklch(0.55 0.12 25 / 0.3)",
+        },
+        neutral: {
+          fg: "rgba(255,255,255,0.62)",
+          bg: "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(8,12,14,0.55))",
+          border: "rgba(255,255,255,0.14)",
+          glow: "none",
+        },
+      }[tier];
+      return (
+        <div style={{
+          position: "absolute",
+          left: 4,
+          right: 4,
+          bottom: 4,
+          height: strong ? 17 : 15,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 999,
+          background: theme.bg,
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          boxShadow: `inset 0 0.5px 0 rgba(255,255,255,0.32), 0 2px 6px rgba(0,0,0,0.28), ${theme.glow}`,
+          border: `0.5px solid ${theme.border}`,
+          fontSize: strong ? 9.5 : 8.5,
+          fontWeight: 700,
+          fontVariantNumeric: "tabular-nums",
+          letterSpacing: kind === "measured" ? "-0.04em" : "0",
+          color: theme.fg,
+          lineHeight: 1,
+          whiteSpace: "nowrap",
+        }}>{label}</div>
+      );
+    }
+
+    /** C: selected gets arc meter; sides stay minimal under-chip */
+    function BadgeArc({ kind, ms, strong }) {
+      if (kind === "none") return null;
+      if (!strong) return <BadgeInset kind={kind} ms={ms} strong={false} />;
+      const progress = kind === "measured" ? Math.max(0.12, Math.min(1, 1 - ms / 400)) : kind === "testing" ? 0.35 : 0.08;
+      const stroke = kind === "timeout" ? "oklch(0.78 0.12 75)" : "var(--mint)";
+      const r = 26;
+      const c = 2 * Math.PI * r;
+      const dash = c * progress;
+      return (
+        <>
+          <svg width="60" height="60" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }} aria-hidden>
+            <circle cx="30" cy="30" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="2.2" />
+            <circle
+              cx="30" cy="30" r={r} fill="none"
+              stroke={stroke}
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${c}`}
+              style={{ opacity: kind === "testing" ? 0.45 : 0.9, filter: "drop-shadow(0 0 4px rgba(110,212,166,0.35))" }}
+            />
+          </svg>
+          <div style={{
+            position: "absolute",
+            left: "50%",
+            bottom: -2,
+            transform: "translateX(-50%)",
+            fontSize: 10,
+            fontWeight: 700,
+            fontVariantNumeric: "tabular-nums",
+            color: kind === "timeout" ? "var(--warn)" : "rgba(255,255,255,0.9)",
+            textShadow: "0 1px 4px rgba(0,0,0,0.8)",
+            letterSpacing: "-0.03em",
+          }}>
+            {kind === "measured" ? ms : kind === "testing" ? "…" : "—"}
+          </div>
+        </>
+      );
+    }
+
+    /** D: micro pill with optional mint for fast nodes */
+    function BadgeTint({ kind, ms, strong }) {
+      if (kind === "none") return null;
+      const fast = kind === "measured" && ms < 100;
+      const mid = kind === "measured" && ms >= 100 && ms < 200;
+      const label = kind === "testing" ? "…" : kind === "timeout" ? "TO" : String(ms);
+      const fg = kind === "timeout"
+        ? "oklch(0.86 0.1 75)"
+        : fast
+          ? "oklch(0.88 0.08 160)"
+          : "rgba(255,255,255,0.88)";
+      return (
+        <div style={{
+          position: "absolute",
+          right: -2,
+          bottom: -2,
+          minWidth: strong ? 26 : 22,
+          height: strong ? 18 : 16,
+          padding: "0 5px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 8,
+          fontSize: strong ? 10 : 9,
+          fontWeight: 700,
+          fontVariantNumeric: "tabular-nums",
+          letterSpacing: "-0.04em",
+          color: fg,
+          background: fast
+            ? "linear-gradient(145deg, oklch(0.42 0.06 160 / 0.9), oklch(0.22 0.04 160 / 0.92))"
+            : mid
+              ? "linear-gradient(145deg, rgba(40,48,56,0.92), rgba(12,14,16,0.9))"
+              : "linear-gradient(145deg, rgba(36,40,46,0.92), rgba(10,12,14,0.92))",
+          border: fast
+            ? "0.5px solid oklch(0.75 0.1 160 / 0.45)"
+            : "0.5px solid rgba(255,255,255,0.14)",
+          boxShadow: "0 3px 10px rgba(0,0,0,0.4), inset 0 0.5px 0 rgba(255,255,255,0.2)",
+        }}>{label}</div>
+      );
+    }
+
+    const SAMPLE = [
+      { id: "a", cc: "jp", flag: "🇯🇵", kind: "measured", ms: 71, selected: true },
+      { id: "b", cc: "jp", flag: "🇯🇵", kind: "measured", ms: 97, selected: false },
+      { id: "c", cc: "hk", flag: "🇭🇰", kind: "timeout", ms: null, selected: false },
+      { id: "d", cc: "cn", flag: "🇨🇳", kind: "testing", ms: null, selected: false },
+      { id: "e", cc: "us", flag: "🇺🇸", kind: "none", ms: null, selected: false },
+      { id: "f", cc: "sg", flag: "🇸🇬", kind: "measured", ms: 184, selected: false },
+    ];
+
+    function CoverRow({ Badge, title, caption }) {
+      return (
+        <div data-screen-label={title} style={{
+          width: 390,
+          borderRadius: 28,
+          overflow: "hidden",
+          background: "linear-gradient(180deg, var(--field-top), var(--field-bot))",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
+          border: "0.5px solid rgba(255,255,255,0.08)",
+        }}>
+          <div style={{
+            height: 210,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "28px 12px 20px",
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: "radial-gradient(rgba(255,255,255,0.04) 0.6px, transparent 0.6px)",
+              backgroundSize: "12px 12px",
+              maskImage: "linear-gradient(180deg, transparent, #000 40%, #000 70%, transparent)",
+              opacity: 0.5,
+              pointerEvents: "none",
+            }} />
+            <div style={{
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "center",
+              gap: 14,
+              height: 96,
+              marginBottom: 14,
+              maskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
+            }}>
+              {SAMPLE.map((n, i) => {
+                const dist = i - 0;
+                const ad = Math.abs(i - 2); // center-ish visual: put selected first in data as selected
+                return null;
+              })}
+              {/* layout: show six orbs with fixed visual roles */}
+              {[
+                { ...SAMPLE[4], dim: true, scale: 0.66 },
+                { ...SAMPLE[3], dim: true, scale: 0.76 },
+                { ...SAMPLE[1], dim: false, scale: 0.88 },
+                { ...SAMPLE[0], dim: false, scale: 1.24 },
+                { ...SAMPLE[2], dim: true, scale: 0.88 },
+                { ...SAMPLE[5], dim: true, scale: 0.76 },
+              ].map((n) => (
+                <div key={n.id + title} style={{
+                  transform: `scale(${n.scale}) translateY(${n.scale < 1 ? (1.24 - n.scale) * 18 : 0}px)`,
+                  opacity: n.scale >= 1.2 ? 1 : n.scale > 0.85 ? 0.82 : 0.48,
+                  position: "relative",
+                }}>
+                  <FlagOrb
+                    cc={n.cc}
+                    flag={n.flag}
+                    selected={!!n.selected}
+                    dim={n.dim}
+                    badge={<Badge kind={n.kind} ms={n.ms} strong={!!n.selected} />}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 15,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.88)",
+            }}>
+              <span style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                免费-日本2-Ver.8
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.38)", flexShrink: 0 }}>· VMess</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.38)" }}>›</span>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.42)" }}>
+              {caption}
+            </div>
+          </div>
+          <div style={{
+            padding: "12px 16px 16px",
+            borderTop: "0.5px solid rgba(255,255,255,0.06)",
+            background: "rgba(0,0,0,0.2)",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 650, marginBottom: 4 }}>{title}</div>
+            <div style={{ fontSize: 12, lineHeight: 1.45, color: "rgba(255,255,255,0.48)", fontWeight: 500 }}>
+              {caption}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function StateStrip({ Badge }) {
+      const states = [
+        { label: "Untested", kind: "none" },
+        { label: "Testing", kind: "testing" },
+        { label: "71 ms", kind: "measured", ms: 71 },
+        { label: "184 ms", kind: "measured", ms: 184 },
+        { label: "Timeout", kind: "timeout" },
+      ];
+      return (
+        <div style={{ display: "flex", gap: 18, justifyContent: "center", padding: "8px 0 4px" }}>
+          {states.map((s) => (
+            <div key={s.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <FlagOrb
+                cc={s.kind === "timeout" ? "hk" : "jp"}
+                flag="🇯🇵"
+                selected={s.kind === "measured" && s.ms === 71}
+                dim={s.kind !== "measured" || s.ms !== 71}
+                badge={<Badge kind={s.kind} ms={s.ms} strong={s.kind === "measured" && s.ms === 71} />}
+              />
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function App() {
+      // DesignCanvas only renders DCArtboard children nested under DCSection.
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="latency-badges"
+            title="Cover Flow latency badge"
+            subtitle="Four levels · Field Black orbs · pick a ship direction"
+          >
+            <DCArtboard id="a" label="A · Under-orb capsule" width={390} height={420}>
+              <CoverRow
+                Badge={BadgeUnder}
+                title="A · Under-orb capsule"
+                caption="Refined code baseline. Hangs below the circle — clear, but can crowd the caption row on small scales."
+              />
+              <div style={{ marginTop: 16, padding: 12, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                <StateStrip Badge={BadgeUnder} />
+              </div>
+            </DCArtboard>
+
+            <DCArtboard id="b" label="B · Inset glass (neutral)" width={390} height={420}>
+              <CoverRow
+                Badge={BadgeInset}
+                title="B · Inset glass (neutral)"
+                caption="Baseline inset chip — digits only, no tier color."
+              />
+              <div style={{ marginTop: 16, padding: 12, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                <StateStrip Badge={BadgeInset} />
+              </div>
+            </DCArtboard>
+
+            <DCArtboard id="b2" label="B2 · Inset + ms + color (ship)" width={390} height={460}>
+              <CoverRow
+                Badge={BadgeInsetMs}
+                title="B2 · Inset + ms + tier color"
+                caption="Recommended ship. Thresholds: &lt;100 mint · 100–200 amber · &gt;200 / timeout soft coral. Unit “ms” on measured only."
+              />
+              <div style={{ marginTop: 16, padding: 12, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                <StateStrip Badge={BadgeInsetMs} />
+                <div style={{
+                  marginTop: 12,
+                  display: "flex",
+                  gap: 10,
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.5)",
+                }}>
+                  <span style={{ color: "oklch(0.82 0.08 155)" }}>&lt;100 good</span>
+                  <span>·</span>
+                  <span style={{ color: "oklch(0.86 0.08 85)" }}>100–200 fair</span>
+                  <span>·</span>
+                  <span style={{ color: "oklch(0.82 0.08 25)" }}>&gt;200 / TO poor</span>
+                </div>
+              </div>
+            </DCArtboard>
+
+            <DCArtboard id="c" label="C · Selected arc meter" width={390} height={420}>
+              <CoverRow
+                Badge={BadgeArc}
+                title="C · Arc meter (selected)"
+                caption="Selected orb gets a soft mint arc encoding “fastness”; sides stay inset chips. More expressive, slightly busier."
+              />
+              <div style={{ marginTop: 16, padding: 12, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                <StateStrip Badge={BadgeArc} />
+              </div>
+            </DCArtboard>
+
+            <DCArtboard id="d" label="D · Corner tint chip" width={390} height={420}>
+              <CoverRow
+                Badge={BadgeTint}
+                title="D · Corner tint"
+                caption="Fast nodes get a mint-tinted corner chip. Stronger ranking cue; risk of looking like “status traffic lights” if overused."
+              />
+              <div style={{ marginTop: 16, padding: 12, background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                <StateStrip Badge={BadgeTint} />
+              </div>
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>

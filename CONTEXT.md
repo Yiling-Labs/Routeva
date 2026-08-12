@@ -170,19 +170,16 @@ _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表�
 - **无订阅（Home Empty）：** 顶栏 **仅 Settings**（无 Subscriptions · **无 Help** · ADR **0063**）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA
 - **Idle（黑场）：** 上部 **国旗 Cover Flow**；选中项下为 **节点名 + 弱协议 + 弱 ›**（**可点** → **Location Surface**；可见文案**不**出现 *Location* 词；a11y *Choose location* + 当前节点）；中部主状态 **仅** *Not Connected*（**无** 中部 *Location ›* glass pill；**无** 常驻 *Can’t connect*）；**Idle 无点阵**；其下 **Mode** 次级入口（Smart / Global ›）  
 - **Swipe / Connecting（黑场）：** Cover Flow 与节点名行仍可见，但 **节点名行不可点**（无 ›、弱化）——避免手势误触；中部 *Not Connected*（Swipe）或 *Connecting…*；Connecting 三圈点全亮（未染绿场）；**藏 Mode**  
-- **Connection Success（绿场）：** 会话时长 + ↓/↑ Mb/s；中部 *Connected* + **节点行**（主 soft-glass，可点 → Location）+ 其下 **Mode** 次级文本（Smart / Global ›）；**无** 状态上方单独「国家/地区名」行；三圈绿点。**不**恢复 Cover Flow。竖叠：状态 → 节点 → Mode（**禁止**横排双 pill）  
+- **Connection Success（绿场）：** 会话时长 + ↓/↑ **本次连接累计流量**（非实时 Mb/s）；中部 *Connected* + **节点行**（主 soft-glass，可点 → Location）+ 其下 **Mode** 次级文本（Smart / Global ›）；**无** 状态上方单独「国家/地区名」行；三圈绿点。**不**恢复 Cover Flow。竖叠：状态 → 节点 → Mode（**禁止**横排双 pill）  
 - **连接失败（ADR 0059 · 0063）：** **不**进入 *Can’t connect*；回 **Idle / Not Connected** + **短 toast**（约 2–3s）；**不**弹诊断（MVP 无诊断 UI）；用户可立即再连  
 - Mode 在 Home：**Smart / Global** 芯片（方案 1）；Direct 仅 Settings  
 **两套选节点语义（ADR 0055/0056）：** Cover Flow **横滑 alone** = 临时 UI 焦点（可被预选/重测覆盖）；**Location 点选** = **Preferred**。Home **不**展示 Preferred/临时差异徽章。  
-**Cover Flow 条（有界快选 · 非全量列表）：** Cover Flow **不是** Active 下全部节点的 flatten，也**不**按 group 分页。**全量列表**仅 **Location**（扁平 · 订阅原序）。  
-- **数据源 `strip[]`：** 长度 **≤ N**（产品默认 **N = 15**，实现常数可调）。  
-- **成员（P2）：** ① **Preferred**（若有且仍在 Active 列表 → **强制入条**）② 其余用 **预评分可用性 Top** 填满至 N（**去重**；评分 = 可达+稳定加权，**非**单次 ms 唯一键）。  
-- **节点总数 &lt; N：** 条 = 全部节点（仍按预评分序；有 Preferred 则预停偏好）。  
-- **测分未完：** 有分的按分排；无分的按**订阅原序**接在后面；不堵连接。  
-- **顺序：** 有序列表，**不做**「高分对称居中」。初始 / 回 Home：**预停** = Preferred 在 strip 中的下标，否则 Top#1（index 0）。横滑只改临时焦点。  
-- **Preferred 离开列表：** 静默丢偏好后重算纯 Top-N。  
-- **Failover 会话暂用条外节点：** Home 显示当前会话名；回 Idle 后 strip **按上式重算**，**不**为会话永久扩条。  
-- **全量 + group：** 仅 Location。  
+**Cover Flow（全量循环 · 订阅原序 · ADR 0068 改判）：** Cover Flow = Active 下**全部可路由节点**（导入时已剔除额度/到期等 metadata 横幅行），顺序 = **订阅原序**，**循环**横滑（无端点）。延迟**只**做角标，**不**裁剪 / 重排 Cover Flow 成员。**Location** 仍为扁平全量，**默认延迟序**（轮末重排）。  
+- **数据源：** `availableNodes` 全量。  
+- **延迟角标（黑场 · 定稿 B2）：** 嵌在旗球底弧的 soft glass 芯片；未测不显示 · 测中 `…` · 有延迟 **`NNms`** · Timeout **`—`**。分档色（TCP RTT）：**&lt;100 绿 · 100–200 黄 · &gt;200/超时 软红**（ADR **0068**）。  
+- **预停：** 有 Preferred → 预停偏好下标；无 → 预停最低 ms。横滑 alone = 临时焦点。  
+- **Failover 会话暂用他节点：** Home 显示当前会话名；回 Idle 后焦点策略不变。  
+- **group UI：** 无；全量列表浏览亦在 Location。  
 **弱协议短名（全 app UI 闭集）：** 用户可见次要协议标签统一为 **`SS` · `VMess` · `VLESS` · `Trojan` · `Hy2`**（Home Cover Flow / 绿场节点行 / Location 行次行同源）。**不**在列表主扫读用 *Hysteria2* / *Shadowsocks* 等全称（a11y 可读 full name）。  
 **节点名展示与截断（闭集）：** 节点显示名 = **订阅原文**（可含 emoji / 中文 / 营销前缀 / 管道符，如 `🇨🇳 台湾A01 | IEPL | x2`）。**禁止**客户端发明短码（如「智能」缩成 `TW-A01`）替代原文。  
 - **Home Cover Flow caption / 绿场节点 chip：** **单行**；**仅节点名**可 `text-overflow: ellipsis`（尾部省略）；**协议短名 + › 不缩**（`flex-shrink: 0`）；caption 行 `max-width` 约屏宽减左右 padding（≈48–56pt 边距）。**不**双行撑中部、**不**跑马灯、**不**点名才展开。  
@@ -225,13 +222,14 @@ _Avoid_: 用户 UI 写 *Auto* 作 Routing Mode 名；Home 主视觉级模式切�
 
 **Location Surface**：
 从 Home **Cover Flow 下节点名行**（黑场 Idle）或 **Connected 节点行**（绿场）**全屏 push** 进入的节点浏览/选择面；标题 *Location*。只列 **Active Subscription** 下**全部**出口节点；**无**分组 chip / 分段浏览。  
-**顺序：** **订阅/配置文件原序**（市场/机场下发顺序）；**不**按地区重分类、**不**按延迟重排、**无**客户端伪造列表顶 *Auto* 行、**无**搜索/筛选、**无**进页自动测、**无**顶栏 `⋯`。  
-**行（闭集）：** 主行节点名（**订阅原文**；单行 tail ellipsis）+ **Preferred** 时右侧 check（**无** *Pinned*/*Current* 文案徽章）；次行 **弱协议短名**（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· **Latency Test** 结果（`—` / `42 ms` / `Timeout`）。无偏好时列表不伪造选中态。  
+**顺序（ADR 0068）：** 默认 **延迟升序**——有 **ms** 的按 RTT 从低到高 → **Timeout** → **未测**（未测段保持订阅相对序）。**不**按地区重分类、**无**客户端伪造列表顶 *Auto* 行、**无**搜索/筛选、**无**进页自动测、**无**顶栏 `⋯`。  
+**重排时机：** **Latency Test** / **静默测**进行中 **只更新行内标注**；**本轮全部结束后**再重排（避免列表跳动抢点）。  
+**行（闭集）：** 主行节点名（**订阅原文**；单行 tail ellipsis）+ **Preferred** 时右侧 check（**无** *Pinned*/*Current* 文案徽章；**不**因偏好强制置顶）；次行 **弱协议短名**（`SS`/`VMess`/`VLESS`/`Trojan`/`Hy2`，与 Home 同源）· **Latency Test** 结果（`—` / `42 ms` / `Timeout`）。无偏好时列表不伪造选中态。  
 **点选 = Preferred node（偏好节点）：** 记住该出口为默认连接目标（ADR **0055**）；**允许 Node Failover** 为保活换走会话节点；静默预选**不得覆盖**偏好。已 Connected → **立即切节点**（非 Repair）；失败**保留偏好**，toast/回退，**不**自动诊断（ADR **0060**）。返回 Home 时 Cover Flow 对齐偏好；Failover 会话暂用他节点时 Home 显示**当前会话**节点。  
 **清除偏好：** **无**显式回 Auto UI。仅当偏好节点离开 Active 列表时静默丢弃 → 下次预选；改偏好 = 点选另一节点。  
-**Latency Test：** 仅顶栏 *Test* 批量测入口延迟/握手（**非** ICMP、**非**完整 Connectivity Probe）；可取消；**不**改偏好、**不**自动切节点、**不**按 ms 重排列表。  
-**空态：** 无订阅 → 引导添加；0 节点 → 说明 + 次要 Update subscription。权威 hi-fi：`design/hi-fi/current/craft-p0/08-location.html`。详见 ADR **0055** / **0056**。  
-_Avoid_: 横向 group chip；按 group 过滤列表；硬 Pin；*Pinned*；列表当订阅管理；按延迟/地区重排；列表顶伪造 Auto；Cover Flow 横滑 alone 当 Preferred
+**Latency Test：** 顶栏 *Test* 与 **静默测** **同一管道、同一结果集**（TCP 入口 RTT；**非** ICMP、**非**完整 Connectivity Probe）；可取消；**不**改偏好、**不**自动切节点；**轮末**按延迟重排列表（ADR **0068**）。  
+**空态：** 无订阅 → 引导添加；0 节点 → 说明 + 次要 Update subscription。权威 hi-fi：`design/hi-fi/current/craft-p0/08-location.html`。详见 ADR **0055** / **0056** / **0068**。  
+_Avoid_: 横向 group chip；按 group 过滤列表；硬 Pin；*Pinned*；列表当订阅管理；按地区重分类；测中途疯狂重排抢点；列表顶伪造 Auto；Cover Flow 横滑 alone 当 Preferred
 
 **Activity Log**：
 本机时间序事件记录（连接、Node Failover、模式/Override 等）。**MVP 必须记录**（能力 P0 · 调试/日后 Help 同源）。  
@@ -356,7 +354,7 @@ _Avoid_: 强制登录才能连接；自建账户体系当 MVP 依赖；把整包
 _Avoid_: 用户可见模式名 *Auto*；以自建庞大域名库当主分流；规则社区；完整策略组编辑器；Home/主路径暴露 Clash 式每组 `select` 控制台；声称 Smart 下「一个节点 = 所有应用出口」
 
 **Provider Group（服务商分组）**：
-订阅里可能存在的节点元数据分区。**Location UI 不展示** group chip，也不按组过滤；列表一律订阅原序扁平展示。  
+订阅里可能存在的节点元数据分区。**Location UI 不展示** group chip，也不按组过滤；列表扁平展示，**默认延迟序**（ADR **0068**）。  
 **不是**运行时策略组出口台。  
 _Avoid_: Location 横向 group chip；与 Clash proxy-group 选中混称
 
@@ -382,29 +380,28 @@ _Avoid_: 全量配置/订阅 Token 上云；自建账号同步；「多设备一
 **Node Selection**：
 在可用节点集合内，按延迟、握手、实际访问成功率（含 Connectivity Probe）、近期失败与稳定性等加权评分，选出当前节点；不能只按 Ping 排序。属客户端主智能之一。  
 **地区/出口国不进默认评分：** Auto 不根据系统 locale、时区、语言或「大陆用户常选香港」等先验猜地区；评分只服务 **可达与稳定**（导向 Connection Success）。用户若要特定地区出口：Cover Flow / Location 手动选，或 **Preferred node**（Location 点选记住；**允许** Node Failover 为保活换会话节点）。  
-**静默测信号（轻量分层，非完整成功判定）：**  
-1. **快速层：** 节点入口延迟 / 协议握手类信号，排除明显死节点。  
-2. **加深层（抽样）：** 仅对快速层前列与当前预选候选，做更重的经节点可达检测；可与 **Connectivity Probe 同目标、同成功定义** 的轻量同源探针，**不是**对全表做完整出网验收。  
-预选 = 加权分（导向「大概率连得上且不慢」）。**Connection Success 真值不变：** 仅用户连接后「隧道就绪 + 完整 Connectivity Probe」；静默测分 **不得** 把 Home 染成 Connected / 绿场。  
-**测分未完成亦可连：** 静默测不是连接闸门。用户可在测分进行中 / 仅有部分分时，对 **当前 Cover Flow 焦点**（订阅默认序、已出的临时最高分、或 Preferred）发起连接手势；连接路径做短确认 + 完整 Connectivity Probe，**不**等待全表测完。后台测可继续；**已进入 Connecting / Connected 的会话** 不得被后续预选刷新从脚下换节点（无 Preferred 时 Idle 临时横滑仍可被预选拉回，见下）。  
-**测速时机（预选、不连）：** Active 订阅导入成功、节点列表可用后，客户端 **静默** 对可用节点做可达/评分，并把 Home Cover Flow **预停**在当前评分最高节点（若已有 Preferred 则预停偏好）；**仍不**自动发起连接（不替代用户连接手势 / 系统 VPN 同意）。**禁止**把「全表测分」主要压在用户下滑连接的关键路径上（连接时应尽量复用已有评分，必要时仅对目标节点做短确认/Probe）。节点过多时允许分层抽样等实现常数，语义仍是「尽早有可用分、Idle 已预选」。  
+**静默测信号（轻量；本期落地 · ADR 0068）：**  
+1. **快速层（本期实现）：** 节点入口 **TCP RTT**（与 Location *Test* 同源）；ms 展示；Timeout / 未测降权。  
+2. **加深层（抽样 · 可后置）：** 仅对快速层前列与当前预选候选做更重经节点可达检测；**不是**对全表做完整出网验收。  
+预选导向「大概率连得上且不慢」。**Connection Success 真值不变：** 仅用户连接后「隧道就绪 + 完整 Connectivity Probe」；静默测分 **不得** 把 Home 染成 Connected / 绿场。  
+**测分未完成亦可连：** 静默测不是连接闸门。用户可在测分进行中对 **当前 Cover Flow 焦点**发起连接；连接路径短确认 + 完整 Probe，**不**等待全表测完。  
+**Connecting / Connected：** **暂停**静默全表测；**不得**被预选刷新从脚下换节点；回 Idle 再续跑（ADR **0068**）。  
+**测速时机（预选、不连）：** Active 订阅可用后 **静默**全表（或分批）TCP 测分；Cover Flow **全量订阅序循环** + 延迟角标；**有 Preferred → 预停偏好**；**无 → 预停最低 ms**；**仍不**自动连接。**禁止**把全表测压在下滑连接关键路径上。  
+**轮末重排：** 测中只写标注；本轮结束后重排 **Location**（Cover Flow 列表序不变）。  
 **静默重测触发（闭集）：**  
-1. **节点集合变化：** 首次导入 Active 成功；Subscription Refresh **成功且节点列表有实质变化**；用户切换 Active Subscription。集合未变 → 不为「再新鲜一点」默认全表重测。  
-2. **弱缓存过期（长间隔 S，实现常数）：** 距上次成功有效测分超过 S，且用户打开 App / 回前台时，**安静**重测并更新预选（**无** Preferred 时可覆盖 Cover Flow 临时焦点；**有** Preferred 时不覆盖偏好）。  
-3. **失败 / Failover 路径：** 连接失败或 Node Failover 时对候选做 **定向重测**（不必全表），服务换节点与诊断/Repair 同源，非 Idle 预选主叙事。  
-4. **用户显式测速：** **Location Surface** 顶栏 *Test*（**Latency Test**）— 刷新列表 ms 标注；可与静默快速层信号同源，**不**单独定义第三套成功标准。  
-**禁止默认：** 仅因 Wi‑Fi↔蜂窝等网络切换就自动全表重测（网络变化靠连接短确认 + 失败后定向测）。  
-**预选 vs 浏览焦点 vs Preferred（两档）：**  
-- **Auto 预选** = 静默测分后的当前最高分节点（可被后续重测更新）——仅当**无** Preferred。  
-- **Cover Flow 浏览焦点** = 在 Home 横滑时的**临时** UI 焦点；**无** Preferred 时重测完成**可以**把 Cover Flow 拉回新的最高分预选；横滑 alone **不**构成 Preferred。  
-- **Preferred node** = 用户在 **Location** **点选**后的持久偏好：列表 check；默认连接目标；**静默重测不得覆盖**；**允许** Node Failover 为保活换走**会话**节点（偏好不因 Failover 改写）。**Smart / Global / Direct 共用同一 Preferred**（切 Mode 不丢）。**无**显式清回 Smart UI；节点离开列表则静默丢弃偏好。  
-- **Cover Flow `strip[]`：** 见上 **Cover Flow 条**——有界 Top-N + Preferred 锚定，**非**全量 flatten。  
-**不设**硬 **Pin**（禁 Failover 的锁死态）。  
-_Avoid_: 只按延迟排序；把「解锁某站」或猜测的出口国当选节点的唯一/默认标准；用 locale=zh-Hans 等静默偏置香港节点；连接手势阻塞等全表测完才建隧道；导入成功后自动连上；把 Cover Flow 临时滑选与 Preferred 混成一种却说不清；硬 Pin 禁 Failover；静默重测覆盖 Preferred；网络切换必全表测；短间隔狂刷静默测速；静默阶段对全部节点做完整经节点 Probe；静默只 Ping 却当唯一预选依据；未连时宣称已验证出网；测分未完就禁用/弱化连接手势；Connecting/Connected 时被预选刷新换节点；Cover Flow 塞全表或按 group 当主列表
+1. **节点集合变化：** 首次导入 Active 成功；Refresh 成功且列表实质变化；切换 Active。  
+2. **弱缓存过期（长间隔 S）：** 打开/回前台且过期 → 安静重测（有 Preferred 不覆盖偏好预停）。  
+3. **失败 / Failover 定向重测**（非 Idle 主叙事）。  
+4. **用户显式 *Test*：** 与静默 **同管道**。  
+**禁止默认：** 仅因网络切换就全表重测。  
+**Cover Flow 延迟角标（黑场）：** 未测安静 · 测中弱 · 有 ms 次级数字 · Timeout 弱警示（ADR **0068**）。  
+**预选 vs 浏览焦点 vs Preferred：** 同前——横滑 alone ≠ Preferred；静默不得覆盖用户横滑焦点 / Preferred。  
+**不设**硬 **Pin**。  
+_Avoid_: 把「解锁某站」或猜测出口国当默认选节点标准；locale 静默偏置地区；连接阻塞等全表测完；导入后自动连；静默重测覆盖 Preferred；Connecting 时换节点；静默全表完整 Probe；未连宣称已验证出网；测中 Location 列表疯狂跳动
 
 **Latency Test**：
-用户在 **Location Surface** 触发的、到**节点入口**的延迟/握手类探测；结果展示为 **ms** 或 Timeout。用于扫表快慢标注，**不是** Connection Success，也**不是** ICMP *Ping* 承诺；**不得**作为 Node Selection 的唯一依据。批量 *Test* **不**改偏好、不自动切节点、不按结果重排列表。  
-_Avoid_: 用户可见硬说 Ping 却测 TCP；用列表 Test 替代完整 Connectivity Probe；测完自动连上最快节点
+到**节点入口**的 TCP RTT 类探测（与静默快速层同源）；结果为 **ms** 或 Timeout。用于 Location 扫表、Cover Flow **角标**、以及 Location/预选的延迟排序信号。**不是** Connection Success，也**不是** ICMP *Ping* 承诺；**不得**单独当作「已验证出网」。触发：① 静默（订阅可用后等，ADR **0068**）② Location 顶栏 *Test*（同管道）。**不**改 Preferred、**不**自动连接；**轮末**可重排 Location（Cover Flow 仍为订阅原序）。  
+_Avoid_: 用户可见硬说 Ping 却测 TCP；用列表 Test 替代完整 Connectivity Probe；测完自动连上最快节点；静默全表完整 Probe
 
 **Node Failover**：
 在用户已启用自动选节点（**Smart** 模式或等价）时，为维持 Connection Success 而在连接过程中**自动**改选可用节点或短重连。**有 Preferred 时仍允许 Failover**（会话可暂离偏好；偏好保留）。属连接保活，**不是** Repair：不走 Repair Consent / 诊断卡。须记入 Activity；连续失败 **不**自动诊断（用户可 Help · ADR **0060**）。用户**关闭**自动选节点时，不得静默 Failover。  

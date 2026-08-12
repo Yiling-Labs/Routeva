@@ -69,8 +69,6 @@
 "What we found" = "我们发现了什么";
 "Your connection data stays under your control." = "你的连接数据始终由你掌控。";
 "· %@" = "· %@";
-"↑ %@ Mb/s" = "↑ %@ Mb/s";
-"↓ %@ Mb/s" = "↓ %@ Mb/s";
 "Smart" = "智能";
 "Global" = "全局";
 "Direct" = "直连";

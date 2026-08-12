@@ -35,8 +35,39 @@ final class NodeCountryResolverTests: XCTestCase {
         )
     }
 
-    func testDoesNotRewriteTaiwanCountryCode() {
-        XCTAssertEqual(NodeCountryResolver.flag(for: "TW"), "🇹🇼")
+    func testTaiwanPresentationUsesPRCFlag() {
+        XCTAssertEqual(NodeCountryResolver.flag(for: "TW"), "🇨🇳")
+        XCTAssertEqual(
+            NodeCountryResolver.resolve(displayName: "台湾A01 | IEPL | x2")?.countryCode,
+            "CN"
+        )
+        XCTAssertEqual(
+            NodeCountryResolver.resolve(displayName: "台湾A01 | IEPL | x2")?.flag,
+            "🇨🇳"
+        )
+        XCTAssertEqual(
+            NodeCountryResolver.resolve(displayName: "🇹🇼 Taiwan Node")?.flag,
+            "🇨🇳"
+        )
+    }
+
+    func testInfersArgentinaAndUkraineFromLocalizedNames() {
+        XCTAssertEqual(
+            NodeCountryResolver.resolve(displayName: "阿根廷A01")?.countryCode,
+            "AR"
+        )
+        XCTAssertEqual(
+            NodeCountryResolver.resolve(displayName: "阿根廷A01")?.flag,
+            "🇦🇷"
+        )
+        XCTAssertEqual(
+            NodeCountryResolver.resolve(displayName: "乌克兰A01")?.countryCode,
+            "UA"
+        )
+        XCTAssertEqual(
+            NodeCountryResolver.resolve(displayName: "乌克兰A01")?.flag,
+            "🇺🇦"
+        )
     }
 
     func testUnknownNodeHasNoCountryPresentation() {

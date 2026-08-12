@@ -154,21 +154,45 @@ struct RoutevaPressStyle: ButtonStyle {
     }
 }
 
-struct RoutevaNavigationHeader: View {
+/// Custom nav bar: title is geometrically centered in the bar (HIG-style),
+/// independent of leading/trailing control widths.
+struct RoutevaNavigationHeader<Trailing: View>: View {
     let title: String
     let backSystemName: String
     let backLabel: String
     var backAction: () -> Void
+    @ViewBuilder var trailing: () -> Trailing
+
+    init(
+        title: String,
+        backSystemName: String,
+        backLabel: String,
+        backAction: @escaping () -> Void,
+        @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }
+    ) {
+        self.title = title
+        self.backSystemName = backSystemName
+        self.backLabel = backLabel
+        self.backAction = backAction
+        self.trailing = trailing
+    }
 
     var body: some View {
-        HStack {
-            GlassOrb(systemName: backSystemName, accessibilityLabel: backLabel, action: backAction)
-            Spacer()
+        ZStack {
+            HStack(spacing: 0) {
+                GlassOrb(systemName: backSystemName, accessibilityLabel: backLabel, action: backAction)
+                Spacer(minLength: 0)
+                trailing()
+            }
+
             Text(LocalizedStringKey(title))
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(RoutevaTheme.primary)
-            Spacer()
-            Color.clear.frame(width: 40, height: 40)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                // Title is decorative for hit-testing; controls sit above via Z order.
+                .allowsHitTesting(false)
+                .accessibilityAddTraits(.isHeader)
         }
         .frame(height: 48)
     }

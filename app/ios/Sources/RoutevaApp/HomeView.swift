@@ -333,14 +333,18 @@ private struct HomeConnectionContent: View {
         case let .connected(startedAt):
             SessionStatsView(
                 startedAt: startedAt,
-                downloadMbps: model.liveDownloadMbps,
-                uploadMbps: model.liveUploadMbps
+                downloadedBytes: model.sessionDownloadedBytes,
+                uploadedBytes: model.sessionUploadedBytes
             )
             .frame(height: 112)
         default:
             NodeCoverFlow(
-                nodes: model.availableNodes,
-                selection: $model.selectedNodeIndex,
+                nodes: model.coverFlowNodes,
+                selection: Binding(
+                    get: { model.coverFlowSelectedIndex },
+                    set: { model.setCoverFlowSelectedIndex($0) }
+                ),
+                latencies: model.nodeLatencies,
                 openLocations: { model.presentedSurface = .locations }
             )
             .frame(height: 136)
@@ -426,155 +430,178 @@ private struct HomeLayout {
 private struct NodeCoverFlow: View {
     let nodes: [NodeSummary]
     @Binding var selection: Int
+    let latencies: [UUID: NodeLatencyStatus]
     let openLocations: () -> Void
 
-    @State private var dragOffset: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Continuous strip position (node-index units). Unbounded so loops can
+    /// fling across the seam without snapping scrollIndex back mid-gesture.
+    @State private var scrollIndex: CGFloat = 0
+    /// `scrollIndex` when the current drag began.
+    @State private var dragOriginIndex: CGFloat = 0
+    /// True for the whole touch sequence (incl. end-of-runloop) so orb taps
+    /// do not fire after a swipe.
     @State private var isDragging = false
 
     private let step: CGFloat = 78
+    /// Residual coast multiplier. ~1 keeps system prediction; higher feels light/floaty.
+    private let flingGain: CGFloat = 0.59
+
+    private var nodeCount: Int { nodes.count }
+
+    /// Loop only when there is a meaningful ring (≥2 nodes).
+    private var isLooping: Bool { nodeCount > 1 }
 
     private var boundedSelection: Int {
         guard !nodes.isEmpty else { return 0 }
         return min(max(selection, 0), nodes.count - 1)
     }
 
+    /// Heavier settle: shorter travel, soft stop without a long coast.
+    private var inertiaAnimation: Animation {
+        if reduceMotion {
+            return .easeOut(duration: 0.15)
+        }
+        return .interpolatingSpring(stiffness: 265, damping: 40.6)
+    }
+
     var body: some View {
         VStack(spacing: 8) {
-            GeometryReader { proxy in
-                ZStack {
-                    ForEach(Array(nodes.enumerated()), id: \.element.id) { item in
-                        // Follow the finger while dragging: a leftward finger
-                        // movement carries the visible node strip left, then
-                        // settles the next item into the center on release.
-                        let distance = CGFloat(item.offset - boundedSelection) + dragOffset / step
-                        let absoluteDistance = abs(distance)
-
-                        if absoluteDistance < 3.8 {
-                            let isSelected = absoluteDistance < 0.45
-                            let scale = coverScale(for: absoluteDistance)
-                            let opacity = coverOpacity(for: absoluteDistance)
-                            let verticalOffset = min(18, absoluteDistance * absoluteDistance * 2)
-
-                            Button {
-                                guard !isDragging else { return }
-                                withAnimation(.routevaEase) {
-                                    selection = item.offset
-                                }
-                            } label: {
-                                NodeFlagOrb(flag: item.element.flag, isSelected: isSelected)
-                            }
-                            .buttonStyle(RoutevaPressStyle())
-                            .scaleEffect(scale)
-                            .opacity(opacity)
-                            .offset(
-                                x: distance * step,
-                                y: verticalOffset
-                            )
-                            .zIndex(30 - Double(absoluteDistance) * 6)
-                            .accessibilityLabel("\(item.element.country), \(item.element.name)")
-                            .accessibilityAddTraits(isSelected ? .isSelected : [])
-                        }
-                    }
+            // Animatable strip receives interpolated scrollIndex each frame so
+            // intermediate nodes stay mounted and the coast is visible.
+            NodeCoverFlowStrip(
+                nodes: nodes,
+                scrollIndex: scrollIndex,
+                step: step,
+                looping: isLooping,
+                latencies: latencies,
+                onSelect: { index in
+                    guard !isDragging else { return }
+                    commitToIndex(index, animated: true)
                 }
-                .frame(width: proxy.size.width, height: proxy.size.height)
-                .contentShape(Rectangle())
-                // Keep each orb tappable. The drag recognizer joins rather
-                // than replaces child button taps; it only claims a held,
-                // horizontal movement once the user passes its threshold.
-                .simultaneousGesture(dragGesture)
-                .mask {
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: .white, location: 0.10),
-                            .init(color: .white, location: 0.90),
-                            .init(color: .clear, location: 1),
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
+            )
+            .frame(height: 96)
+            .contentShape(Rectangle())
+            .simultaneousGesture(dragGesture)
+            .onAppear {
+                scrollIndex = CGFloat(boundedSelection)
+            }
+            .onChange(of: selection) { _, newValue in
+                guard !isDragging else { return }
+                guard !nodes.isEmpty else { return }
+                let normalized = ((newValue % nodeCount) + nodeCount) % nodeCount
+                let target = nearestScrollIndex(to: normalized)
+                guard abs(scrollIndex - target) > 0.001 else { return }
+                commitScrollIndex(target, selection: normalized, animated: true)
+            }
+            .onChange(of: nodes.count) { _, _ in
+                guard !nodes.isEmpty else {
+                    scrollIndex = 0
+                    return
+                }
+                let normalized = boundedSelection
+                let target = nearestScrollIndex(to: normalized)
+                if abs(scrollIndex - target) > 0.001 {
+                    commitScrollIndex(target, selection: normalized, animated: false)
                 }
             }
-            .frame(height: 96)
-            .animation(.routevaEase, value: selection)
 
             if !nodes.isEmpty {
-                let selected = nodes[boundedSelection]
-                Button(action: openLocations) {
-                    HStack(spacing: 5) {
-                        Text(selected.name)
-                            .font(.system(size: 16, weight: .semibold))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            .layoutPriority(0)
-                        Text("· \(selected.protocolName)")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(RoutevaTheme.quiet)
-                            .lineLimit(1)
-                            .layoutPriority(1)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(RoutevaTheme.quiet)
-                            .fixedSize()
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.horizontal, 28)
-                }
-                .buttonStyle(RoutevaPressStyle())
-                .accessibilityLabel("Choose location, \(selected.name)")
-                .accessibilityIdentifier("home.location")
+                // Caption uses the same animatable scrollIndex presentation.
+                NodeCoverFlowCaption(
+                    nodes: nodes,
+                    scrollIndex: scrollIndex,
+                    looping: isLooping,
+                    openLocations: openLocations
+                )
             }
         }
     }
 
-    private func coverScale(for distance: CGFloat) -> CGFloat {
-        switch distance {
-        case ..<0.5: 1.24
-        case ..<1.5: 0.86
-        case ..<2.5: 0.74
-        default: 0.64
-        }
+    /// Normalized selection index in `0..<count`.
+    private func normalizedIndex(_ raw: Int) -> Int {
+        guard nodeCount > 0 else { return 0 }
+        let m = raw % nodeCount
+        return m >= 0 ? m : m + nodeCount
     }
 
-    private func coverOpacity(for distance: CGFloat) -> Double {
-        switch distance {
-        case ..<0.5: 1
-        case ..<1.5: 0.8
-        case ..<2.5: 0.5
-        default: 0.3
+    /// Scroll target for a logical index that is closest to the current scroll
+    /// (so external selection changes animate the short way around the ring).
+    private func nearestScrollIndex(to logicalIndex: Int) -> CGFloat {
+        guard isLooping else { return CGFloat(logicalIndex) }
+        let count = CGFloat(nodeCount)
+        let base = CGFloat(logicalIndex)
+        let k = ((scrollIndex - base) / count).rounded()
+        return base + k * count
+    }
+
+    private func commitToIndex(_ index: Int, animated: Bool) {
+        guard !nodes.isEmpty else { return }
+        let logical = normalizedIndex(index)
+        let target = nearestScrollIndex(to: logical)
+        commitScrollIndex(target, selection: logical, animated: animated)
+    }
+
+    private func commitScrollIndex(_ index: CGFloat, selection newSelection: Int, animated: Bool) {
+        if animated && !reduceMotion {
+            withAnimation(inertiaAnimation) {
+                scrollIndex = index
+                selection = newSelection
+            }
+        } else {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                scrollIndex = index
+                selection = newSelection
+            }
         }
     }
 
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 8)
             .onChanged { value in
-                isDragging = true
-                dragOffset = value.translation.width
+                guard isLooping else { return }
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    if !isDragging {
+                        isDragging = true
+                        dragOriginIndex = scrollIndex
+                    }
+                    // Free continuous index — loops have no end rubber-band.
+                    scrollIndex = dragOriginIndex - value.translation.width / step
+                }
             }
             .onEnded { value in
                 guard !nodes.isEmpty else {
-                    dragOffset = 0
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        scrollIndex = 0
+                        isDragging = false
+                    }
+                    return
+                }
+                guard isLooping else {
                     isDragging = false
                     return
                 }
 
-                let threshold: CGFloat = 36
-                let nextSelection: Int
-                if value.translation.width < -threshold {
-                    nextSelection = min(boundedSelection + 1, nodes.count - 1)
-                } else if value.translation.width > threshold {
-                    nextSelection = max(boundedSelection - 1, 0)
-                } else {
-                    nextSelection = boundedSelection
-                }
+                // Coast from gesture velocity, then snap to nearest node on the ring.
+                let finger = value.translation.width
+                let residual = (value.predictedEndTranslation.width - finger) * flingGain
+                let projectedFree = dragOriginIndex - (finger + residual) / step
+                let rounded = projectedFree.rounded()
+                let nextSelection = normalizedIndex(Int(rounded))
 
-                withAnimation(.routevaEase) {
+                withAnimation(inertiaAnimation) {
+                    // Keep continuous scroll at the rounded projection so the
+                    // seam crosses without a visual jump; selection is modular.
+                    scrollIndex = rounded
                     selection = nextSelection
-                    dragOffset = 0
                 }
-                // Button actions can be delivered at the end of the same
-                // touch sequence. Keep the drag state for this run loop so a
-                // completed swipe cannot also select whichever orb it ended on.
                 DispatchQueue.main.async {
                     isDragging = false
                 }
@@ -582,9 +609,178 @@ private struct NodeCoverFlow: View {
     }
 }
 
+/// Strip layout that participates in the scrollIndex animation timeline so
+/// intermediate indices stay visible while a fling coasts.
+private struct NodeCoverFlowStrip: View, @preconcurrency Animatable {
+    let nodes: [NodeSummary]
+    var scrollIndex: CGFloat
+    let step: CGFloat
+    let looping: Bool
+    let latencies: [UUID: NodeLatencyStatus]
+    let onSelect: (Int) -> Void
+
+    nonisolated var animatableData: CGFloat {
+        get { scrollIndex }
+        set { scrollIndex = newValue }
+    }
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                ForEach(Array(nodes.enumerated()), id: \.element.id) { item in
+                    let distance = circularDistance(to: item.offset)
+                    let absoluteDistance = abs(distance)
+
+                    // Wide window so multi-node flings keep orbs mounted.
+                    if absoluteDistance < 5.5 {
+                        let isSelected = absoluteDistance < 0.45
+                        let scale = coverScale(for: absoluteDistance)
+                        let opacity = coverOpacity(for: absoluteDistance)
+                        let verticalOffset = min(18, absoluteDistance * absoluteDistance * 2)
+
+                        Button {
+                            onSelect(item.offset)
+                        } label: {
+                            NodeFlagOrb(
+                                flag: item.element.flag,
+                                isSelected: isSelected,
+                                latency: latencies[item.element.id]
+                            )
+                        }
+                        .buttonStyle(RoutevaPressStyle())
+                        .scaleEffect(scale)
+                        .opacity(opacity)
+                        .offset(
+                            x: distance * step,
+                            y: verticalOffset
+                        )
+                        .zIndex(30 - Double(absoluteDistance) * 6)
+                        .accessibilityLabel(
+                            accessibilityLabel(
+                                node: item.element,
+                                latency: latencies[item.element.id]
+                            )
+                        )
+                        .accessibilityAddTraits(isSelected ? .isSelected : [])
+                    }
+                }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .mask {
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .white, location: 0.10),
+                        .init(color: .white, location: 0.90),
+                        .init(color: .clear, location: 1),
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            }
+        }
+    }
+
+    /// Signed distance from `scrollIndex` to `itemIndex` on a linear strip or ring.
+    private func circularDistance(to itemIndex: Int) -> CGFloat {
+        let raw = CGFloat(itemIndex) - scrollIndex
+        guard looping, nodes.count > 1 else { return raw }
+        let count = CGFloat(nodes.count)
+        // Wrap into (-count/2, count/2].
+        var d = raw - count * floor((raw + count / 2) / count)
+        // When count is even, floor can leave -count/2 and +count/2 aliases;
+        // prefer the non-negative half so left/right don't fight.
+        if d <= -count / 2 { d += count }
+        if d > count / 2 { d -= count }
+        return d
+    }
+
+    private func coverScale(for distance: CGFloat) -> CGFloat {
+        let d = min(max(distance, 0), 3)
+        switch d {
+        case ..<1: return 1.24 + (0.86 - 1.24) * d
+        case ..<2: return 0.86 + (0.74 - 0.86) * (d - 1)
+        default: return 0.74 + (0.64 - 0.74) * (d - 2)
+        }
+    }
+
+    private func coverOpacity(for distance: CGFloat) -> Double {
+        let d = min(max(distance, 0), 3)
+        switch d {
+        case ..<1: return 1 + (0.8 - 1) * Double(d)
+        case ..<2: return 0.8 + (0.5 - 0.8) * Double(d - 1)
+        default: return 0.5 + (0.3 - 0.5) * Double(d - 2)
+        }
+    }
+
+    private func accessibilityLabel(node: NodeSummary, latency: NodeLatencyStatus?) -> String {
+        let latencyPart: String
+        switch latency {
+        case let .measured(ms): latencyPart = ", \(ms) milliseconds"
+        case .testing: latencyPart = ", testing latency"
+        case .unavailable: latencyPart = ", timeout"
+        case .none: latencyPart = ""
+        }
+        return "\(node.country), \(node.name)\(latencyPart)"
+    }
+}
+
+/// Caption that tracks the animating scroll position (same Animatable path).
+private struct NodeCoverFlowCaption: View, @preconcurrency Animatable {
+    let nodes: [NodeSummary]
+    var scrollIndex: CGFloat
+    let looping: Bool
+    let openLocations: () -> Void
+
+    nonisolated var animatableData: CGFloat {
+        get { scrollIndex }
+        set { scrollIndex = newValue }
+    }
+
+    private var focusedIndex: Int {
+        guard !nodes.isEmpty else { return 0 }
+        let rounded = Int(scrollIndex.rounded())
+        if looping {
+            let count = nodes.count
+            let m = rounded % count
+            return m >= 0 ? m : m + count
+        }
+        return min(max(rounded, 0), nodes.count - 1)
+    }
+
+    var body: some View {
+        let focused = nodes[focusedIndex]
+        Button(action: openLocations) {
+            HStack(spacing: 5) {
+                Text(focused.name)
+                    .font(.system(size: 16, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .layoutPriority(0)
+                Text("· \(focused.protocolName)")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(RoutevaTheme.quiet)
+                    .lineLimit(1)
+                    .layoutPriority(1)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(RoutevaTheme.quiet)
+                    .fixedSize()
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.horizontal, 28)
+            .contentTransition(.opacity)
+        }
+        .buttonStyle(RoutevaPressStyle())
+        .accessibilityLabel("Choose location, \(focused.name)")
+        .accessibilityIdentifier("home.location")
+    }
+}
+
 private struct NodeFlagOrb: View {
     let flag: String
     let isSelected: Bool
+    var latency: NodeLatencyStatus? = nil
 
     private var flagURL: URL? {
         guard let countryCode = countryCode(from: flag) else { return nil }
@@ -638,6 +834,12 @@ private struct NodeFlagOrb: View {
                 lineWidth: isSelected ? 1.6 : 1
             )
         }
+        // Inset glass chip (design B) — sits on the flag disc, not hanging below.
+        .overlay(alignment: .bottom) {
+            CoverFlowLatencyBadge(status: latency, emphasized: isSelected)
+                .padding(.horizontal, isSelected ? 9 : 8)
+                .padding(.bottom, isSelected ? 8 : 7)
+        }
         .shadow(color: .black.opacity(isSelected ? 0.48 : 0.32), radius: isSelected ? 16 : 9, y: isSelected ? 11 : 7)
         .shadow(color: isSelected ? .white.opacity(0.13) : .clear, radius: 10)
     }
@@ -657,6 +859,119 @@ private struct NodeFlagOrb: View {
             UnicodeScalar(scalar.value - regionalIndicatorBase + 65).map { String($0) }
         }
         .joined()
+    }
+}
+
+/// Inset glass latency chip (design B2): `NNms` + tier color.
+/// Thresholds for proxy TCP RTT: &lt;100 good · 100…200 fair · &gt;200 / timeout poor.
+private struct CoverFlowLatencyBadge: View {
+    let status: NodeLatencyStatus?
+    var emphasized = false
+
+    /// Soft glass tints — readable on flag photos without traffic-light noise.
+    private enum Tier {
+        case good, fair, poor, neutral
+
+        static func of(status: NodeLatencyStatus?) -> Tier {
+            switch status {
+            case let .measured(ms) where ms < 100: .good
+            case let .measured(ms) where ms <= 200: .fair
+            case .measured, .unavailable: .poor
+            case .testing, .none: .neutral
+            }
+        }
+    }
+
+    var body: some View {
+        switch status {
+        case .none:
+            EmptyView()
+        case .testing:
+            chip(label: "…", tier: .neutral)
+        case let .measured(ms):
+            chip(label: "\(ms)ms", tier: Tier.of(status: status))
+        case .unavailable:
+            chip(label: "—", tier: .poor)
+        }
+    }
+
+    private func chip(label: String, tier: Tier) -> some View {
+        Text(label)
+            .font(.system(size: emphasized ? 9.5 : 8.5, weight: .bold).monospacedDigit())
+            .tracking(label.hasSuffix("ms") ? -0.4 : 0)
+            .foregroundStyle(foreground(tier))
+            .frame(maxWidth: .infinity)
+            .frame(height: emphasized ? 17 : 15)
+            .background {
+                Capsule()
+                    .fill(background(tier))
+                    .overlay {
+                        Capsule()
+                            .stroke(border(tier), lineWidth: 0.5)
+                    }
+                    .shadow(color: glow(tier), radius: tier == .neutral ? 2 : 4, y: 1)
+            }
+    }
+
+    private func foreground(_ tier: Tier) -> Color {
+        switch tier {
+        case .good: Color(red: 190 / 255, green: 255 / 255, blue: 220 / 255)
+        case .fair: Color(red: 255 / 255, green: 230 / 255, blue: 170 / 255)
+        case .poor: Color(red: 255 / 255, green: 190 / 255, blue: 180 / 255)
+        case .neutral: Color.white.opacity(0.62)
+        }
+    }
+
+    private func background(_ tier: Tier) -> LinearGradient {
+        switch tier {
+        case .good:
+            LinearGradient(
+                colors: [
+                    Color(red: 40 / 255, green: 120 / 255, blue: 90 / 255).opacity(0.90),
+                    Color(red: 18 / 255, green: 56 / 255, blue: 42 / 255).opacity(0.94),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+        case .fair:
+            LinearGradient(
+                colors: [
+                    Color(red: 140 / 255, green: 100 / 255, blue: 36 / 255).opacity(0.88),
+                    Color(red: 56 / 255, green: 40 / 255, blue: 14 / 255).opacity(0.94),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+        case .poor:
+            LinearGradient(
+                colors: [
+                    Color(red: 140 / 255, green: 52 / 255, blue: 44 / 255).opacity(0.88),
+                    Color(red: 56 / 255, green: 22 / 255, blue: 18 / 255).opacity(0.94),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+        case .neutral:
+            LinearGradient(
+                colors: [Color.white.opacity(0.20), Color.black.opacity(0.55)],
+                startPoint: .top, endPoint: .bottom
+            )
+        }
+    }
+
+    private func border(_ tier: Tier) -> Color {
+        switch tier {
+        case .good: Color(red: 120 / 255, green: 230 / 255, blue: 180 / 255).opacity(0.45)
+        case .fair: Color(red: 240 / 255, green: 200 / 255, blue: 100 / 255).opacity(0.40)
+        case .poor: Color(red: 240 / 255, green: 140 / 255, blue: 120 / 255).opacity(0.38)
+        case .neutral: Color.white.opacity(0.14)
+        }
+    }
+
+    private func glow(_ tier: Tier) -> Color {
+        switch tier {
+        case .good: Color(red: 80 / 255, green: 200 / 255, blue: 140 / 255).opacity(0.35)
+        case .fair: Color(red: 220 / 255, green: 170 / 255, blue: 60 / 255).opacity(0.28)
+        case .poor: Color(red: 200 / 255, green: 80 / 255, blue: 60 / 255).opacity(0.28)
+        case .neutral: .black.opacity(0.22)
+        }
     }
 }
 
@@ -812,8 +1127,15 @@ private struct HomeModeSheet: View {
 
 private struct SessionStatsView: View {
     let startedAt: Date
-    let downloadMbps: Double
-    let uploadMbps: Double
+    let downloadedBytes: UInt64
+    let uploadedBytes: UInt64
+
+    private static let byteFormatter: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .binary
+        formatter.allowsNonnumericFormatting = false
+        return formatter
+    }()
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -823,12 +1145,16 @@ private struct SessionStatsView: View {
                     .monospacedDigit()
                     .tracking(-0.8)
                 HStack(spacing: 18) {
-                    Text("↓ \(downloadMbps, format: .number.precision(.fractionLength(1))) Mb/s")
-                    Text("↑ \(uploadMbps, format: .number.precision(.fractionLength(1))) Mb/s")
+                    Text("↓ \(Self.formatBytes(downloadedBytes))")
+                    Text("↑ \(Self.formatBytes(uploadedBytes))")
                 }
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color.white.opacity(0.78))
                 .monospacedDigit()
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(
+                    "Downloaded \(Self.formatBytes(downloadedBytes)), uploaded \(Self.formatBytes(uploadedBytes))"
+                )
             }
         }
     }
@@ -836,6 +1162,12 @@ private struct SessionStatsView: View {
     private func duration(from start: Date, to end: Date) -> String {
         let seconds = max(0, Int(end.timeIntervalSince(start)))
         return String(format: "%02d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60)
+    }
+
+    /// Session cumulative traffic since this connection started.
+    private static func formatBytes(_ bytes: UInt64) -> String {
+        let value = Int64(clamping: bytes)
+        return byteFormatter.string(fromByteCount: value)
     }
 }
 
@@ -973,6 +1305,7 @@ private struct ConnectCapsule: View {
                     .allowsHitTesting(false)
                 }
 
+                // Gestures only on the thumb capsule — not the full stage.
                 VStack(spacing: 8) {
                     Circle()
                         .fill(ledColor)
@@ -1018,6 +1351,16 @@ private struct ConnectCapsule: View {
                     }
                 }
                 .shadow(color: showsConnectedChrome ? RoutevaTheme.mint.opacity(0.42) : .black.opacity(0.48), radius: 18, y: 12)
+                .contentShape(Capsule())
+                .gesture(dragGesture, including: isEnabled ? .all : .none)
+                .onTapGesture {
+                    guard isEnabled, !showsConnectingChrome else { return }
+                    isConnected ? onDisconnect() : beginConnecting()
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(showsConnectedChrome ? "Disconnect" : "Connect")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("home.connect")
                 .offset(y: trackTop + trackPadding + progress * travel)
                 // Animate the moving geometry itself. State changes can also
                 // restyle the thumb, so binding this to state caused a stale
@@ -1027,8 +1370,6 @@ private struct ConnectCapsule: View {
             .frame(width: stageWidth, height: stageHeight)
             .scaleEffect(scale)
             .frame(width: stageWidth * scale, height: stageHeight * scale)
-            .contentShape(Rectangle())
-            .gesture(dragGesture, including: isEnabled ? .all : .none)
             .onAppear(perform: synchronizeConnectionAnimation)
             .onChange(of: state) { _, newState in
                 switch newState {
@@ -1043,14 +1384,6 @@ private struct ConnectCapsule: View {
                 }
                 synchronizeConnectionAnimation()
             }
-            .onTapGesture {
-                guard isEnabled, !showsConnectingChrome else { return }
-                isConnected ? onDisconnect() : beginConnecting()
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(showsConnectedChrome ? "Disconnect" : "Connect")
-            .accessibilityAddTraits(.isButton)
-            .accessibilityIdentifier("home.connect")
 
             Text(LocalizedStringKey(showsConnectedChrome ? "Swipe up to disconnect" : "Swipe down to connect"))
                 .font(.system(size: 13, weight: .medium))

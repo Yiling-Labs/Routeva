@@ -1042,8 +1042,16 @@
       );
     }
 
-    /** Pin connected top: large session clock + refined down/up rates */
-    function SessionStats({ seconds, downMbps, upMbps, light }) {
+    /** Pin connected top: large session clock + cumulative down/up traffic */
+    function formatSessionBytes(bytes) {
+      const n = Math.max(0, Number(bytes) || 0);
+      if (n < 1024) return `${Math.round(n)} B`;
+      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+      if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+      return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    }
+
+    function SessionStats({ seconds, downBytes, upBytes, light }) {
       const c = 'rgba(255,255,255,0.96)';
       const mute = light ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.45)';
       const pad = (n) => String(n).padStart(2, '0');
@@ -1078,14 +1086,12 @@
           }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               <span style={{ opacity: 0.85, display: 'flex' }}><IconArrowDown size={10} stroke={1.5} /></span>
-              <span>{downMbps.toFixed(1)}</span>
-              <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 2 }}>Mb/s</span>
+              <span>{formatSessionBytes(downBytes)}</span>
             </span>
             <span style={{ width: 1, height: 11, background: 'currentColor', opacity: 0.2 }} />
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               <span style={{ opacity: 0.85, display: 'flex' }}><IconArrowUp size={10} stroke={1.5} /></span>
-              <span>{upMbps.toFixed(1)}</span>
-              <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 2 }}>Mb/s</span>
+              <span>{formatSessionBytes(upBytes)}</span>
             </span>
           </div>
         </div>
@@ -1525,8 +1531,9 @@
       const node = NODES[nodeIdx] || NODES[defaultNodeIdx >= 0 ? defaultNodeIdx : 2];
 
       const [secs, setSecs] = useState(state === 'connected' ? 45 * 60 + 29 : 0);
-      const [down, setDown] = useState(12.4);
-      const [up, setUp] = useState(23.6);
+      // Mock cumulative session traffic (bytes), not live rate.
+      const [down, setDown] = useState(state === 'connected' ? 48 * 1024 * 1024 : 0);
+      const [up, setUp] = useState(state === 'connected' ? 6.2 * 1024 * 1024 : 0);
       const [demoProgress, setDemoProgress] = useState(0);
       const [demoIgnite, setDemoIgnite] = useState(0);
 
@@ -1534,8 +1541,8 @@
         if ((!interactive && !demo) || s !== 'connected') return;
         const t = setInterval(() => {
           setSecs((v) => v + 1);
-          setDown((v) => Math.max(0.8, v + (Math.random() - 0.48) * 1.2));
-          setUp((v) => Math.max(0.5, v + (Math.random() - 0.48) * 0.9));
+          setDown((v) => v + Math.floor(80_000 + Math.random() * 220_000));
+          setUp((v) => v + Math.floor(12_000 + Math.random() * 40_000));
         }, 1000);
         return () => clearInterval(t);
       }, [interactive, demo, s]);
@@ -1706,8 +1713,8 @@
               }}>
                 <SessionStats
                   seconds={(interactive || demo) && s === 'connected' ? secs : (secs || 45 * 60 + 29)}
-                  downMbps={down}
-                  upMbps={up}
+                  downBytes={down}
+                  upBytes={up}
                   light
                 />
               </div>

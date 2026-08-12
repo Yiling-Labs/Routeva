@@ -7,40 +7,40 @@ struct LocationView: View {
     var body: some View {
         RoutevaField {
             VStack(spacing: 0) {
-                HStack {
-                    GlassOrb(systemName: "chevron.left", accessibilityLabel: "Back") { dismiss() }
-                    Spacer()
-                    Text("Location")
-                        .font(.system(size: 17, weight: .semibold))
-                    Spacer()
+                RoutevaNavigationHeader(
+                    title: "Location",
+                    backSystemName: "chevron.left",
+                    backLabel: "Back",
+                    backAction: dismiss.callAsFunction
+                ) {
                     LocationTestButton(
                         isTesting: model.isTestingNodes,
                         action: { Task { await model.testNodeLatencies() } }
                     )
                 }
-                .frame(height: 48)
                 .accessibilityIdentifier("location.screen")
 
                 ScrollView {
-                    if model.availableNodes.isEmpty {
+                    let nodes = model.locationDisplayNodes
+                    if nodes.isEmpty {
                         LocationEmptyState()
                             .frame(maxWidth: .infinity, minHeight: 420)
                     } else {
                         VStack(spacing: 0) {
-                            ForEach(Array(model.availableNodes.enumerated()), id: \.element.id) { index, node in
+                            ForEach(Array(nodes.enumerated()), id: \.element.id) { index, node in
                                 LocationRow(
                                     node: node,
                                     latency: model.nodeLatencies[node.id],
                                     isPreferred: node.id == model.activeSubscription?.preferredNodeID
                                 ) {
                                     Task { @MainActor in
-                                        await model.selectPreferredNode(at: index)
+                                        await model.selectPreferredNode(id: node.id)
                                         dismiss()
                                     }
                                 }
                                 .accessibilityIdentifier("location.node.\(index)")
 
-                                if index < model.availableNodes.count - 1 {
+                                if index < nodes.count - 1 {
                                     Rectangle()
                                         .fill(.white.opacity(0.065))
                                         .frame(height: 0.7)

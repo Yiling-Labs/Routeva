@@ -42,7 +42,7 @@
 | 2 | **Swipe ~⅓** | ~1/3 | **第 1 圈** | Cover Flow + 节点名（**锁定**·无 ›） | **仅** Not Connected | 黑 |
 | 3 | **Swipe ~⅔** | ~2/3 | **1–2 圈** | 同上 | **仅** Not Connected | 黑 |
 | 4 | **Connecting** | 底 | **3 圈全亮** | Cover Flow + 节点名锁定 | **Connecting…** | 黑 |
-| 5 | **Connected** | 底 STOP | 3 圈绿 + 脉冲 | **时长 + ↓↑ Mb/s** | **仅** Connected · **可点节点行**（→ Location；无国家名行） | **绿** |
+| 5 | **Connected** | 底 STOP | 3 圈绿 + 脉冲 | **时长 + ↓↑ 本次累计流量** | **仅** Connected · **可点节点行**（→ Location；无国家名行） | **绿** |
 
 Interactive 列可拖/点完整流程。
 

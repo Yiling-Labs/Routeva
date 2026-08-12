@@ -49,8 +49,9 @@ final class RoutevaAppModel: ObservableObject {
     @Published var routingMode: RoutingMode = .automatic
     @Published var dnsPreset: DNSPreset = .automatic
     @Published var overrides: [DomainOverrideSummary] = []
-    @Published var liveDownloadMbps = 0.0
-    @Published var liveUploadMbps = 0.0
+    /// Tunnel session cumulative traffic (this connection only).
+    @Published var sessionDownloadedBytes: UInt64 = 0
+    @Published var sessionUploadedBytes: UInt64 = 0
     @Published var importConfirmation: ImportConfirmation?
     @Published var currentDiagnosticResult: DiagnosticResult?
     @Published private(set) var latestActivityRecord: ActivityRecord?
@@ -60,6 +61,8 @@ final class RoutevaAppModel: ObservableObject {
     @Published var nodeFailoverToast: String?
     @Published var nodeLatencies: [UUID: NodeLatencyStatus] = [:]
     @Published var isTestingNodes = false
+    /// Location list order after a completed latency round (node IDs). Empty = subscription order.
+    @Published private(set) var locationOrderIDs: [UUID] = []
     @Published var updatingSubscriptionIDs: Set<UUID> = []
     @Published var deletingSubscriptionIDs: Set<UUID> = []
     @Published var subscriptionUpdateFailureToast = false
@@ -67,6 +70,9 @@ final class RoutevaAppModel: ObservableObject {
 
     private static let onboardingKey = "routeva.onboarding.data-privacy.completed"
     private static let autoUpdateKey = "routeva.subscription.auto-update.enabled"
+    private static let latencyRoundCompletedAtKey = "routeva.latency.round-completed-at"
+    /// Weak cache TTL for silent full-table latency (implementation constant S).
+    private static let latencyCacheTTL: TimeInterval = 6 * 60 * 60
     #if DEBUG
     private static let debugStartupDurationKey = "routeva.debug.last-startup-duration"
     private static let debugProviderStartupDurationKey =
@@ -93,7 +99,6 @@ final class RoutevaAppModel: ObservableObject {
     private var trafficTaskID: UUID?
     private var postConnectProbeTask: Task<Void, Never>?
     private var postConnectProbeTaskID: UUID?
-    private var trafficRateSampler = ProviderTrafficRateSampler()
     private var connectedCore: CoreIdentifier?
     private var verifiedNodeID: UUID?
     private var runtimeCatalogNodeIDs: Set<UUID> = []
@@ -106,6 +111,11 @@ final class RoutevaAppModel: ObservableObject {
     private var isSceneActive = true
     private let deviceID: String
     private var overrideSyncService: CloudOverrideSyncService?
+    private var silentLatencyTask: Task<Void, Never>?
+    private var latencyRoundGeneration = 0
+    /// Once the user picks a Cover Flow card or Location Preferred, silent
+    /// latency pre-stop / reload must not steal that focus.
+    private var nodeSelectionOwnedByUser = false
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -187,6 +197,7 @@ final class RoutevaAppModel: ObservableObject {
             await self?.reloadOverrides()
             await self?.reloadLatestActivity()
             await self?.syncOverrides()
+            await self?.scheduleSilentLatencyTestIfNeeded()
         }
     }
 
@@ -196,6 +207,46 @@ final class RoutevaAppModel: ObservableObject {
 
     var availableNodes: [NodeSummary] {
         activeSubscription?.nodes ?? []
+    }
+
+    /// Location list: latency-ascending after a completed round; else subscription order.
+    var locationDisplayNodes: [NodeSummary] {
+        let nodes = availableNodes
+        guard !locationOrderIDs.isEmpty else { return nodes }
+        let byID = Dictionary(uniqueKeysWithValues: nodes.map { ($0.id, $0) })
+        var ordered: [NodeSummary] = []
+        ordered.reserveCapacity(nodes.count)
+        for id in locationOrderIDs {
+            if let node = byID[id] { ordered.append(node) }
+        }
+        for node in nodes where !locationOrderIDs.contains(node.id) {
+            ordered.append(node)
+        }
+        return ordered
+    }
+
+    /// Home Cover Flow: full Active node list in subscription order.
+    /// Provider metadata / quota banner rows are already dropped at import.
+    var coverFlowNodes: [NodeSummary] {
+        availableNodes
+    }
+
+    var coverFlowSelectedIndex: Int {
+        guard !availableNodes.isEmpty else { return 0 }
+        return min(max(selectedNodeIndex, 0), availableNodes.count - 1)
+    }
+
+    func setCoverFlowSelectedIndex(_ index: Int) {
+        guard availableNodes.indices.contains(index) else { return }
+        if selectedNodeIndex != index {
+            selectedNodeIndex = index
+            nodeSelectionOwnedByUser = true
+        }
+    }
+
+    func selectPreferredNode(id: UUID) async {
+        guard let index = activeSubscription?.nodes.firstIndex(where: { $0.id == id }) else { return }
+        await selectPreferredNode(at: index)
     }
 
     var redactedDiagnosticReport: String {
@@ -251,6 +302,7 @@ final class RoutevaAppModel: ObservableObject {
         cancelNodeSelection()
         probeCounterSummary = nil
         cancelPostConnectProbe()
+        pauseSilentLatencyTest()
         #if DEBUG && targetEnvironment(simulator)
         connectionState = .idle
         connectionFailureMessage = "VPN connection testing requires a signed build on a physical iPhone."
@@ -271,8 +323,10 @@ final class RoutevaAppModel: ObservableObject {
                 #endif
             } catch is CancellationError {
                 connectionState = .idle
+                scheduleSilentLatencyTestIfNeeded()
             } catch {
                 await presentDiagnostic(from: trace)
+                scheduleSilentLatencyTestIfNeeded()
             }
         }
     }
@@ -284,19 +338,21 @@ final class RoutevaAppModel: ObservableObject {
         cancelNodeSelection()
         cancelPostConnectProbe()
         stopTrafficPolling()
-        trafficRateSampler.reset()
         connectedCore = nil
         clearConnectedNodeState()
         // Do not keep Home visually connected while iOS asynchronously reaps
         // a provider whose stop command is being submitted immediately below.
         connectionState = .idle
-        liveDownloadMbps = 0
-        liveUploadMbps = 0
+        sessionDownloadedBytes = 0
+        sessionUploadedBytes = 0
         let controller = providerController
         let stopStartedAt = Date()
         disconnectionTask = Task { [weak self] in
             guard let self else { return }
-            defer { disconnectionTask = nil }
+            defer {
+                disconnectionTask = nil
+                scheduleSilentLatencyTestIfNeeded()
+            }
             await connectionCoordinator.stop(
                 stopProvider: { core in await controller.requestStop(core: core) }
             )
@@ -312,6 +368,9 @@ final class RoutevaAppModel: ObservableObject {
     func setHomeVisible(_ visible: Bool) {
         isHomeVisible = visible
         refreshTrafficPolling()
+        if visible {
+            scheduleSilentLatencyTestIfNeeded()
+        }
     }
 
     func setSceneActive(_ active: Bool) {
@@ -321,6 +380,7 @@ final class RoutevaAppModel: ObservableObject {
             Task {
                 await syncOverrides()
                 await reconcileSelectedNodeIfNeeded()
+                scheduleSilentLatencyTestIfNeeded()
             }
         }
     }
@@ -627,6 +687,7 @@ final class RoutevaAppModel: ObservableObject {
             }
             guard nodeSelectionIntentID == intentID else { return }
             selectedNodeIndex = index
+            nodeSelectionOwnedByUser = true
             await reloadSubscriptions()
             guard nodeSelectionIntentID == intentID else { return }
             if case .connected = connectionState {
@@ -1011,14 +1072,77 @@ final class RoutevaAppModel: ObservableObject {
         connectedDirectRouteAddresses = []
     }
 
+    /// User-visible Location *Test* — same pipeline as silent latency.
     func testNodeLatencies() async {
-        guard !isTestingNodes, let database, let activeSubscription else { return }
-        guard let records = try? await database.nodes(subscriptionID: activeSubscription.id) else { return }
+        await runLatencyRound(userInitiated: true)
+    }
+
+    /// Schedule a silent full-table TCP latency round when idle and cache is cold.
+    func scheduleSilentLatencyTestIfNeeded() {
+        guard isIdleForLatencyWork else { return }
+        guard activeSubscription != nil, !availableNodes.isEmpty else { return }
+        guard !isTestingNodes, silentLatencyTask == nil else { return }
+        if let completedAt = defaults.object(forKey: Self.latencyRoundCompletedAtKey) as? Date,
+           Date().timeIntervalSince(completedAt) < Self.latencyCacheTTL,
+           !locationOrderIDs.isEmpty {
+            return
+        }
+        silentLatencyTask = Task { [weak self] in
+            guard let self else { return }
+            defer { silentLatencyTask = nil }
+            await runLatencyRound(userInitiated: false)
+        }
+    }
+
+    private var isIdleForLatencyWork: Bool {
+        switch connectionState {
+        case .idle, .failed: true
+        case .connecting, .connected: false
+        }
+    }
+
+    private func pauseSilentLatencyTest() {
+        silentLatencyTask?.cancel()
+        silentLatencyTask = nil
+        latencyRoundGeneration += 1
+    }
+
+    private func runLatencyRound(userInitiated: Bool) async {
+        guard let database, let activeSubscription else { return }
+        guard let records = try? await database.nodes(subscriptionID: activeSubscription.id),
+              !records.isEmpty else { return }
+        // Connecting / Connected: never run (or continue) a full-table round.
+        if case .connecting = connectionState { return }
+        if case .connected = connectionState { return }
+
+        let generation = latencyRoundGeneration + 1
+        latencyRoundGeneration = generation
         isTestingNodes = true
-        defer { isTestingNodes = false }
-        nodeLatencies = Dictionary(uniqueKeysWithValues: records.map { ($0.id, .testing) })
+        defer {
+            if latencyRoundGeneration == generation {
+                isTestingNodes = false
+            }
+        }
+
+        // Mark outstanding as testing without wiping prior ms until replaced.
+        for record in records {
+            if nodeLatencies[record.id] == nil || userInitiated {
+                nodeLatencies[record.id] = .testing
+            } else if case .measured = nodeLatencies[record.id] {
+                // Keep last good ms while re-probing silently.
+            } else {
+                nodeLatencies[record.id] = .testing
+            }
+        }
+        if userInitiated {
+            nodeLatencies = Dictionary(uniqueKeysWithValues: records.map { ($0.id, .testing) })
+        }
 
         for start in stride(from: 0, to: records.count, by: 6) {
+            if Task.isCancelled || latencyRoundGeneration != generation { return }
+            if case .connecting = connectionState { return }
+            if case .connected = connectionState { return }
+
             let batch = Array(records[start..<min(start + 6, records.count)])
             await withTaskGroup(of: (UUID, Int?).self) { group in
                 for record in batch {
@@ -1035,9 +1159,63 @@ final class RoutevaAppModel: ObservableObject {
                     }
                 }
                 for await (id, milliseconds) in group {
+                    guard latencyRoundGeneration == generation else { return }
                     nodeLatencies[id] = milliseconds.map(NodeLatencyStatus.measured) ?? .unavailable
                 }
             }
+        }
+
+        guard latencyRoundGeneration == generation else { return }
+        guard isIdleForLatencyWork else { return }
+
+        // Round complete: Location order + Cover Flow pre-stop (Preferred wins).
+        applyLatencyRoundResults(nodes: availableNodes)
+        defaults.set(Date(), forKey: Self.latencyRoundCompletedAtKey)
+    }
+
+    private func applyLatencyRoundResults(nodes: [NodeSummary]) {
+        // Always refresh Location order. Cover Flow stays subscription order.
+        locationOrderIDs = Self.sortedNodeIDsByLatency(nodes: nodes, latencies: nodeLatencies)
+
+        // Cover Flow / Location pick owns focus until the catalog changes.
+        // Pre-stop must not yank the user back to Preferred or lowest-ms.
+        guard !nodeSelectionOwnedByUser else { return }
+
+        let preferredID = activeSubscription?.preferredNodeID
+        if let preferredID,
+           let preferredIndex = nodes.firstIndex(where: { $0.id == preferredID }) {
+            selectedNodeIndex = preferredIndex
+            return
+        }
+        // No Preferred: pre-stop on lowest ms among measured nodes.
+        if let bestID = locationOrderIDs.first(where: {
+            if case .measured = nodeLatencies[$0] { return true }
+            return false
+        }), let bestIndex = nodes.firstIndex(where: { $0.id == bestID }) {
+            selectedNodeIndex = bestIndex
+        }
+    }
+
+    private static func sortedNodeIDsByLatency(
+        nodes: [NodeSummary],
+        latencies: [UUID: NodeLatencyStatus]
+    ) -> [UUID] {
+        let indexed = nodes.enumerated().map { offset, node in (offset, node) }
+        return indexed.sorted { lhs, rhs in
+            let l = latencySortKey(latencies[lhs.1.id])
+            let r = latencySortKey(latencies[rhs.1.id])
+            if l.bucket != r.bucket { return l.bucket < r.bucket }
+            if l.ms != r.ms { return l.ms < r.ms }
+            return lhs.0 < rhs.0
+        }.map(\.1.id)
+    }
+
+    /// bucket: 0 = measured, 1 = timeout, 2 = unknown/testing
+    private static func latencySortKey(_ status: NodeLatencyStatus?) -> (bucket: Int, ms: Int) {
+        switch status {
+        case let .measured(ms): return (0, ms)
+        case .unavailable: return (1, Int.max)
+        case .testing, .none: return (2, Int.max)
         }
     }
 
@@ -1060,12 +1238,35 @@ final class RoutevaAppModel: ObservableObject {
                 canUpdateAutomatically: record.sourceKind == "remote-url"
             ))
         }
+        let previousActiveID = activeSubscription?.id
+        let previousNodeIDs = Set(availableNodes.map(\.id))
+        // Preserve temporary Cover Flow focus across reloads when possible.
+        let previousSelectedID = availableNodes.indices.contains(selectedNodeIndex)
+            ? availableNodes[selectedNodeIndex].id
+            : nil
         subscriptions = summaries
-        if let preferredNodeID = activeSubscription?.preferredNodeID,
-           let preferredIndex = availableNodes.firstIndex(where: { $0.id == preferredNodeID }) {
+        let newNodeIDs = Set(availableNodes.map(\.id))
+        let catalogChanged = activeSubscription?.id != previousActiveID || newNodeIDs != previousNodeIDs
+        if catalogChanged {
+            // New node set: system owns focus again (Preferred / index 0).
+            nodeSelectionOwnedByUser = false
+            locationOrderIDs = []
+            defaults.removeObject(forKey: Self.latencyRoundCompletedAtKey)
+        }
+
+        if nodeSelectionOwnedByUser,
+           let previousSelectedID,
+           let keptIndex = availableNodes.firstIndex(where: { $0.id == previousSelectedID }) {
+            selectedNodeIndex = keptIndex
+        } else if let preferredNodeID = activeSubscription?.preferredNodeID,
+                  let preferredIndex = availableNodes.firstIndex(where: { $0.id == preferredNodeID }) {
             selectedNodeIndex = preferredIndex
         } else if selectedNodeIndex >= availableNodes.count {
             selectedNodeIndex = 0
+        }
+
+        if catalogChanged {
+            scheduleSilentLatencyTestIfNeeded()
         }
     }
 
@@ -1274,6 +1475,13 @@ final class RoutevaAppModel: ObservableObject {
             ))
             throw error
         }
+
+        // Quick TCP reachability on the selected node before bringing the
+        // tunnel up — rejects obviously dead endpoints (avoids a "connected"
+        // shell that cannot forward). Hysteria2 is UDP-only; skip and rely on
+        // the post-connect core probe.
+        try await verifySelectedNodeReachable(trace: trace)
+
         let controller = providerController
         let excludedNodeAddresses = manifest.directRouteAddresses
         let startupTiming = StartupTimingBox()
@@ -1312,11 +1520,8 @@ final class RoutevaAppModel: ObservableObject {
             },
                 stopProvider: { core in await controller.stop(core: core) },
                 probe: { _ in
-                    // NE reports Connected only after the provider has loaded
-                    // the manifest, started Libbox/gVisor, and started the
-                    // public PacketFlow bridge. Internet/CDN reachability is a
-                    // post-connect health signal and must not hold the power
-                    // control in Connecting or trigger serial node retries.
+                    // Tunnel readiness only. Through-proxy health is verified
+                    // immediately after Connected via startPostConnectProbe.
                     await trace.record(.init(layer: .probe, status: .passed))
                 }
             )
@@ -1352,7 +1557,8 @@ final class RoutevaAppModel: ObservableObject {
         runtimeCatalogNodeIDs = Set(manifest.profiles.map(\.id))
         connectedTunnelProbeAddressSets = []
         connectedDirectRouteAddresses = excludedNodeAddresses
-        trafficRateSampler.reset()
+        sessionDownloadedBytes = 0
+        sessionUploadedBytes = 0
         currentDiagnosticResult = nil
         connectionState = .connected(sessionStartedAt: .now)
         refreshTrafficPolling()
@@ -1465,10 +1671,17 @@ final class RoutevaAppModel: ObservableObject {
                             + "[\(diagnosticSummary)]"
                     )
                     #endif
-                    // This is telemetry only. NE/provider teardown is still
-                    // authoritative and is handled by traffic polling. A
-                    // public health endpoint must not turn a running VPN into
-                    // a false startup failure or serially rotate nodes.
+                    // Public CDN probe can fail while the tunnel still carries
+                    // real traffic — keep the session in that case. When the
+                    // data-plane also shows no progress, treat it as a dead
+                    // node: tear down and ask the user to switch.
+                    if !trafficProvesTunnel {
+                        await tearDownDeadNodeSession(
+                            core: core,
+                            taskID: taskID,
+                            errorCode: errorCode
+                        )
+                    }
                 }
             } catch is CancellationError {
                 return
@@ -1478,28 +1691,121 @@ final class RoutevaAppModel: ObservableObject {
         }
     }
 
+    /// Stop a session that came up but failed through-proxy health without
+    /// data-plane progress — the "fake connected" case.
+    private func tearDownDeadNodeSession(
+        core: CoreIdentifier,
+        taskID: UUID,
+        errorCode: String
+    ) async {
+        guard postConnectProbeTaskID == taskID, connectedCore == core else { return }
+        #if DEBUG
+        print("Routeva VPN dead-node teardown: \(errorCode)")
+        #endif
+        // Detach this task's IDs without cancelling ourselves mid-teardown.
+        postConnectProbeTask = nil
+        postConnectProbeTaskID = nil
+        stopTrafficPolling()
+        let controller = providerController
+        await connectionCoordinator.stop(
+            stopProvider: { identifier in await controller.requestStop(core: identifier) }
+        )
+        connectedCore = nil
+        clearConnectedNodeState()
+        connectionState = .idle
+        sessionDownloadedBytes = 0
+        sessionUploadedBytes = 0
+        connectionFailureMessage = Self.nodeUnreachableUserMessage
+    }
+
     private func cancelPostConnectProbe() {
         postConnectProbeTask?.cancel()
         postConnectProbeTask = nil
         postConnectProbeTaskID = nil
     }
 
+    private static let nodeUnreachableUserMessage =
+        "This node isn’t responding. Try another node."
+
     private func presentDiagnostic(from trace: ConnectionDiagnosticTrace) async {
         let result = await recordDiagnostic(from: trace)
         connectionState = .idle
         clearConnectedNodeState()
-        #if DEBUG
         let evidenceCode = result.evidence.last(where: {
             $0.checkStatus == .failed
         })?.errorCode ?? result.stableErrorCode
-        var message = "Couldn’t connect. Try again. [\(evidenceCode)]"
-        if let probeCounterSummary {
-            message += " {\(probeCounterSummary)}"
+        let isNodeUnreachable = evidenceCode == "probe.node_unreachable"
+            || evidenceCode == "probe.core_url_test_failed"
+            || evidenceCode == "probe.core_url_test_unavailable"
+        #if DEBUG
+        if isNodeUnreachable {
+            var message = "\(Self.nodeUnreachableUserMessage) [\(evidenceCode)]"
+            if let probeCounterSummary {
+                message += " {\(probeCounterSummary)}"
+            }
+            connectionFailureMessage = message
+        } else {
+            var message = "Couldn’t connect. Try again. [\(evidenceCode)]"
+            if let probeCounterSummary {
+                message += " {\(probeCounterSummary)}"
+            }
+            connectionFailureMessage = message
         }
-        connectionFailureMessage = message
         #else
-        connectionFailureMessage = "Couldn’t connect. Try again."
+        connectionFailureMessage = isNodeUnreachable
+            ? Self.nodeUnreachableUserMessage
+            : "Couldn’t connect. Try again."
         #endif
+    }
+
+    /// TCP open to the selected node's host:port before tunnel start.
+    private func verifySelectedNodeReachable(trace: ConnectionDiagnosticTrace) async throws {
+        guard let database else { return }
+        guard availableNodes.indices.contains(selectedNodeIndex) else {
+            await trace.record(.init(
+                layer: .probe,
+                status: .failed,
+                errorCode: "probe.node_unreachable"
+            ))
+            throw RoutevaAppDataError.nodeUnavailable
+        }
+        let nodeID = availableNodes[selectedNodeIndex].id
+        guard let record = try? await database.node(id: nodeID) else {
+            await trace.record(.init(
+                layer: .probe,
+                status: .failed,
+                errorCode: "probe.node_unreachable"
+            ))
+            throw RoutevaAppDataError.nodeUnavailable
+        }
+        // UDP transports cannot be validated with a TCP open.
+        if record.protocolKind == .hysteria2 {
+            await trace.record(.init(layer: .probe, status: .passed, errorCode: "probe.node_udp_skipped"))
+            return
+        }
+        let latency = await NodeLatencyProbe.measure(
+            host: record.endpointHost,
+            port: record.endpointPort,
+            timeout: 2.5
+        )
+        if let latency {
+            nodeLatencies[record.id] = .measured(latency)
+            await trace.record(.init(layer: .probe, status: .passed))
+            return
+        }
+        nodeLatencies[record.id] = .unavailable
+        await trace.record(.init(
+            layer: .probe,
+            status: .failed,
+            errorCode: "probe.node_unreachable"
+        ))
+        #if DEBUG
+        print(
+            "Routeva VPN pre-connect node probe failed: "
+                + "\(record.endpointHost):\(record.endpointPort)"
+        )
+        #endif
+        throw RoutevaAppDataError.nodeUnavailable
     }
 
     @discardableResult
@@ -1583,28 +1889,20 @@ final class RoutevaAppModel: ObservableObject {
             #endif
             while !Task.isCancelled {
                 guard let core = connectedCore else { break }
-                var needsWarmupSample = false
                 do {
                     let snapshot = try await providerController.queryTraffic(core: core)
                     guard !Task.isCancelled, trafficTaskID == taskID else { break }
-                    let now = Date()
-                    if let rate = trafficRateSampler.sample(snapshot, at: now) {
-                        liveUploadMbps = rate.uploadMbps
-                        liveDownloadMbps = rate.downloadMbps
-                    } else {
-                        liveUploadMbps = 0
-                        liveDownloadMbps = 0
-                        needsWarmupSample = true
-                    }
+                    // Provider counters are cumulative for this tunnel session.
+                    sessionUploadedBytes = snapshot.uploadedBytes
+                    sessionDownloadedBytes = snapshot.downloadedBytes
                 } catch {
                     guard !Task.isCancelled, trafficTaskID == taskID else { break }
-                    liveUploadMbps = 0
-                    liveDownloadMbps = 0
                     if !(await providerController.isConnectionActive(core: core)) {
                         connectedCore = nil
                         clearConnectedNodeState()
-                        trafficRateSampler.reset()
                         connectionState = .idle
+                        sessionDownloadedBytes = 0
+                        sessionUploadedBytes = 0
                         #if DEBUG
                         connectionFailureMessage =
                             "VPN stopped unexpectedly. Try again. [provider.session_ended]"
@@ -1613,7 +1911,6 @@ final class RoutevaAppModel: ObservableObject {
                         #endif
                         break
                     }
-                    needsWarmupSample = true
                 }
                 #if DEBUG
                 // Provider IPC is globally limited to one request per 200 ms.
@@ -1635,9 +1932,7 @@ final class RoutevaAppModel: ObservableObject {
                     }
                 }
                 #endif
-                try? await Task.sleep(
-                    for: needsWarmupSample ? .milliseconds(250) : .milliseconds(500)
-                )
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
     }
@@ -1646,8 +1941,8 @@ final class RoutevaAppModel: ObservableObject {
         trafficTask?.cancel()
         trafficTask = nil
         trafficTaskID = nil
-        liveDownloadMbps = 0
-        liveUploadMbps = 0
+        sessionDownloadedBytes = 0
+        sessionUploadedBytes = 0
     }
 
     private static func nodeSummary(_ record: NodeRecord) -> NodeSummary {

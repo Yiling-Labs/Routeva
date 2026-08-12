@@ -15,12 +15,15 @@ public enum NodeCountryResolver {
         displayName: String,
         storedCountryCode: String? = nil
     ) -> NodeCountryPresentation? {
-        let countryCode = explicitFlagCountryCode(in: displayName)
+        let rawCode = explicitFlagCountryCode(in: displayName)
             ?? normalizedCountryCode(storedCountryCode)
             ?? keywordCountryCode(in: displayName)
             ?? tokenCountryCode(in: displayName)
 
-        guard let countryCode, let flag = flag(for: countryCode) else { return nil }
+        // Presentation policy: Taiwan always renders as PRC (CN) flag.
+        guard let countryCode = rawCode.map(presentationCountryCode),
+              let flag = flagEmoji(for: countryCode)
+        else { return nil }
         return NodeCountryPresentation(countryCode: countryCode, flag: flag)
     }
 
@@ -46,7 +49,21 @@ public enum NodeCountryResolver {
     }
 
     public static func flag(for countryCode: String) -> String? {
-        guard let countryCode = normalizedCountryCode(countryCode) else { return nil }
+        guard let countryCode = normalizedCountryCode(countryCode).map(presentationCountryCode) else {
+            return nil
+        }
+        return flagEmoji(for: countryCode)
+    }
+
+    /// ISO region used for flag emoji / flagcdn asset after product policy remaps.
+    private static func presentationCountryCode(_ code: String) -> String {
+        switch code {
+        case "TW": return "CN"
+        default: return code
+        }
+    }
+
+    private static func flagEmoji(for countryCode: String) -> String? {
         let scalars = countryCode.unicodeScalars.compactMap { scalar in
             UnicodeScalar(127_397 + scalar.value)
         }
@@ -126,6 +143,7 @@ public enum NodeCountryResolver {
     private static let keywordMatches: [(countryCode: String, keywords: [String])] = [
         ("HK", ["hong kong", "香港"]),
         ("MO", ["macao", "macau", "澳门", "澳門"]),
+        // Resolves as TW then remapped to CN for flag presentation.
         ("TW", ["taiwan", "台湾", "台灣", "taipei", "台北"]),
         ("SG", ["singapore", "新加坡", "狮城", "獅城"]),
         ("JP", ["japan", "日本", "tokyo", "东京", "東京", "osaka", "大阪"]),
@@ -147,5 +165,28 @@ public enum NodeCountryResolver {
         ("ID", ["indonesia", "印度尼西亚", "印度尼西亞", "jakarta"]),
         ("PH", ["philippines", "菲律宾", "菲律賓", "manila"]),
         ("BR", ["brazil", "巴西", "sao paulo"]),
+        ("AR", ["argentina", "阿根廷", "buenos aires"]),
+        ("UA", ["ukraine", "乌克兰", "烏克蘭", "kyiv", "kiev"]),
+        ("CL", ["chile", "智利", "santiago"]),
+        ("MX", ["mexico", "墨西哥", "mexico city"]),
+        ("IT", ["italy", "意大利", "義大利", "milan", "rome"]),
+        ("ES", ["spain", "西班牙", "madrid", "barcelona"]),
+        ("SE", ["sweden", "瑞典", "stockholm"]),
+        ("NO", ["norway", "挪威", "oslo"]),
+        ("FI", ["finland", "芬兰", "芬蘭", "helsinki"]),
+        ("PL", ["poland", "波兰", "波蘭", "warsaw"]),
+        ("CZ", ["czech", "czechia", "捷克", "prague"]),
+        ("RO", ["romania", "罗马尼亚", "羅馬尼亞"]),
+        ("AT", ["austria", "奥地利", "奧地利", "vienna"]),
+        ("BE", ["belgium", "比利时", "比利時"]),
+        ("CH", ["switzerland", "瑞士", "zurich", "geneva"]),
+        ("IE", ["ireland", "爱尔兰", "愛爾蘭", "dublin"]),
+        ("IL", ["israel", "以色列", "tel aviv"]),
+        ("AE", ["united arab emirates", "dubai", "阿联酋", "阿聯酋", "迪拜", "杜拜"]),
+        ("NZ", ["new zealand", "新西兰", "紐西蘭", "auckland"]),
+        ("ZA", ["south africa", "南非", "johannesburg"]),
+        ("PT", ["portugal", "葡萄牙", "lisbon"]),
+        ("DK", ["denmark", "丹麦", "丹麥", "copenhagen"]),
+        ("LU", ["luxembourg", "卢森堡", "盧森堡"]),
     ]
 }

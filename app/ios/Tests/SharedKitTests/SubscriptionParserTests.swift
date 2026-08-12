@@ -44,6 +44,33 @@ final class SubscriptionParserTests: XCTestCase {
         XCTAssertEqual(parsed.nodes[1].security, .tls)
     }
 
+    func testSkipsProviderTrafficAndExpiryBannerNodes() throws {
+        func vmessURI(ps: String, add: String) throws -> String {
+            let object: [String: Any] = [
+                "v": "2",
+                "ps": ps,
+                "add": add,
+                "port": "10086",
+                "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                "net": "tcp",
+                "tls": "",
+            ]
+            let data = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+            return "vmess://\(data.base64EncodedString())"
+        }
+
+        let traffic = try vmessURI(ps: "剩余流量：19.06% 57.71GB", add: "www.g00gle.com")
+        let expiry = try vmessURI(ps: "过期时间：2026-09-17 10:01:32", add: "www.g00gle.com")
+        let real = try vmessURI(ps: "日本A05 | 下载专用", add: "jp05.example.invalid")
+        let subscription = Data("\(traffic)\n\(expiry)\n\(real)".utf8).base64EncodedString()
+
+        let parsed = try parser.parse(subscription)
+
+        XCTAssertEqual(parsed.nodes.map(\.displayName), ["日本A05 | 下载专用"])
+        XCTAssertEqual(parsed.nodes[0].endpointHost, "jp05.example.invalid")
+        XCTAssertEqual(parsed.skippedNodeCount, 2)
+    }
+
     func testParsesClashBlockAndInlineMappingsAndSkipsUnsupportedType() throws {
         let yaml = """
         mixed-port: 7890

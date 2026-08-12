@@ -53,7 +53,8 @@
 - **胶囊：** 主连接控件；圆角满圆  
 - **Sheet 圆角：** ~24  
 - **留白：** 中部信息区疏朗；底部主操作区给足呼吸  
-- **Cover Flow：** 水平为主、**浅弧**（约 `y ∝ d²×2`）；item 间距适中；选中项下 **节点名+弱协议**；Idle/Can’t **+弱 › 可点→Location**；Swipe/Connecting 锁定；**长名 tail ellipsis**（协议/› 不缩；a11y 全量） 
+- **Cover Flow：** 水平为主、**浅弧**（约 `y ∝ d²×2`）；item 间距适中；选中项下 **节点名+弱协议**；Idle/Can’t **+弱 › 可点→Location**；Swipe/Connecting 锁定；**长名 tail ellipsis**（协议/› 不缩；a11y 全量）  
+- **Cover Flow 延迟角标（定稿 B2 · ADR 0068）：** 嵌在国旗圆盘**底弧**的 soft glass 芯片（非球下悬挂）；**`NNms`** 等宽数字；分档 **&lt;100 绿 · 100–200 黄 · &gt;200/超时 软红**；未测不画、测中 `…`、Timeout `—`。**禁止**刺眼交通灯红、角标外飘抢国旗主视觉 
 
 ## 6. 动效气质
 
