@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="design_doc_mode" content="canvas" />
+<title>Routeva · App Icon · Shelf Pass</title>
+<style>
+  :root {
+    --paper: #0b0e11;
+    --paper-2: #14191f;
+    --paper-top: #1e252c;
+    --ink: rgba(255,255,255,0.96);
+    --ink2: rgba(255,255,255,0.74);
+    --mute: rgba(255,255,255,0.56);
+    --quiet: rgba(255,255,255,0.36);
+    --mint: #7fd9b0;
+    --mint-2: #b6f0d4;
+    --edge: rgba(255,255,255,0.10);
+    --glass: rgba(255,255,255,0.055);
+    --spring: 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    --g: clamp(1.1rem, 3.2vw, 2.4rem);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition-duration: 0.01ms !important; animation: none !important; }
+  }
+  body {
+    font-family: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 65% 45% at 50% -8%, rgba(127,217,176,0.07), transparent 55%),
+      linear-gradient(180deg, var(--paper-top) 0%, var(--paper-2) 40%, var(--paper) 100%);
+  }
+  .wrap { position: relative; z-index: 1; }
+
+  .top {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.75rem; padding: 0.95rem var(--g);
+    background: color-mix(in srgb, var(--paper) 70%, transparent);
+    backdrop-filter: blur(22px) saturate(160%);
+    border-bottom: 1px solid var(--edge);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .top { background: var(--paper); backdrop-filter: none; }
+  }
+  .brand {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .brand em { color: var(--mint); font-style: normal; }
+  .hint { font-size: 12px; color: var(--quiet); font-weight: 500; }
+  .hint kbd {
+    font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 0.2rem 0.4rem; border-radius: 5px;
+    border: 1px solid var(--edge); background: var(--glass); color: var(--mute);
+  }
+
+  .hero {
+    max-width: 78rem; margin: 0 auto;
+    padding: 2rem var(--g) 1.25rem;
+    display: grid; gap: 1.5rem;
+  }
+  @media (min-width: 960px) {
+    .hero { grid-template-columns: 1.2fr 0.8fr; align-items: start; gap: 2rem; }
+  }
+  .kicker {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--mint); margin-bottom: 0.65rem;
+  }
+  h1 {
+    font-size: clamp(1.85rem, 4.2vw, 2.7rem);
+    font-weight: 700; letter-spacing: -0.03em; line-height: 1.08;
+    margin-bottom: 0.75rem;
+  }
+  .lede {
+    font-size: 15px; line-height: 1.7; color: var(--ink2);
+    max-width: 48ch; margin-bottom: 1.1rem;
+  }
+  .principles { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .pill {
+    font-size: 11px; font-weight: 600; color: var(--ink2);
+    padding: 0.32rem 0.7rem; border-radius: 999px;
+    border: 1px solid var(--edge); background: var(--glass);
+  }
+  .pill b { color: var(--mint); }
+
+  .side {
+    display: flex; flex-direction: column; gap: 0.7rem;
+    padding: 1rem 1.1rem; border-radius: 20px;
+    border: 1px solid var(--edge); background: var(--glass);
+  }
+  .side h2 {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .side p, .side li { font-size: 13px; line-height: 1.65; color: var(--ink2); }
+  .side ul { padding-left: 1.1rem; display: grid; gap: 0.35rem; }
+
+  section.block {
+    max-width: 78rem; margin: 0 auto;
+    padding: 0.5rem var(--g) 2.2rem;
+  }
+  .sec-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute);
+    margin-bottom: 0.9rem;
+  }
+
+  .grid5 {
+    display: grid; gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 720px) { .grid5 { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1180px) { .grid5 { grid-template-columns: repeat(5, 1fr); } }
+
+  .card {
+    border: 1px solid var(--edge);
+    background: rgba(255,255,255,0.03);
+    border-radius: 22px;
+    padding: 0.85rem 0.85rem 1rem;
+    display: flex; flex-direction: column; gap: 0.7rem;
+    cursor: pointer;
+    transition: transform var(--spring), border-color var(--spring), background var(--spring);
+  }
+  .card:hover { border-color: rgba(127,217,176,0.35); background: rgba(255,255,255,0.05); }
+  .card:focus-visible { outline: 2px solid rgba(140,220,190,0.9); outline-offset: 3px; }
+  .card[data-on="1"] { border-color: rgba(127,217,176,0.55); background: rgba(127,217,176,0.06); }
+  .card:active { transform: scale(0.985); }
+
+  .icon-sq {
+    width: 100%; aspect-ratio: 1;
+    border-radius: 22.5%;
+    overflow: hidden;
+    background: #0b0e11;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+  }
+  .icon-sq img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  .meta { display: flex; flex-direction: column; gap: 0.25rem; }
+  .id {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mint);
+  }
+  .name { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+  .why { font-size: 13px; line-height: 1.55; color: var(--ink2); }
+  .risk { font-size: 12px; line-height: 1.5; color: var(--quiet); }
+
+  .sizes {
+    display: flex; align-items: flex-end; gap: 0.7rem;
+    padding-top: 0.25rem;
+  }
+  .sz { display: flex; flex-direction: column; align-items: center; gap: 0.28rem; }
+  .sz img {
+    display: block; border-radius: 22.5%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .sz span { font-size: 10px; color: var(--quiet); font-weight: 600; }
+
+  .current {
+    display: grid; gap: 1rem;
+    grid-template-columns: 132px 1fr;
+    align-items: center;
+    padding: 1rem;
+    border: 1px dashed var(--edge);
+    border-radius: 22px;
+    background: rgba(255,255,255,0.02);
+  }
+  .current img {
+    width: 132px; height: 132px; border-radius: 22.5%;
+    display: block; box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+  }
+  .current h3 { font-size: 16px; font-weight: 700; margin-bottom: 0.3rem; }
+  .current p { font-size: 13px; line-height: 1.65; color: var(--ink2); }
+
+  .shelf {
+    display: grid; gap: 0.65rem;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (min-width: 800px) { .shelf { grid-template-columns: repeat(6, 1fr); } }
+  .tile {
+    border-radius: 16px; padding: 0.85rem 0.75rem 0.75rem;
+    min-height: 108px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    gap: 0.4rem;
+  }
+  .tile strong { font-size: 13px; font-weight: 700; }
+  .tile span { font-size: 11px; line-height: 1.4; opacity: 0.78; }
+  .t-sr { background: #e85d04; color: #fff; }
+  .t-surge { background: #0a84ff; color: #fff; }
+  .t-qx { background: #1c1c2e; color: #9ad7ff; }
+  .t-stash { background: #f5c518; color: #1a1400; }
+  .t-loon { background: #5ac8fa; color: #062033; }
+  .t-vpn { background: #1f8a4c; color: #eafff2; }
+
+  .spring {
+    border-radius: 28px;
+    padding: 1.4rem 1.2rem 1.2rem;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(80,90,110,0.35), transparent 55%),
+      linear-gradient(180deg, #1a1d24 0%, #0c0e12 100%);
+    border: 1px solid var(--edge);
+  }
+  .dock {
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 1.15rem 1.35rem;
+  }
+  .app {
+    width: 62px; display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  }
+  .app img, .app .fake {
+    width: 62px; height: 62px; border-radius: 14px; display: block;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+  }
+  .app .fake { display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+  .app em {
+    font-style: normal; font-size: 10px; color: rgba(255,255,255,0.72);
+    letter-spacing: -0.01em; text-align: center; width: 72px;
+  }
+
+  .rec {
+    padding: 1.1rem 1.15rem;
+    border-radius: 20px;
+    border: 1px solid rgba(127,217,176,0.28);
+    background: rgba(127,217,176,0.06);
+  }
+  .rec h3 { font-size: 16px; font-weight: 700; margin-bottom: 0.4rem; }
+  .rec p { font-size: 14px; line-height: 1.7; color: var(--ink2); }
+
+  footer {
+    max-width: 78rem; margin: 0 auto;
+    padding: 0 var(--g) 3rem;
+    font-size: 12px; color: var(--quiet); line-height: 1.6;
+  }
+
+  .focus {
+    position: fixed; inset: 0; z-index: 80;
+    background: rgba(8,10,12,0.72);
+    backdrop-filter: blur(16px);
+    display: none; place-items: center;
+    padding: 2rem;
+  }
+  .focus.on { display: grid; }
+  .focus img {
+    width: min(72vw, 72vh, 560px);
+    height: auto; border-radius: 22.5%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Routeva · <em>Shelf Pass</em> · 2026-08-13</div>
+    <div class="hint">点选一张看大图 · <kbd>1</kbd>–<kbd>5</kbd> 聚焦 · <kbd>Esc</kbd> 关闭</div>
+  </header>
+
+  <div class="hero" data-screen-label="brief">
+    <div>
+      <div class="kicker">App Icon · 5 new marks</div>
+      <h1>给已经有订阅的人，<br />一个不靠火箭辨认的图标。</h1>
+      <p class="lede" lang="zh">
+        现行 Via Up 清楚，但 chevron 是系统符号。这一轮从最新 Home（玻璃 orb、选中双环、连接胶囊、顶开口点阵）和货架空槽长出来：炭黑 + mint，消费级，不卖节点。
+      </p>
+      <div class="principles">
+        <span class="pill"><b>受众</b> 会粘贴、不懂协议</span>
+        <span class="pill"><b>邻座</b> ChatGPT / YouTube / Telegram</span>
+        <span class="pill"><b>避开</b> 橙火箭 · 蓝专业器 · 盾</span>
+        <span class="pill"><b>工艺</b> 矢量 + 克制 glow</span>
+      </div>
+    </div>
+    <aside class="side">
+      <h2>Assumptions</h2>
+      <ul>
+        <li>主图标，不是 in-app glyph。</li>
+        <li>满幅正方形；圆角由系统遮罩，图里不画。</li>
+        <li>无字、无旗、无协议名。</li>
+        <li>色锁 visual-system：Field Black + mint。</li>
+        <li>不覆盖 <code>design/brand/app-icon/</code>，除非选定。</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="block" data-screen-label="current">
+    <div class="sec-title">现行（对照，不是本轮候选）</div>
+    <div class="current">
+      <img src="assets/current-via-up.png" alt="现行 Via Up" />
+      <div>
+        <h3>Via Up · 双 chevron</h3>
+        <p>2026-08-06 选定。前进语义清楚，29pt 稳。弱点是 OS 符号感，货架上不容易从系统设置 / 其它「向上」图标里被记住。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" data-screen-label="five">
+    <div class="sec-title">五枚新方向</div>
+    <div class="grid5" id="cards"></div>
+  </section>
+
+  <section class="block" data-screen-label="shelf">
+    <div class="sec-title">竞品占住的槽（色块示意，不是商标）</div>
+    <div class="shelf">
+      <div class="tile t-sr"><strong>Shadowrocket</strong><span>橙 · 火箭 · 品类默认</span></div>
+      <div class="tile t-surge"><strong>Surge</strong><span>蓝 · 浪 · 贵 / 专业</span></div>
+      <div class="tile t-qx"><strong>Quantumult X</strong><span>暗 · Q · 规则玩家</span></div>
+      <div class="tile t-stash"><strong>Stash</strong><span>金 · 盒 · craft 高玩</span></div>
+      <div class="tile t-loon"><strong>Loon</strong><span>气球 · 稍轻松</span></div>
+      <div class="tile t-vpn"><strong>通用 VPN</strong><span>绿盾 / 地球 / 锁</span></div>
+    </div>
+  </section>
+
+  <section class="block" data-screen-label="springboard">
+    <div class="sec-title">弹簧板邻座（62pt）</div>
+    <div class="spring">
+      <div class="dock" id="dock"></div>
+    </div>
+  </section>
+
+  <section class="block" data-screen-label="recommend">
+    <div class="rec">
+      <h3>建议默认：01 Glass Orb</h3>
+      <p>
+        和 Home 选中节点是同一个物件，货架上立刻不像火箭也不像盾。
+        若更在乎名字锁定、29pt 剪影，选 <b>02 Considered Path</b>。
+        若更在乎「这就是那个滑动连接的 App」，选 <b>04 Capsule</b>。
+        Nest 与 Flow 更产品签名，但更容易被读成笑脸 / 分子——当第二候选，不当唯一上架。
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    探索批次 <code>design/hi-fi/_explore/2026-08-13-app-icon-shelf/</code>
+    · 真源 SVG · 导出 1024 RGB PNG
+    · 选定后再写 direction-approved 并晋升品牌真源。
+  </footer>
+</div>
+
+<div class="focus" id="focus" hidden>
+  <img id="focusImg" alt="" />
+</div>
+
+<script>
+  const ICONS = [
+    {
+      id: "01",
+      file: "01-glass-orb.png",
+      name: "Glass Orb",
+      why: "Cover Flow 选中 orb：玻璃球 + 双环，去掉国旗。消费级物件。",
+      risk: "易被读成状态灯 / Find My。"
+    },
+    {
+      id: "02",
+      file: "02-considered-path.png",
+      name: "Considered Path",
+      why: "一条路，一次翻山。品牌句：Connect without the maze.",
+      risk: "仍可能被扫成对勾或运动品牌弧。"
+    },
+    {
+      id: "03",
+      file: "03-nest-rings.png",
+      name: "Nest Rings",
+      why: "Home 连接点阵：顶开口三圈。不是左右开口的 Wi‑Fi。",
+      risk: "远看仍像碗 / 笑脸 / 声波。"
+    },
+    {
+      id: "04",
+      file: "04-capsule.png",
+      name: "Capsule",
+      why: "START/STOP 胶囊本身。无电源符、无字。手能认的控件。",
+      risk: "像药丸、鼠标或 Voice Memos。"
+    },
+    {
+      id: "05",
+      file: "05-flow-orbs.png",
+      name: "Flow Orbs",
+      why: "最新 Home 签名：浅弧三盘，中心亮、两侧退。",
+      risk: "29pt 易糊成分子 / 米奇。"
+    }
+  ];
+
+  const cards = document.getElementById("cards");
+  const dock = document.getElementById("dock");
+  const focus = document.getElementById("focus");
+  const focusImg = document.getElementById("focusImg");
+
+  function squircle(src, px) {
+    return `<img src="assets/${src}" width="${px}" height="${px}" alt="" />`;
+  }
+
+  ICONS.forEach((ic, i) => {
+    const el = document.createElement("article");
+    el.className = "card";
+    el.tabIndex = 0;
+    el.dataset.i = String(i);
+    el.innerHTML = `
+      <div class="icon-sq">${squircle(ic.file, 360)}</div>
+      <div class="meta">
+        <div class="id">${ic.id}</div>
+        <div class="name">${ic.name}</div>
+        <p class="why">${ic.why}</p>
+        <p class="risk">风险：${ic.risk}</p>
+      </div>
+      <div class="sizes">
+        <div class="sz">${squircle(ic.file, 60)}<span>60</span></div>
+        <div class="sz">${squircle(ic.file, 40)}<span>40</span></div>
+        <div class="sz">${squircle(ic.file, 29)}<span>29</span></div>
+      </div>`;
+    el.addEventListener("click", () => openFocus(i));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFocus(i); }
+    });
+    cards.appendChild(el);
+  });
+
+  const neighbors = [
+    { t: "Photos", bg: "#1c1c1e", c: "#fff" },
+    { t: "ChatGPT", bg: "#10a37f", c: "#fff" },
+    { t: "YouTube", bg: "#ff0000", c: "#fff" },
+    { t: "Telegram", bg: "#2aabee", c: "#fff" }
+  ];
+  neighbors.forEach((n) => {
+    const a = document.createElement("div");
+    a.className = "app";
+    a.innerHTML = `<div class="fake" style="background:${n.bg};color:${n.c}">${n.t.slice(0,2)}</div><em>${n.t}</em>`;
+    dock.appendChild(a);
+  });
+  ICONS.forEach((ic) => {
+    const a = document.createElement("div");
+    a.className = "app";
+    a.innerHTML = `${squircle(ic.file, 62)}<em>${ic.name}</em>`;
+    dock.appendChild(a);
+  });
+
+  function openFocus(i) {
+    document.querySelectorAll(".card").forEach((c, j) => {
+      c.dataset.on = j === i ? "1" : "0";
+    });
+    focusImg.src = "assets/" + ICONS[i].file;
+    focusImg.alt = ICONS[i].name;
+    focus.hidden = false;
+    focus.classList.add("on");
+  }
+  function closeFocus() {
+    focus.classList.remove("on");
+    focus.hidden = true;
+  }
+  focus.addEventListener("click", closeFocus);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeFocus();
+    if (e.key >= "1" && e.key <= "5") openFocus(Number(e.key) - 1);
+  });
+</script>
+</body>
+</html>

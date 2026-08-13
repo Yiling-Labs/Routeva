@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2e343a"/>
+      <stop offset="100%" stop-color="#0b0e11"/>
+    </linearGradient>
+    <linearGradient id="pill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d4f8e6"/>
+      <stop offset="38%" stop-color="#8ee0b8"/>
+      <stop offset="100%" stop-color="#3d7a68"/>
+    </linearGradient>
+    <linearGradient id="spec" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.44"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c8f5de"/>
+      <stop offset="100%" stop-color="#7fd9b0"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- nest around bottom cap · 270° top gap · Home 三圈 -->
+  <g fill="none" stroke-linecap="round" transform="rotate(-90 512 640)">
+    <circle cx="512" cy="640" r="286" stroke="#5f8f7e" stroke-opacity="0.72" stroke-width="28"
+            stroke-dasharray="1347.75 449.25" stroke-dashoffset="1572.37"/>
+    <circle cx="512" cy="640" r="236" stroke="#7fd9b0" stroke-opacity="0.88" stroke-width="30"
+            stroke-dasharray="1112.12 370.71" stroke-dashoffset="1297.48"/>
+    <circle cx="512" cy="640" r="186" stroke="url(#mint)" stroke-width="32"
+            stroke-dasharray="876.50 292.17" stroke-dashoffset="1022.59" filter="url(#glow)"/>
+  </g>
+  <rect x="364" y="200" width="296" height="540" rx="148" fill="url(#pill)" filter="url(#shadow)"/>
+  <rect x="364" y="200" width="296" height="540" rx="148" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+  <rect x="392" y="220" width="240" height="200" rx="120" fill="url(#spec)"/>
+  <circle cx="512" cy="276" r="8" fill="#eafff4"/>
+  <circle cx="512" cy="276" r="14" fill="#b6f0d4" opacity="0.32"/>
+</svg>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="design_doc_mode" content="canvas" />
+<title>Routeva · Capsule Depth</title>
+<style>
+  :root {
+    --paper: #0b0e11;
+    --paper-2: #14191f;
+    --paper-top: #1e252c;
+    --ink: rgba(255,255,255,0.96);
+    --ink2: rgba(255,255,255,0.74);
+    --mute: rgba(255,255,255,0.56);
+    --quiet: rgba(255,255,255,0.36);
+    --mint: #7fd9b0;
+    --edge: rgba(255,255,255,0.10);
+    --glass: rgba(255,255,255,0.055);
+    --spring: 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    --g: clamp(1.1rem, 3.2vw, 2.4rem);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition-duration: 0.01ms !important; animation: none !important; }
+  }
+  body {
+    font-family: -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 65% 45% at 50% -8%, rgba(127,217,176,0.07), transparent 55%),
+      linear-gradient(180deg, var(--paper-top) 0%, var(--paper-2) 40%, var(--paper) 100%);
+  }
+  .wrap { position: relative; z-index: 1; }
+  .top {
+    position: sticky; top: 0; z-index: 40;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.75rem; padding: 0.95rem var(--g);
+    background: color-mix(in srgb, var(--paper) 70%, transparent);
+    backdrop-filter: blur(22px) saturate(160%);
+    border-bottom: 1px solid var(--edge);
+  }
+  .brand {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--mute);
+  }
+  .brand em { color: var(--mint); font-style: normal; }
+  .hint { font-size: 12px; color: var(--quiet); font-weight: 500; }
+  .hint kbd {
+    font: 600 10px/1 ui-monospace, Menlo, monospace;
+    padding: 0.2rem 0.4rem; border-radius: 5px;
+    border: 1px solid var(--edge); background: var(--glass); color: var(--mute);
+  }
+  .hero {
+    max-width: 78rem; margin: 0 auto;
+    padding: 2rem var(--g) 1.25rem;
+    display: grid; gap: 1.5rem;
+  }
+  @media (min-width: 960px) {
+    .hero { grid-template-columns: 1.15fr 0.85fr; }
+  }
+  .kicker {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--mint); margin-bottom: 0.65rem;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700; letter-spacing: -0.03em; line-height: 1.08;
+    margin-bottom: 0.75rem;
+  }
+  .lede { font-size: 15px; line-height: 1.7; color: var(--ink2); max-width: 48ch; }
+  .side {
+    padding: 1rem 1.1rem; border-radius: 20px;
+    border: 1px solid var(--edge); background: var(--glass);
+  }
+  .side h2 {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 0.45rem;
+  }
+  .side li { font-size: 13px; line-height: 1.65; color: var(--ink2); }
+  .side ul { padding-left: 1.1rem; display: grid; gap: 0.3rem; }
+  .block { max-width: 78rem; margin: 0 auto; padding: 0.4rem var(--g) 2rem; }
+  .sec-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--mute); margin-bottom: 0.9rem;
+  }
+  .ship {
+    display: grid; grid-template-columns: 120px 1fr; gap: 1rem; align-items: center;
+    padding: 0.95rem; border: 1px dashed var(--edge); border-radius: 22px;
+  }
+  .ship img { width: 120px; height: 120px; border-radius: 22.5%; display: block; }
+  .ship h3 { font-size: 16px; font-weight: 700; margin-bottom: 0.3rem; }
+  .ship p { font-size: 13px; line-height: 1.65; color: var(--ink2); }
+  .grid {
+    display: grid; gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 720px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1180px) { .grid { grid-template-columns: repeat(5, 1fr); } }
+  .card {
+    border: 1px solid var(--edge); background: rgba(255,255,255,0.03);
+    border-radius: 22px; padding: 0.85rem 0.85rem 1rem;
+    display: flex; flex-direction: column; gap: 0.65rem;
+    cursor: pointer;
+    transition: transform var(--spring), border-color var(--spring);
+  }
+  .card:hover { border-color: rgba(127,217,176,0.35); }
+  .card:focus-visible { outline: 2px solid rgba(140,220,190,0.9); outline-offset: 3px; }
+  .card[data-on="1"] { border-color: rgba(127,217,176,0.55); background: rgba(127,217,176,0.06); }
+  .icon-sq { width: 100%; aspect-ratio: 1; border-radius: 22.5%; overflow: hidden; background: #0b0e11; }
+  .icon-sq img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .id { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mint); }
+  .name { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+  .why { font-size: 13px; line-height: 1.55; color: var(--ink2); }
+  .atom { font-size: 12px; color: var(--quiet); }
+  .sizes { display: flex; align-items: flex-end; gap: 0.65rem; }
+  .sz { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+  .sz img { display: block; border-radius: 22.5%; }
+  .sz span { font-size: 10px; color: var(--quiet); font-weight: 600; }
+  footer {
+    max-width: 78rem; margin: 0 auto; padding: 0 var(--g) 3rem;
+    font-size: 12px; color: var(--quiet); line-height: 1.6;
+  }
+  .focus {
+    position: fixed; inset: 0; z-index: 80;
+    background: rgba(8,10,12,0.72); backdrop-filter: blur(16px);
+    display: none; place-items: center; padding: 2rem;
+  }
+  .focus.on { display: grid; }
+  .focus img {
+    width: min(72vw, 72vh, 560px); height: auto; border-radius: 22.5%;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Routeva · <em>Capsule Depth</em> · 2026-08-13</div>
+    <div class="hint">只深化 04 · <kbd>1</kbd>–<kbd>5</kbd> 大图 · <kbd>Esc</kbd></div>
+  </header>
+
+  <div class="hero" data-screen-label="brief">
+    <div>
+      <div class="kicker">04 Capsule · 5 atomic variants</div>
+      <h1>同一颗胶囊，<br />只改一个变量。</h1>
+      <p class="lede" lang="zh">
+        不重开形。五枚分别动材质、连接态、滑动槽、底圈、宽高比。船货 04 放在上面当尺子。
+      </p>
+    </div>
+    <aside class="side">
+      <h2>锁</h2>
+      <ul>
+        <li>竖直胶囊 · Field Black · mint</li>
+        <li>无字、无电源符、无圆角烘焙</li>
+        <li>不做 Path / Orb / Flow</li>
+      </ul>
+    </aside>
+  </div>
+
+  <section class="block" data-screen-label="ship">
+    <div class="sec-title">现行船货（对照，不是本轮候选）</div>
+    <div class="ship">
+      <img src="assets/04-0-ship.png" alt="04 ship" />
+      <div>
+        <h3>04 · Capsule</h3>
+        <p>已晋升的 mint 玻璃胶囊。本轮每枚只改它的一个细节。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" data-screen-label="five">
+    <div class="sec-title">五枚深化</div>
+    <div class="grid" id="cards"></div>
+  </section>
+
+  <footer>
+    <code>design/hi-fi/_explore/2026-08-13-capsule-depth/</code>
+    · 选定后只替换船货，不新开形。
+  </footer>
+</div>
+
+<div class="focus" id="focus" hidden><img id="focusImg" alt="" /></div>
+
+<script>
+  const ICONS = [
+    { id: "04.1", file: "04-1-quiet-frost.png", name: "Quiet Frost", atom: "材质", why: "同一几何，压掉湿高光。Instrument Quiet。" },
+    { id: "04.2", file: "04-2-idle-thumb.png", name: "Idle Thumb", atom: "状态", why: "未连深色拇指 + mint LED。去维生素误读。" },
+    { id: "04.3", file: "04-3-in-well.png", name: "In Well", atom: "轨道", why: "滑动槽 + 底座 mint 拇指。这才是控件，不是药丸。" },
+    { id: "04.4", file: "04-4-nest-seat.png", name: "Nest Seat", atom: "点阵", why: "连上后的底圈。Home 三圈坐在胶囊底下。" },
+    { id: "04.5", file: "04-5-hardware.png", name: "Hardware", atom: "比例", why: "贴近 Home 70×104。更像拇指，少像鼠标。" }
+  ];
+  const cards = document.getElementById("cards");
+  const focus = document.getElementById("focus");
+  const focusImg = document.getElementById("focusImg");
+
+  ICONS.forEach((ic, i) => {
+    const el = document.createElement("article");
+    el.className = "card";
+    el.tabIndex = 0;
+    el.innerHTML = `
+      <div class="icon-sq"><img src="assets/${ic.file}" alt="" /></div>
+      <div class="id">${ic.id}</div>
+      <div class="name">${ic.name}</div>
+      <p class="atom">原子 · ${ic.atom}</p>
+      <p class="why">${ic.why}</p>
+      <div class="sizes">
+        <div class="sz"><img src="assets/${ic.file}" width="60" height="60" alt="" /><span>60</span></div>
+        <div class="sz"><img src="assets/${ic.file}" width="40" height="40" alt="" /><span>40</span></div>
+        <div class="sz"><img src="assets/${ic.file}" width="29" height="29" alt="" /><span>29</span></div>
+      </div>`;
+    el.addEventListener("click", () => openFocus(i));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFocus(i); }
+    });
+    cards.appendChild(el);
+  });
+
+  function openFocus(i) {
+    document.querySelectorAll(".card").forEach((c, j) => { c.dataset.on = j === i ? "1" : "0"; });
+    focusImg.src = "assets/" + ICONS[i].file;
+    focusImg.alt = ICONS[i].name;
+    focus.hidden = false;
+    focus.classList.add("on");
+  }
+  function closeFocus() { focus.classList.remove("on"); focus.hidden = true; }
+  focus.addEventListener("click", closeFocus);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeFocus();
+    if (e.key >= "1" && e.key <= "5") openFocus(Number(e.key) - 1);
+  });
+</script>
+</body>
+</html>

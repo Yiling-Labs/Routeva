@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2e343a"/>
+      <stop offset="100%" stop-color="#0b0e11"/>
+    </linearGradient>
+    <linearGradient id="pill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d4f8e6"/>
+      <stop offset="38%" stop-color="#8ee0b8"/>
+      <stop offset="100%" stop-color="#3d7a68"/>
+    </linearGradient>
+    <linearGradient id="spec" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.44"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- 352×524 ≈ Home 70×104 = 1:1.49 -->
+  <rect x="336" y="250" width="352" height="524" rx="176" fill="url(#pill)" filter="url(#shadow)"/>
+  <rect x="336" y="250" width="352" height="524" rx="176" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2"/>
+  <rect x="368" y="272" width="288" height="200" rx="144" fill="url(#spec)"/>
+  <circle cx="512" cy="332" r="8" fill="#eafff4"/>
+  <circle cx="512" cy="332" r="15" fill="#b6f0d4" opacity="0.32"/>
+</svg>

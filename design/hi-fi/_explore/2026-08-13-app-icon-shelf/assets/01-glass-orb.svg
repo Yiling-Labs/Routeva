@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2e343a"/>
+      <stop offset="100%" stop-color="#0b0e11"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#f4fff9"/>
+      <stop offset="18%" stop-color="#c8f5de"/>
+      <stop offset="48%" stop-color="#7fd9b0"/>
+      <stop offset="78%" stop-color="#4a7d6c"/>
+      <stop offset="100%" stop-color="#243f38"/>
+    </radialGradient>
+    <linearGradient id="spec" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="22" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="512" cy="508" r="248" fill="#7fd9b0" opacity="0.22" filter="url(#glow)"/>
+  <circle cx="512" cy="508" r="236" fill="url(#orb)"/>
+  <circle cx="512" cy="508" r="236" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+  <ellipse cx="512" cy="412" rx="148" ry="92" fill="url(#spec)"/>
+  <circle cx="512" cy="508" r="254" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="3.5"/>
+  <circle cx="512" cy="508" r="280" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="12"/>
+</svg>

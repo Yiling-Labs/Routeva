@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2e343a"/>
+      <stop offset="100%" stop-color="#0b0e11"/>
+    </linearGradient>
+    <radialGradient id="side" cx="38%" cy="32%" r="70%">
+      <stop offset="0%" stop-color="#9aa3aa"/>
+      <stop offset="48%" stop-color="#5a636b"/>
+      <stop offset="100%" stop-color="#2c3339"/>
+    </radialGradient>
+    <radialGradient id="core" cx="38%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#f4fff9"/>
+      <stop offset="18%" stop-color="#c8f5de"/>
+      <stop offset="48%" stop-color="#7fd9b0"/>
+      <stop offset="78%" stop-color="#4a7d6c"/>
+      <stop offset="100%" stop-color="#243f38"/>
+    </radialGradient>
+    <linearGradient id="spec" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="286" cy="534" r="150" fill="url(#side)"/>
+  <circle cx="286" cy="534" r="150" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <ellipse cx="262" cy="480" rx="78" ry="48" fill="url(#spec)" opacity="0.4"/>
+  <circle cx="738" cy="534" r="150" fill="url(#side)"/>
+  <circle cx="738" cy="534" r="150" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+  <ellipse cx="714" cy="480" rx="78" ry="48" fill="url(#spec)" opacity="0.4"/>
+  <circle cx="512" cy="496" r="214" fill="#7fd9b0" opacity="0.20" filter="url(#glow)"/>
+  <circle cx="512" cy="496" r="200" fill="url(#core)"/>
+  <circle cx="512" cy="496" r="200" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+  <ellipse cx="512" cy="418" rx="120" ry="76" fill="url(#spec)"/>
+  <circle cx="512" cy="496" r="214" fill="none" stroke="rgba(255,255,255,0.56)" stroke-width="3"/>
+  <circle cx="512" cy="496" r="234" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8"/>
+</svg>

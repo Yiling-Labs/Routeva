@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2e343a"/>
+      <stop offset="100%" stop-color="#0b0e11"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c8f5de"/>
+      <stop offset="100%" stop-color="#7fd9b0"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- 270° nest, 90° gap at 12 o'clock — less smile, still Home-family -->
+  <g fill="none" stroke-linecap="round" transform="rotate(-90 512 512)">
+    <circle cx="512" cy="512" r="300" stroke="#5f8f7e" stroke-opacity="0.78" stroke-width="46"
+            stroke-dasharray="1413.72 471.24" stroke-dashoffset="1649.34"/>
+    <circle cx="512" cy="512" r="214" stroke="#7fd9b0" stroke-width="50"
+            stroke-dasharray="1008.45 336.15" stroke-dashoffset="1176.53"/>
+    <circle cx="512" cy="512" r="128" stroke="url(#mint)" stroke-width="54"
+            stroke-dasharray="603.19 201.06" stroke-dashoffset="703.72" filter="url(#glow)"/>
+  </g>
+</svg>

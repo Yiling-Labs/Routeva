@@ -1,0 +1,3 @@
+# 01 · Glass Orb
+
+iOS app icon, 1024×1024 square, full-bleed, no rounded-rect baked in, no transparency, no text. Vertical Field Black gradient from charcoal #2e343a at the top to near-black #0b0e11 at the bottom. Centered frosted glass sphere, about 46% of the canvas wide, mint glass material: highlight at upper-left #f2fff8 into #c8f5de into #7fd9b0 into deep sage #2a4f46. Soft mint bloom behind the sphere. Selected Cover Flow treatment: a tight bright rim plus a wider faint white ring. Small specular cap on the upper third. Calm, crafted, Apple HIG quality. No flag, no map, no shield, no rocket, no neon.

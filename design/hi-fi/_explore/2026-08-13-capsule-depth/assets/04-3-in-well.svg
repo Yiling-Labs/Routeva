@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2e343a"/>
+      <stop offset="100%" stop-color="#0b0e11"/>
+    </linearGradient>
+    <linearGradient id="well" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a424a"/>
+      <stop offset="45%" stop-color="#1c2228"/>
+      <stop offset="100%" stop-color="#101418"/>
+    </linearGradient>
+    <linearGradient id="pill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d4f8e6"/>
+      <stop offset="38%" stop-color="#8ee0b8"/>
+      <stop offset="100%" stop-color="#3d7a68"/>
+    </linearGradient>
+    <linearGradient id="spec" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="wellSh" x="-20%" y="-10%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+    <filter id="thumbSh" x="-30%" y="-20%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#1e6b4a" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- track 300×664 · Home 80×204 同族 -->
+  <rect x="362" y="180" width="300" height="664" rx="150" fill="url(#well)" filter="url(#wellSh)"/>
+  <rect x="362" y="180" width="300" height="664" rx="150" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="1.5"/>
+  <rect x="378" y="196" width="268" height="120" rx="60" fill="rgba(255,255,255,0.04)"/>
+  <!-- mint thumb seated at STOP -->
+  <rect x="378" y="412" width="268" height="416" rx="134" fill="url(#pill)" filter="url(#thumbSh)"/>
+  <rect x="378" y="412" width="268" height="416" rx="134" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="1.5"/>
+  <rect x="402" y="430" width="220" height="168" rx="110" fill="url(#spec)"/>
+  <circle cx="512" cy="478" r="7" fill="#eafff4"/>
+  <circle cx="512" cy="478" r="13" fill="#b6f0d4" opacity="0.32"/>
+</svg>

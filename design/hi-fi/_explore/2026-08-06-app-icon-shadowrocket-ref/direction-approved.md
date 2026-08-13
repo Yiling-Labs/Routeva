@@ -1,7 +1,8 @@
 # Direction approved · Routeva App Icon
 
 **Date:** 2026-08-06  
-**Updated:** 2026-08-06（按 Image #1 / Apple #10 重出）
+**Updated:** 2026-08-06（按 Image #1 / Apple #10 重出）  
+**Status:** **superseded 2026-08-13** → [`../2026-08-13-app-icon-shelf/direction-approved.md`](../2026-08-13-app-icon-shelf/direction-approved.md)（04 Capsule）
 
 ## 用户选择轨迹
 
