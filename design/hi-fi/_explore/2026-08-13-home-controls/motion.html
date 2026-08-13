@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routeva · 连接态过渡</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --ink: #1c1915;
+      --mute: #6a635a;
+      --paper: #f0eee9;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--paper); }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", system-ui, sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    .wrap {
+      display: grid;
+      grid-template-columns: 420px minmax(280px, 520px);
+      gap: 40px;
+      justify-content: center;
+      align-items: start;
+      padding: 36px 28px 80px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    @media (max-width: 860px) {
+      .wrap { grid-template-columns: 1fr; justify-items: center; }
+    }
+    .spec h1 {
+      font-size: 22px;
+      letter-spacing: -0.03em;
+      margin: 0 0 8px;
+    }
+    .spec p { margin: 0 0 12px; font-size: 14px; line-height: 1.55; color: var(--mute); font-weight: 500; }
+    .spec strong { color: var(--ink); font-weight: 650; }
+    .btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 20px; }
+    .btns button {
+      appearance: none;
+      border: 0.5px solid rgba(28,25,21,0.16);
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: 600 13px/1 inherit;
+      cursor: pointer;
+      min-height: 36px;
+    }
+    .btns button[data-on="1"] { background: #1c1915; color: #fff; }
+    .tl { display: flex; flex-direction: column; gap: 14px; }
+    .beat {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.7);
+      border: 0.5px solid rgba(28,25,21,0.08);
+    }
+    .beat b { display: block; font-size: 13px; margin-bottom: 6px; }
+    .beat span { font-size: 12.5px; line-height: 1.5; color: var(--mute); font-weight: 500; }
+    .beat[data-on="1"] { outline: 1.5px solid #c96442; background: #fff; }
+    @media (prefers-reduced-motion: reduce) {
+      .motion * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="./icons.js"></script>
+  <script type="text/babel" src="./kit.jsx"></script>
+  <script type="text/babel" src="./motion.jsx"></script>
+</body>
+</html>
