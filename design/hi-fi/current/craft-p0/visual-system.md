@@ -37,6 +37,7 @@
 | 角色 | 约 size | weight | 色 |
 |---|---|---|---|
 | 超大展示（时长） | 40 | 300 | 白 ~96% |
+| Welcome / Privacy 展示词 | 56 | 700 | 白 ~96% · 仅首次两屏；无副文 |
 | 主状态 / 页标题 | 28–30 | 700 | 白 ~96% |
 | 节点名 | 15–16 | 600 | 白 ~88% |
 | 正文 / 说明 | 14–15 | 500 | 白 ~52–78%（≥ ~5:1 on Field Black） |
@@ -83,7 +84,7 @@
 
 | 屏幕 | 与 Home 的协调方式 |
 |---|---|
-| **Onboarding / Import** | Field Black；大标题 28–30；主 CTA 薄荷绿实心；少步骤。**Parsing** = 叠在 Add 上的玻璃 status 模态。成功 = Home Idle 同壳 + 短 toast（2–3s） |
+| **Onboarding / Import** | Field Black；Welcome / Data & Privacy 展示词 **56 / 700**（无副文、无说明卡）；Import 大标题 28–30；主 CTA 薄荷绿实心；少步骤。**Parsing** = 叠在 Add 上的玻璃 status 模态。成功 = Home Idle 同壳 + 短 toast（2–3s） |
 | **Location / 节点列表** | Field Black；顶栏 Back + *Location* + *Test*；**扁平**订阅原序；**无** group chip；行：名 · Preferred check · 弱协议 · ms；权威 `08-location.html` |
 | **Subscriptions** | Field Black；**单列表**；名旁铅笔 Rename；到期标签；Update 失败 toast；权威 `04-subscriptions.html` |
 | **Settings** | Black 场；**Connection → App**；Auto-update · Subscriptions › · About ›；权威 `05-settings.html` |

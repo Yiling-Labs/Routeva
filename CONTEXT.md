@@ -138,7 +138,7 @@ _Avoid_: MVP 顶栏 Help pill；Empty 用 + 替换 Settings；连接失败自动
 **Settings Surface**：
 从 Home 顶栏进入的一级配置面。**根页主职 = Connection Policy 优先**（ADR 0021）。**读者模型（C2，ADR 0045；grill 2026-08-07 再确认 A）：** 产品服务小白与半专业；Settings **同一套短策略闭集**，**半专业为主读者**（主动改意图），小白为**被引导的次要读者**（默认值 + 短副文；Post-MVP 可经 Help 引进同一页）。**不**为小白单独再瘦 IA。人群杠杆在 Table Stakes Connect（MVP）与日后 Self-Healing / Help。**根页一级分组闭集（两段，自上而下 · ADR 0051）：**
 1. **Connection** — 根页固定三行（均为 › 进二级，非 Home 内联控件）：**Routing mode** · **DNS** · **Overrides**（User Override 列表/编辑；Beta **无**条数上限）。**每行标题 + 一行释义副文（English 源，短，解释标题是什么；不绑定具体选项、不写何时该改）+ 右侧当前值：**  
-   - **Routing mode** — 副文 *How traffic uses your proxy*（进入后选 **Smart** / Global / Direct；用户可见**禁止** *Auto* 作模式名）。  
+   - **Routing mode** — 副文 *How traffic uses your proxy*（进入后选 **Smart** / Global，与 Home 同闭集；点返回时若与当前模式不同则走同一条 `setRoutingMode` 切换，相同则不改；用户可见**禁止** *Auto* 作模式名）。  
    - **DNS** — 副文 *How names resolve on your connection*（进入后选 Automatic / Privacy / Compatibility）。  
    - **Overrides** — 副文 *Exceptions for specific domains*（进入后管 Domain 例外列表）。  
    **DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（偏好节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
@@ -170,9 +170,9 @@ _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表�
 - **无订阅（Home Empty）：** 顶栏 **仅 Settings**（无 Subscriptions · **无 Help** · ADR **0063**）；主状态与 CTA 统一 **Add subscription** + 副文 *Paste a link you already have*；START **弱化不可连**；导入只走中部 CTA
 - **Idle（黑场）：** 上部 **国旗 Cover Flow**；选中项下为 **节点名 + 弱协议 + 弱 ›**（**可点** → **Location Surface**；可见文案**不**出现 *Location* 词；a11y *Choose location* + 当前节点）；中部主状态 **仅** *Not Connected*（**无** 中部 *Location ›* glass pill；**无** 常驻 *Can’t connect*）；**Idle 无点阵**；其下 **Mode** 次级入口（Smart / Global ›）  
 - **Swipe / Connecting（黑场）：** Cover Flow 与节点名行仍可见，但 **节点名行不可点**（无 ›、弱化）——避免手势误触；中部 *Not Connected*（Swipe）或 *Connecting…*；Connecting 三圈点全亮（未染绿场）；**藏 Mode**  
-- **Connection Success（绿场）：** 会话时长 + ↓/↑ **本次连接累计流量**（非实时 Mb/s）；中部 *Connected* + **节点行**（主 soft-glass，可点 → Location）+ 其下 **Mode** 次级文本（Smart / Global ›）；**无** 状态上方单独「国家/地区名」行；三圈绿点。**不**恢复 Cover Flow。竖叠：状态 → 节点 → Mode（**禁止**横排双 pill）  
+- **Connection Success（绿场）：** 会话时长 + ↓/↑ **本次连接累计流量**（非实时 Mb/s）；中部 *Connected* + **一条居中 glass 条**（左 Location 旗+名 › · 右 *Mode Smart ›*；Direct 无 Mode 半段）；**无** 状态上方单独「国家/地区名」行；三圈绿点。**不**恢复 Cover Flow。竖叠：状态 → Location|Mode 条。Idle 的 Location 仍在 Cover Flow 下节点名行；Connecting 藏 Mode、球下名锁定。  
 - **连接失败（ADR 0059 · 0063）：** **不**进入 *Can’t connect*；回 **Idle / Not Connected** + **短 toast**（约 2–3s）；**不**弹诊断（MVP 无诊断 UI）；用户可立即再连  
-- Mode 在 Home：**Smart / Global** 芯片（方案 1）；Direct 仅 Settings  
+- Mode 在 Home：**Smart / Global** 芯片（方案 1）；Settings 选择器同一闭集  
 **两套选节点语义（ADR 0055/0056）：** Cover Flow **横滑 alone** = 临时 UI 焦点（可被预选/重测覆盖）；**Location 点选** = **Preferred**。Home **不**展示 Preferred/临时差异徽章。  
 **Cover Flow（全量循环 · 订阅原序 · ADR 0068 改判）：** Cover Flow = Active 下**全部可路由节点**（导入时已剔除额度/到期等 metadata 横幅行），顺序 = **订阅原序**，**循环**横滑（无端点）。延迟**只**做角标，**不**裁剪 / 重排 Cover Flow 成员。**Location** 仍为扁平全量，**默认延迟序**（轮末重排）。  
 - **数据源：** `availableNodes` 全量。  
@@ -197,7 +197,7 @@ _Avoid_: Cover Flow / chip 出现 🇹🇼；实现里 `flagcdn.com/.../tw.png`�
 _Avoid_: 常驻 *Can’t connect*；失败假绿场；**任何**日常路径自动诊断/自动诊断 sheet（ADR **0060**）；Needs attention；Cover Flow 国家名撞名；绿场叠国家名；Home 叠 *Pinned*；节点只读装饰；Idle 空 Location 按钮；节点名双行/跑马灯；Mode 与节点横排双 glass
 
 **First-Run Setup（闭集）**：
-首次安装：**Welcome（仅一次）→ Home Empty →（用户点 Add subscription）→ Add Subscription**。欢迎仅 **headline + 一句副文**；Empty 顶栏 **仅 Settings**（ADR **0063**）。**无** 诊断/修复说教；**无** 应用内 VPN 说明页。权威 hi-fi：`03-setup.html`。详见 ADR 0019。  
+首次安装：**Welcome（仅一次）→ Data & Privacy（仅一次）→ Home Empty →（用户点 Add subscription）→ Add Subscription**。欢迎仅 **三词标题（Paste / Connect / Smart）+ CTA**；隐私页仅 **两词（On device / No tracking）+ Privacy Policy 外链 + Continue**；**无**副文/说明卡；Empty 顶栏 **仅 Settings**（ADR **0063**）。**无** 诊断/修复说教；**无** 应用内 VPN 说明页。权威 hi-fi：`03-setup.html`。详见 ADR 0019。  
 _Avoid_: Welcome 三连轰炸；Empty 顶栏 Help
 
 **Add Subscription（交互）**：
@@ -209,14 +209,13 @@ _Avoid_: 手填 URL 主 UI；Found clipboard 独立屏；成功页与 Home 壳�
 _Avoid_: Idle 常驻点阵；未 Probe 成功就整屏染绿；点阵超过 3 圈
 
 **Routing Mode Entry**：
-**Routing Mode 用户可见闭集（全 app 统一）：** **Smart** · **Global** · **Direct**。内部/代码 id：`auto` · `global` · `direct`。**禁止**用户 UI 将 Smart 写作 *Auto*（Home 与 Settings 双名已废止）。  
-切换在 Settings（及 Agent）；Home：**Smart / Global** 弱 Mode chip + sheet（Idle / Connected；ADR **0058**）；Direct 仅 Settings。换节点：黑场 = Cover Flow（临时焦点）+ **节点名行可点**（Idle → Location）；绿场 = **Connected 中部节点行可点**（进同一 **Location Surface**；**不**回 Cover Flow）。  
-**Settings · Routing mode ›：** 单选三档 + 各一行副文；**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
-**三档语义（与 Preferred / Override 正交，ADR 0058）：**  
+**Routing Mode 用户可见闭集（全 app 统一）：** **Smart** · **Global**。内部/代码 id：`auto` · `global`。运行时仍可识别遗留 `direct`，但 Home / Settings **不再提供 Direct 选项**。**禁止**用户 UI 将 Smart 写作 *Auto*（Home 与 Settings 双名已废止）。  
+切换入口：Home Mode chip + sheet（Idle / Connected；ADR **0058**）与 Settings · Routing mode ›。两条入口选项闭集相同，并都走 `setRoutingMode`（已连接则重连，相同则 no-op）。Settings 在二级页点选为草稿，**返回或关掉 Settings 时**若与当前模式不同才提交。换节点：黑场 = Cover Flow（临时焦点）+ **节点名行可点**（Idle → Location）；绿场 = **Connected 中部节点行可点**（进同一 **Location Surface**；**不**回 Cover Flow）。  
+**Settings · Routing mode ›：** 单选 **Smart / Global** + 各一行副文；**无** Direct 档、**无** 长对比表、**无** 当前规则摘要墙。变更记 Activity，并按 Snapshot Policy 处理。  
+**两档语义（与 Preferred / Override 正交，ADR 0058）：**  
 - **Smart**（id `auto`）— 服务商规则优先；Preferred / 会话节点只约束「会走代理且由客户端选出口」的流量（**诚实子集**，不假装一个节点改写全部分组）。  
 - **Global** — 默认进隧道流量收敛到**当前会话节点**（与 Preferred 对齐；Failover 另论）；**不再**按服务商规则做直连/分组分流（安全兜底如局域网除外）。  
-- **Direct** — 默认直连；不表示系统能力永久消失。  
-**与 User Override：** 三模式均 **仍应用** Override（Mode 定默认，Override 定域名例外）。**Preferred** 三模式**共用一份**，切 Mode 不丢、不改。  
+**与 User Override：** Smart / Global（及遗留 Direct 运行时）均 **仍应用** Override（Mode 定默认，Override 定域名例外）。**Preferred** 共用一份，切 Mode 不丢、不改。  
 **无「高级模式」总闸：** 半专业入口 = 常驻 Settings 行 + Help/诊断深链同一页；不设 Advanced 开关升级主 UI。  
 _Avoid_: 用户 UI 写 *Auto* 作 Routing Mode 名；Home 主视觉级模式切换；Settings 模式页做成教学长文或完整规则浏览器；绿场无入口只能先断连再选节点；Global 名存实亡仍跑完整订阅分流；切 Global/Direct 时静默丢弃 Override 或 Preferred；显式 Advanced mode 隐藏 Mode/Overrides
 

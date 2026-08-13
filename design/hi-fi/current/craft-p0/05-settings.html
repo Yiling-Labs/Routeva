@@ -138,11 +138,11 @@
       groupShadow: '0 10px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.09)',
     };
 
-    /* Smart/Global user labels · id auto/global for internals · en.yaml settings.routing.* */
+    /* Smart/Global user labels · id auto/global for internals · en.yaml settings.routing.*
+       Closed set matches Home mode sheet. Direct is runtime leftover only. */
     const MODE_OPTS = [
       { id: 'auto', title: 'Smart', sub: 'Provider rules; your node when proxied' },
       { id: 'global', title: 'Global', sub: 'All traffic via current node' },
-      { id: 'direct', title: 'Direct', sub: 'No proxy by default' },
     ];
     const DNS_OPTS = [
       { id: 'automatic', title: 'Automatic', sub: 'System / tunnel default' },
@@ -1312,10 +1312,20 @@
     function Interactive() {
       const [screen, setScreen] = useState('root');
       const [mode, setMode] = useState('auto');
+      const [draftMode, setDraftMode] = useState('auto');
       const [dns, setDns] = useState('automatic');
       const [autoUpdate, setAutoUpdate] = useState(true);
       const [showAdd, setShowAdd] = useState(false);
       const [overrides, setOverrides] = useState(OVERRIDE_DEMO);
+
+      const openScreen = (next) => {
+        if (next === 'mode') setDraftMode(mode);
+        setScreen(next);
+      };
+      const commitModeAndReturn = () => {
+        if (draftMode !== mode) setMode(draftMode);
+        setScreen('root');
+      };
 
       const modeLabel = MODE_OPTS.find((m) => m.id === mode)?.title || 'Smart';
       const dnsLabel = DNS_OPTS.find((d) => d.id === dns)?.title || 'Automatic';
@@ -1344,7 +1354,7 @@
       } else if (screen === 'root') {
         body = (
           <SettingsRoot
-            onNav={setScreen}
+            onNav={openScreen}
             onClose={() => setScreen('closed')}
             modeLabel={modeLabel}
             dnsLabel={dnsLabel}
@@ -1358,9 +1368,9 @@
           <PickerScreen
             title="Routing mode"
             options={MODE_OPTS}
-            selected={mode}
-            onSelect={setMode}
-            onBack={() => setScreen('root')}
+            selected={draftMode}
+            onSelect={setDraftMode}
+            onBack={commitModeAndReturn}
           />
         );
       } else if (screen === 'dns') {
@@ -1441,7 +1451,7 @@
               )}
             </div>
             <div className="phone-col">
-              <div className="lab">2 · Routing mode<span>Three intents + one-line subs</span></div>
+              <div className="lab">2 · Routing mode<span>Smart / Global · apply on Back if changed</span></div>
               {frame(
                 <PickerScreen
                   title="Routing mode"

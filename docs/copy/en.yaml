@@ -118,6 +118,7 @@ strings:
     en: Connecting…
     tier: shell
     surface: home
+    notes: "Reduce-motion and VoiceOver stay on this string. Visible title/hint cycle trailing . / .. / ... from the localized stem."
 
   - key: home.connected.status
     en: Connected
@@ -374,25 +375,47 @@ strings:
     tier: shell
     surface: setup
 
-  - key: setup.welcome.headline_line1
-    en: Paste your subscription.
+  - key: setup.welcome.word_paste
+    en: Paste
     tier: shell
     surface: setup
-    notes: "hi-fi 03-setup · ADR 0019"
+    notes: "Welcome A Stack · 03-setup · no subtitle"
 
-  - key: setup.welcome.headline_line2
-    en: We handle the rest.
+  - key: setup.welcome.word_connect
+    en: Connect
     tier: shell
     surface: setup
 
-  - key: setup.welcome.subtitle
-    en: No technical setup. Connects first—and explains itself when it doesn’t.
-    tier: lock-en
+  - key: setup.welcome.word_smart
+    en: Smart
+    tier: shell
     surface: setup
-    notes: "Welcome = easy for non-tech + connect-first/honest-fail philosophy. no-sell only on setup.add.footer_no_sell. Avoid ‘VPN’ category pitch on this screen."
+    notes: "Same word as Mode Smart; do not write Auto"
 
   - key: setup.welcome.cta
     en: Get started
+    tier: shell
+    surface: setup
+
+  - key: setup.privacy.word_on_device
+    en: On device
+    tier: shell
+    surface: setup
+    notes: "Data & Privacy A Stack · no cards · iCloud exceptions only in Privacy Policy"
+
+  - key: setup.privacy.word_no_tracking
+    en: No tracking
+    tier: shell
+    surface: setup
+
+  - key: setup.privacy.policy
+    en: Privacy Policy
+    tier: shell
+    surface: setup
+    notes: "Same label as settings.about.privacy_policy; opens /privacy/"
+
+  - key: setup.privacy.cta
+    en: Continue
     tier: shell
     surface: setup
 

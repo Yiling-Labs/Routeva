@@ -82,7 +82,7 @@
 
 ### 4.1 首次启动与导入
 
-- **First-Run（ADR 0019）：** Welcome（仅一次：headline + 一句副文，自备订阅 / 不卖节点）→ Home Empty → 用户主动 Add subscription。**无** 1·2·3 卡片墙；**无** 应用内 VPN 说明页。
+- **First-Run（ADR 0019）：** Welcome（仅一次：三词 *Paste / Connect / Smart*，无副文）→ Data & Privacy（仅一次：*On device / No tracking* + Privacy Policy 外链，无说明卡）→ Home Empty → 用户主动 Add subscription。**无** 1·2·3 卡片墙；**无** 应用内 VPN 说明页。
 - **VPN 权限（Platform Realization）：** 首次真正连接手势时出 **系统 VPN 授权**（iOS：系统 VPN 弹窗；Android：VpnService / 系统 VPN 权限流）；拒绝 → 回 Home Idle；同意 → 连接至 Connection Success。用途说明放商店/隐私文案，不单独做应用内说明屏。不要求注册/邮箱。
 - **Add Subscription：** Paste from Clipboard 为主，Scan QR / Import file 为辅；**无**手填主 UI、**无**「剪贴板已发现」独立页。解析为叠在 Add 上的 **Parsing 模态**（源相关文案：*Reading from Clipboard…* / *Reading QR code…* / *Reading file…*）。失败：页内短句 + Paste again；**不覆盖**已有配置。
 - **导入成功：** 直接回 **Home Idle（同壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s** 自动消失）；设 Active；**不**自动连；**不**强制命名（自动取名 + Subscriptions 内可选 Rename，见 ADR 0033）。详细字段（到期/流量/更新时间等）进订阅详情，不挡首次路径。

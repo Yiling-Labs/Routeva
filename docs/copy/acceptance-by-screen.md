@@ -80,7 +80,8 @@
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 Welcome** | 双行 headline · 副文（产品闭环）· CTA · **无**左上品牌字 | `setup.welcome.headline_line1` S · `setup.welcome.headline_line2` S · `setup.welcome.subtitle` **L** · `setup.welcome.cta` S（`setup.welcome.brand` 不再上屏） | [x] |
+| **1 Welcome** | 三词标题 Paste / Connect / Smart · CTA · **无**副文 · **无**左上品牌字 | `setup.welcome.word_paste` S · `setup.welcome.word_connect` S · `setup.welcome.word_smart` S · `setup.welcome.cta` S（`setup.welcome.brand` 不上屏） | [ ] |
+| **1b Data & Privacy** | 两词 On device / No tracking · Privacy Policy 外链 · Continue · **无**说明卡 | `setup.privacy.word_on_device` S · `setup.privacy.word_no_tracking` S · `setup.privacy.policy` S · `setup.privacy.cta` S | [ ] |
 | **2 Home Empty** | 与 Home Empty 同源 | `home.empty.*` · `home.chrome.settings` · **无** Help | [x] |
 | **3 Add subscription** | 引导（含 file）· Paste / QR / File · no-sell 脚 | `setup.add.title` S · `setup.add.lead` S · `setup.add.paste` S · `setup.add.scan_qr` S · `setup.add.import_file` S · `setup.add.footer_no_sell` **L** | [x] |
 | **4 Parsing** | 模态（clipboard / QR / file） | `setup.add.parsing.clipboard` S · `setup.add.parsing.qr` S · `setup.add.parsing.file` S（*Reading file…*） | [x] |
@@ -91,7 +92,8 @@
 
 | 项 | 结论 |
 |---|---|
-| Welcome 副文 | `setup.welcome.subtitle`：*No technical setup. Connects first—and explains itself when it doesn’t.*；**不**拼 no-sell；no-sell 仅 `setup.add.footer_no_sell` |
+| Welcome 标题 | 仅三词 *Paste / Connect / Smart*（2026-08-13 A Stack）；**无**副文；**不**拼 no-sell；no-sell 仅 `setup.add.footer_no_sell` |
+| Data & Privacy | 仅两词 *On device / No tracking* + *Privacy Policy* 外链（2026-08-13 A Stack）；**无**说明卡；iCloud 例外只在政策页 |
 | Parsing 4c | *Reading file…* 已挂 |
 | Success toast | 演示实例 *Apex Transit · 42 nodes* 符合 `setup.add.success_toast` 模板 |
 | 禁止项 | 无 1·2·3 · 无 VPN 说明页 · 失败无协议格式清单 |
@@ -131,7 +133,7 @@ hi-fi 文案已对齐；**产品代码实现**另勾。
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
 | **1 Root** | 段 · Connection 三行+副文 · App 三行（Auto-update Toggle 默认开 · Subscriptions · About）· Close | `settings.title` S · `settings.section.connection` S · `settings.section.app` S · `settings.routing.title`+`.subtitle` S · `settings.dns.title`+`.subtitle` S · `settings.overrides.title`+`.subtitle` S · `settings.app.auto_update.title`+`.subtitle` S · `settings.app.subscriptions` S · `settings.app.about` S · `chrome.close` S · 计数 `chrome.none` / 数字 | [x] |
-| **2 Routing mode** | 三档 | `settings.routing.{auto,global,direct}.{title,sub}` S · `chrome.back` S | [x] |
+| **2 Routing mode** | Smart / Global；返回时若变更则切换 | `settings.routing.{auto,global}.{title,sub}` S · `chrome.back` S | [x] |
 | **3 DNS** | 三档 | `settings.dns.{automatic,privacy,compatibility}.{title,sub}` S | [x] |
 | **4 Overrides empty** | O3 空态 | `settings.overrides.empty.title` S · `.howto` S · `.boundary` **L** · `.chip` S · `settings.overrides.add` S | [x] |
 | **4d iCloud restore fail** | 空库恢复失败弱提示（iOS） | `settings.overrides.icloud.restore_failed` S · 帧 **4d** 空态弱行；非常驻云状态 | [x] |
@@ -261,5 +263,5 @@ hi-fi 文案已对齐；**产品代码实现**另勾。
 - [x] §6 Diagnostic 帧勾完（含 **6 Success · 7 Rolled back**）  
 - [x] §2–§5 文案/hi-fi 勾完（2026-08-06；含 Settings **4d/4e** iCloud restore）  
 - [ ] §7 chrome 跟宿主实现时勾  
-- [x] 本轮 **L** 键抽检：诊断 / Repair CTA / About MT / Welcome 产品闭环副文 / Add no-sell 与 CONTEXT/ADR 一致  
+- [x] 本轮 **L** 键抽检：诊断 / Repair CTA / About MT / Welcome 三词 Paste/Connect/Smart / Add no-sell 与 CONTEXT/ADR 一致  
 - [ ] 实现绑定 key 名与本表一致（Android：`.` → `_`）——**编码阶段**  

@@ -87,7 +87,8 @@
 
 | # | 项 | iOS | Android |
 |---|---|---|---|
-| 3.1.1 | Welcome 仅一次：headline + 副文 + Get started；**无** 1·2·3 | [ ] | [ ] |
+| 3.1.1 | Welcome 仅一次：Paste / Connect / Smart + Get started；**无**副文；**无** 1·2·3 | [ ] | [ ] |
+| 3.1.1b | Data & Privacy 仅一次：On device / No tracking + Privacy Policy 外链 + Continue；**无**说明卡 | [ ] | [ ] |
 | 3.1.2 | Home Empty：顶栏 **仅 Settings**；*Add subscription*；START 弱化 | [ ] | [ ] |
 | 3.1.3 | Add：Paste 主 · Scan QR · Import file；**无**手填主 UI | [ ] | [ ] |
 | 3.1.4 | Parsing 模态叠在 Add 上（非全屏）；三源文案正确 | [ ] | [ ] |
