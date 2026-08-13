@@ -18,7 +18,12 @@
 "Add exception" = "Add exception";
 "Privacy Policy" = "Privacy Policy";
 "Terms of Use" = "Terms of Use";
-"Paste your subscription.\nWe handle the rest." = "Paste your subscription.\nWe handle the rest.";
+"Paste" = "Paste";
+"Connect" = "Connect";
+"Smart" = "Smart";
+"On device" = "On device";
+"No tracking" = "No tracking";
+"Continue" = "Continue";
 "Use a link you already have. We don’t sell or recommend providers." = "Use a link you already have. We don’t sell or recommend providers.";
 "Get started" = "Get started";
 "Supported" = "Supported";

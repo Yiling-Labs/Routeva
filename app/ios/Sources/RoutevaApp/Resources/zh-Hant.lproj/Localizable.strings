@@ -18,7 +18,12 @@
 "Add exception" = "加入例外";
 "Privacy Policy" = "隱私權政策";
 "Terms of Use" = "使用條款";
-"Paste your subscription.\nWe handle the rest." = "貼上你的訂閱。\n其他交給我們。";
+"Paste" = "貼上";
+"Connect" = "連線";
+"Smart" = "智慧";
+"On device" = "僅本機";
+"No tracking" = "無追蹤";
+"Continue" = "繼續";
 "Use a link you already have. We don’t sell or recommend providers." = "使用你已有的連結。我們不銷售或推薦服務商。";
 "Get started" = "開始使用";
 "Supported" = "已驗證";

@@ -18,7 +18,12 @@
 "Add exception" = "예외 추가";
 "Privacy Policy" = "개인정보 처리방침";
 "Terms of Use" = "이용 약관";
-"Paste your subscription.\nWe handle the rest." = "구독을 붙여넣으세요.\n나머지는 저희가 처리합니다.";
+"Paste" = "붙여넣기";
+"Connect" = "연결";
+"Smart" = "스마트";
+"On device" = "이 기기에";
+"No tracking" = "추적 없음";
+"Continue" = "계속";
 "Use a link you already have. We don’t sell or recommend providers." = "이미 가지고 있는 링크를 사용하세요. 제공업체를 판매하거나 추천하지 않습니다.";
 "Get started" = "시작하기";
 "Supported" = "검증됨";

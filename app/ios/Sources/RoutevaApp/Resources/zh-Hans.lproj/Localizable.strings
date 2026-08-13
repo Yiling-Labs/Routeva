@@ -18,7 +18,11 @@
 "Add exception" = "添加例外";
 "Privacy Policy" = "隐私政策";
 "Terms of Use" = "使用条款";
-"Paste your subscription.\nWe handle the rest." = "粘贴你的订阅。\n其他交给我们。";
+"Paste" = "粘贴";
+"Connect" = "连接";
+"On device" = "仅本机";
+"No tracking" = "无追踪";
+"Continue" = "继续";
 "Use a link you already have. We don’t sell or recommend providers." = "使用你已有的链接。我们不销售或推荐服务商。";
 "Get started" = "开始使用";
 "Supported" = "已验证";
@@ -41,7 +45,6 @@
 "Checks the active subscription on cold launch after 24 hours" = "冷启动时，距离上次检查满 24 小时后检查当前订阅";
 "Couldn’t add this" = "无法添加此订阅";
 "Couldn’t update. Your existing subscription was kept." = "无法更新。已保留现有订阅。";
-"DATA & PRIVACY" = "数据与隐私";
 "DOMAIN" = "域名";
 "Data" = "用量";
 "Domain exceptions apply in Smart, Global, and Direct — not a full rule set." = "域名例外在智能、全局和直连模式下生效，并非完整规则集。";
@@ -52,7 +55,6 @@
 "Import a new file or link when your provider changes this subscription." = "服务商更改此订阅后，请导入新的文件或链接。";
 "Mode" = "模式";
 "No exceptions yet" = "尚无例外";
-"No technical setup. Connects first—and explains itself when it doesn’t." = "无需技术设置。先连接；如果连不上，Routeva 会说明原因。";
 "On iPhone, domain exceptions may back up to your iCloud for reinstalls and device switches." = "在 iPhone 上，域名例外可能会备份到 iCloud，以便重新安装或更换设备后恢复。";
 "One domain each" = "每个例外一个域名";
 "Pin a domain to proxy or direct when the default mode isn’t enough." = "默认模式不够用时，可将域名固定为代理或直连。";
@@ -67,7 +69,6 @@
 "The current connection keeps its existing routes until you reconnect." = "当前连接会保留原有路由，直到重新连接。";
 "Updated %@" = "已更新 %@";
 "What we found" = "我们发现了什么";
-"Your connection data stays under your control." = "你的连接数据始终由你掌控。";
 "· %@" = "· %@";
 "Smart" = "智能";
 "Global" = "全局";

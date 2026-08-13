@@ -85,6 +85,7 @@ struct HomeView: View {
                 .presentationCornerRadius(28)
                 .presentationBackground { RoutevaSheetBackground() }
         }
+        .defersSystemGestures(on: connected ? .bottom : [])
         .onAppear {
             model.setHomeVisible(true)
             model.setSceneActive(scenePhase == .active)
@@ -345,6 +346,10 @@ private struct HomeConnectionContent: View {
                     set: { model.setCoverFlowSelectedIndex($0) }
                 ),
                 latencies: model.nodeLatencies,
+                locationEnabled: {
+                    if case .connecting = model.connectionState { return false }
+                    return true
+                }(),
                 openLocations: { model.presentedSurface = .locations }
             )
             .frame(height: 136)
@@ -353,42 +358,64 @@ private struct HomeConnectionContent: View {
 
     private var statusBand: some View {
         VStack(spacing: 10) {
-            Text(LocalizedStringKey(statusTitle))
-                .font(.system(size: 30, weight: .bold))
-                .tracking(-0.8)
+            Group {
+                if case .connecting = model.connectionState {
+                    ConnectingEllipsisText()
+                } else {
+                    Text(LocalizedStringKey(statusTitle))
+                }
+            }
+            .font(.system(size: 30, weight: .bold))
+            .tracking(-0.8)
 
             switch model.connectionState {
             case .idle, .failed:
                 modeButton
+                    .transition(.opacity)
             case .connected:
-                VStack(spacing: 9) {
-                    Button {
-                        model.presentedSurface = .locations
-                    } label: {
-                        HStack(spacing: 7) {
-                            Text(node?.flag ?? "")
-                            Text(node?.name ?? "")
-                                .fontWeight(.semibold)
-                            Text("· \(node?.protocolName ?? "")")
-                                .foregroundStyle(RoutevaTheme.quiet)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(RoutevaTheme.quiet)
-                        }
-                        .font(.system(size: 12, weight: .medium))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .routevaGlass(cornerRadius: 999)
-                    }
-                    .buttonStyle(RoutevaPressStyle())
-                    .accessibilityIdentifier("home.location")
-                    modeButton
-                }
+                LocationModeSplitBar(
+                    node: node,
+                    modeTitle: model.routingMode == .direct
+                        ? nil
+                        : LocalizedStringKey(model.routingMode.rawValue),
+                    onLocation: { model.presentedSurface = .locations },
+                    onMode: showModeSheet
+                )
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.97)),
+                        removal: .opacity
+                    )
+                )
             case .connecting:
-                EmptyView()
+                Color.clear
+                    .frame(height: 0)
+                    .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity)
+        .fixedSize(horizontal: false, vertical: true)
+        .animation(locationModeAnimation, value: locationModePhase)
+    }
+
+    /// Idle / busy / on — scoped so capsule travel is not driven from here.
+    private var locationModePhase: String {
+        switch model.connectionState {
+        case .idle, .failed: "idle"
+        case .connecting: "busy"
+        case .connected: "on"
+        }
+    }
+
+    private var locationModeAnimation: Animation {
+        if UIAccessibility.isReduceMotionEnabled {
+            return .easeOut(duration: 0.15)
+        }
+        switch locationModePhase {
+        case "on": return .easeOut(duration: 0.38).delay(0.12)
+        case "idle": return .easeOut(duration: 0.20)
+        default: return .easeOut(duration: 0.18)
+        }
     }
 
     private var statusTitle: String {
@@ -414,10 +441,94 @@ private struct HomeConnectionContent: View {
                 }
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(RoutevaTheme.secondary)
+                .frame(minHeight: 44)
+                .padding(.horizontal, 16)
             }
             .buttonStyle(RoutevaPressStyle())
             .accessibilityIdentifier("home.mode")
         }
+    }
+}
+
+/// Connected: Location | Mode as one centered 44pt glass pill.
+private struct LocationModeSplitBar: View {
+    let node: NodeSummary?
+    let modeTitle: LocalizedStringKey?
+    let onLocation: () -> Void
+    let onMode: () -> Void
+
+    private let barHeight: CGFloat = 44
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button(action: onLocation) {
+                HStack(spacing: 7) {
+                    Text(node?.flag ?? "")
+                        .font(.system(size: 16))
+                    Text(Self.displayName(node?.name ?? ""))
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(RoutevaTheme.quiet)
+                }
+                .padding(.leading, 14)
+                .padding(.trailing, 12)
+                .frame(height: barHeight)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(RoutevaPressStyle())
+            .accessibilityLabel("Choose location, \(node?.name ?? "")")
+            .accessibilityIdentifier("home.location")
+
+            if modeTitle != nil {
+                Rectangle()
+                    .fill(Color.white.opacity(0.16))
+                    .frame(width: 1, height: 16)
+
+                Button(action: onMode) {
+                    HStack(spacing: 5) {
+                        Text("Mode")
+                            .foregroundStyle(RoutevaTheme.quiet)
+                        if let modeTitle {
+                            Text(modeTitle)
+                        }
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(RoutevaTheme.quiet)
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(RoutevaTheme.secondary)
+                    .padding(.leading, 12)
+                    .padding(.trailing, 16)
+                    .frame(height: barHeight)
+                    .fixedSize(horizontal: true, vertical: true)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(RoutevaPressStyle())
+                .accessibilityIdentifier("home.mode")
+            }
+        }
+        .frame(height: barHeight)
+        .frame(maxWidth: 320)
+        .fixedSize(horizontal: false, vertical: true)
+        .routevaGlass(cornerRadius: barHeight / 2)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity)
+    }
+
+    /// Circular flag is already shown — drop a leading regional-indicator pair.
+    private static func displayName(_ name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let scalars = Array(trimmed.unicodeScalars)
+        let region: ClosedRange<UInt32> = 0x1F1E6...0x1F1FF
+        guard scalars.count >= 2,
+              region.contains(scalars[0].value),
+              region.contains(scalars[1].value)
+        else { return trimmed }
+        return String(String.UnicodeScalarView(scalars.dropFirst(2)))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
@@ -431,6 +542,7 @@ private struct NodeCoverFlow: View {
     let nodes: [NodeSummary]
     @Binding var selection: Int
     let latencies: [UUID: NodeLatencyStatus]
+    var locationEnabled = true
     let openLocations: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -513,6 +625,7 @@ private struct NodeCoverFlow: View {
                     nodes: nodes,
                     scrollIndex: scrollIndex,
                     looping: isLooping,
+                    isEnabled: locationEnabled,
                     openLocations: openLocations
                 )
             }
@@ -730,6 +843,7 @@ private struct NodeCoverFlowCaption: View, @preconcurrency Animatable {
     let nodes: [NodeSummary]
     var scrollIndex: CGFloat
     let looping: Bool
+    var isEnabled = true
     let openLocations: () -> Void
 
     nonisolated var animatableData: CGFloat {
@@ -750,30 +864,42 @@ private struct NodeCoverFlowCaption: View, @preconcurrency Animatable {
 
     var body: some View {
         let focused = nodes[focusedIndex]
-        Button(action: openLocations) {
-            HStack(spacing: 5) {
-                Text(focused.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .layoutPriority(0)
-                Text("· \(focused.protocolName)")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(RoutevaTheme.quiet)
-                    .lineLimit(1)
-                    .layoutPriority(1)
+        let label = HStack(spacing: 5) {
+            Text(focused.name)
+                .font(.system(size: 16, weight: .semibold))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .layoutPriority(0)
+            Text("· \(focused.protocolName)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(RoutevaTheme.quiet)
+                .lineLimit(1)
+                .layoutPriority(1)
+            if isEnabled {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(RoutevaTheme.quiet)
                     .fixedSize()
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.horizontal, 28)
-            .contentTransition(.opacity)
         }
-        .buttonStyle(RoutevaPressStyle())
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 10)
+        .contentTransition(.opacity)
+
+        Group {
+            if isEnabled {
+                Button(action: openLocations) { label }
+                    .buttonStyle(RoutevaPressStyle())
+            } else {
+                label
+                    .opacity(0.45)
+                    .accessibilityHidden(true)
+            }
+        }
         .accessibilityLabel("Choose location, \(focused.name)")
         .accessibilityIdentifier("home.location")
+        .accessibilityAddTraits(isEnabled ? [] : .isStaticText)
     }
 }
 
@@ -1093,7 +1219,7 @@ private struct HomeModeSheet: View {
             Text("Mode")
                 .font(.system(size: 22, weight: .bold))
 
-            ForEach([RoutingMode.automatic, .global]) { mode in
+            ForEach(RoutingMode.userSelectable) { mode in
                 Button {
                     model.setRoutingMode(mode)
                     dismiss()
@@ -1171,6 +1297,50 @@ private struct SessionStatsView: View {
     }
 }
 
+/// Connecting 态的“还在干活”提示：词干保持本地化，句点 . / .. / ... 循环。
+private struct ConnectingEllipsisText: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var dotCount = 1
+
+    var body: some View {
+        Group {
+            if reduceMotion {
+                Text("Connecting…")
+            } else {
+                let stem = Self.stem
+                Text(stem + "...")
+                    .hidden()
+                    .overlay(alignment: .leading) {
+                        Text(stem + String(repeating: ".", count: dotCount))
+                    }
+            }
+        }
+        .accessibilityLabel(Text("Connecting…"))
+        .task(id: reduceMotion) {
+            guard !reduceMotion else { return }
+            dotCount = 1
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(400))
+                guard !Task.isCancelled else { return }
+                dotCount = dotCount % 3 + 1
+            }
+        }
+    }
+
+    /// 从已有 `Connecting…` 译串去掉尾部省略号，避免再维护一套词干。
+    private static var stem: String {
+        let localized = String(localized: "Connecting…")
+        let trimmed = localized.trimmingCharacters(in: .whitespaces)
+        if trimmed.hasSuffix("...") {
+            return String(trimmed.dropLast(3)).trimmingCharacters(in: .whitespaces)
+        }
+        if trimmed.hasSuffix("…") {
+            return String(trimmed.dropLast()).trimmingCharacters(in: .whitespaces)
+        }
+        return trimmed
+    }
+}
+
 private struct ConnectCapsule: View {
     let state: RoutevaAppModel.ConnectionState
     let isEnabled: Bool
@@ -1182,6 +1352,7 @@ private struct ConnectCapsule: View {
     @State private var isDragging = false
     @State private var ignitionProgress: CGFloat = 0
     @State private var busyPulseBright = false
+    @State private var isPulsing = false
     @State private var isPresentingConnection = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -1226,12 +1397,23 @@ private struct ConnectCapsule: View {
         return max(0, min(1, (base + translation) / travel))
     }
 
+    /// Idle / Connected 静止座：热区停在这里，不跟着拇指走。
+    private var restSeat: CGFloat {
+        if showsConnectingChrome || isConnected { 1 } else { 0 }
+    }
+
     private var lightLevel: CGFloat {
-        max(0, min(1, isConnected || showsConnectingChrome ? 1 : progress))
+        if showsConnectingChrome { return 1 }
+        if isDragging { return progress }
+        if isConnected { return 1 }
+        return progress
     }
 
     private var ringProgress: CGFloat {
-        isConnected || showsConnectingChrome ? ignitionProgress : progress
+        if showsConnectingChrome { return ignitionProgress }
+        if isDragging { return progress }
+        if isConnected { return ignitionProgress }
+        return progress
     }
 
     private var slideAnimation: Animation {
@@ -1305,90 +1487,97 @@ private struct ConnectCapsule: View {
                     .allowsHitTesting(false)
                 }
 
-                // Gestures only on the thumb capsule — not the full stage.
-                VStack(spacing: 8) {
-                    Circle()
-                        .fill(ledColor)
-                        .frame(width: 7, height: 7)
-                        .shadow(
-                            color: Color(red: 50 / 255, green: 255 / 255, blue: 130 / 255)
-                                .opacity(lightLevel < 0.08 ? 0 : 0.25 + 0.70 * Double(lightLevel)),
-                            radius: lightLevel < 0.08 ? 0 : 4 + 12 * lightLevel
-                        )
-                    Text(LocalizedStringKey(showsConnectingChrome ? "…" : (showsConnectedChrome ? "STOP" : "START")))
-                        .font(.system(size: 12, weight: .heavy))
-                        .tracking(1.4)
-                    Image(systemName: "power")
-                        .font(.system(size: 24, weight: .semibold))
-                }
-                .foregroundStyle(showsConnectedChrome ? Color(red: 10 / 255, green: 31 / 255, blue: 24 / 255) : .white)
-                .frame(width: trackWidth - inset * 2, height: thumbHeight)
-                .background {
-                    Capsule()
-                        .fill(thumbBackground)
-                }
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(.white.opacity(showsConnectedChrome ? 0.28 : 0.16), lineWidth: 0.7))
-                .overlay {
-                    if showsConnectingChrome {
-                        // The reference's busy cue lives in the upper face only;
-                        // keep its dark-to-light range deliberately restrained.
-                        LinearGradient(
-                            colors: [
-                                Color(red: 117 / 255, green: 142 / 255, blue: 132 / 255)
-                                    .opacity(busyPulseBright ? 0.24 : 0.11),
-                                Color(red: 76 / 255, green: 98 / 255, blue: 92 / 255)
-                                    .opacity(busyPulseBright ? 0.13 : 0.06),
-                                .clear,
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: thumbHeight * 0.56, alignment: .top)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .clipShape(Capsule())
-                        .allowsHitTesting(false)
+                thumbChrome
+                    .allowsHitTesting(false)
+                    .offset(y: trackTop + trackPadding + progress * travel)
+                    .animation(reduceMotion || isDragging ? nil : slideAnimation, value: progress)
+
+                // 手势打在静止热区上。绑在会移动的拇指上时，位移会取消手势，
+                // translation 归零后手指还在，新手势又开始，录屏里就是隔帧回顶。
+                Color.white.opacity(0.001)
+                    .frame(width: trackWidth - inset * 2, height: thumbHeight)
+                    .contentShape(Capsule())
+                    .highPriorityGesture(dragGesture, including: gestureMask)
+                    .offset(y: trackTop + trackPadding + restSeat * travel)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(
+                        showsConnectingChrome ? "Connecting" : (showsConnectedChrome ? "Disconnect" : "Connect")
+                    )
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityIdentifier("home.connect")
+                    .accessibilityAction {
+                        guard isEnabled, !showsConnectingChrome else { return }
+                        isConnected ? onDisconnect() : beginConnecting(slideThumb: true)
                     }
-                }
-                .shadow(color: showsConnectedChrome ? RoutevaTheme.mint.opacity(0.42) : .black.opacity(0.48), radius: 18, y: 12)
-                .contentShape(Capsule())
-                .gesture(dragGesture, including: isEnabled ? .all : .none)
-                .onTapGesture {
-                    guard isEnabled, !showsConnectingChrome else { return }
-                    isConnected ? onDisconnect() : beginConnecting()
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(showsConnectedChrome ? "Disconnect" : "Connect")
-                .accessibilityAddTraits(.isButton)
-                .accessibilityIdentifier("home.connect")
-                .offset(y: trackTop + trackPadding + progress * travel)
-                // Animate the moving geometry itself. State changes can also
-                // restyle the thumb, so binding this to state caused a stale
-                // top-half shadow to linger at the destination during a tap.
-                .animation(reduceMotion || isDragging ? nil : slideAnimation, value: progress)
             }
+            .coordinateSpace(name: "connect-stage")
             .frame(width: stageWidth, height: stageHeight)
             .scaleEffect(scale)
             .frame(width: stageWidth * scale, height: stageHeight * scale)
             .onAppear(perform: synchronizeConnectionAnimation)
             .onChange(of: state) { _, newState in
-                switch newState {
-                case .idle, .failed:
-                    isPresentingConnection = false
-                case .connected:
-                    // A successful connection must immediately settle the
-                    // capsule; only connecting owns the breathing highlight.
-                    isPresentingConnection = false
-                case .connecting:
-                    break
-                }
-                synchronizeConnectionAnimation()
+                applyConnectionState(newState)
             }
 
-            Text(LocalizedStringKey(showsConnectedChrome ? "Swipe up to disconnect" : "Swipe down to connect"))
+            Group {
+                if showsConnectingChrome {
+                    ConnectingEllipsisText()
+                } else {
+                    Text(LocalizedStringKey(showsConnectedChrome ? "Swipe up to disconnect" : "Swipe down to connect"))
+                }
+            }
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(RoutevaTheme.muted)
         }
+    }
+
+    private var gestureMask: GestureMask {
+        isEnabled && !showsConnectingChrome ? .all : .none
+    }
+
+    private var thumbChrome: some View {
+        VStack(spacing: 8) {
+            Circle()
+                .fill(ledColor)
+                .frame(width: 7, height: 7)
+                .shadow(
+                    color: Color(red: 50 / 255, green: 255 / 255, blue: 130 / 255)
+                        .opacity(lightLevel < 0.08 ? 0 : 0.25 + 0.70 * Double(lightLevel)),
+                    radius: lightLevel < 0.08 ? 0 : 4 + 12 * lightLevel
+                )
+            Text(LocalizedStringKey(showsConnectingChrome ? "…" : (showsConnectedChrome ? "STOP" : "START")))
+                .font(.system(size: 12, weight: .heavy))
+                .tracking(1.4)
+            Image(systemName: "power")
+                .font(.system(size: 24, weight: .semibold))
+        }
+        .foregroundStyle(showsConnectedChrome ? Color(red: 10 / 255, green: 31 / 255, blue: 24 / 255) : .white)
+        .frame(width: trackWidth - inset * 2, height: thumbHeight)
+        .background {
+            Capsule()
+                .fill(thumbBackground)
+        }
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(.white.opacity(showsConnectedChrome ? 0.28 : 0.16), lineWidth: 0.7))
+        .overlay {
+            if showsConnectingChrome {
+                LinearGradient(
+                    colors: [
+                        Color(red: 117 / 255, green: 142 / 255, blue: 132 / 255)
+                            .opacity(busyPulseBright ? 0.24 : 0.11),
+                        Color(red: 76 / 255, green: 98 / 255, blue: 92 / 255)
+                            .opacity(busyPulseBright ? 0.13 : 0.06),
+                        .clear,
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: thumbHeight * 0.56, alignment: .top)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .clipShape(Capsule())
+            }
+        }
+        .shadow(color: showsConnectedChrome ? RoutevaTheme.mint.opacity(0.42) : .black.opacity(0.48), radius: 18, y: 12)
     }
 
     private var thumbBackground: AnyShapeStyle {
@@ -1422,46 +1611,53 @@ private struct ConnectCapsule: View {
     }
 
     private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 4)
+        DragGesture(minimumDistance: 0, coordinateSpace: .named("connect-stage"))
             .onChanged { value in
-                guard !showsConnectingChrome else { return }
-                isDragging = true
-                translation = isConnected
-                    ? min(0, max(-travel, value.translation.height / scale))
-                    : max(0, min(travel, value.translation.height / scale))
+                guard isEnabled, !showsConnectingChrome else { return }
+                let dy = value.translation.height
+                withoutAnimation {
+                    isDragging = true
+                    translation = isConnected
+                        ? min(0, max(-travel, dy))
+                        : max(0, min(travel, dy))
+                }
             }
-            .onEnded { _ in
-                guard !showsConnectingChrome else { return }
+            .onEnded { value in
+                guard isEnabled, !showsConnectingChrome else { return }
+                let dy = value.translation.height
+                let isTap = abs(dy) < 4 && abs(value.translation.width) < 4
+                withoutAnimation { isDragging = false }
+
+                if isTap {
+                    if isConnected {
+                        onDisconnect()
+                    } else {
+                        beginConnecting(slideThumb: true)
+                    }
+                    return
+                }
+
                 let shouldAct = isConnected ? progress < 0.35 : progress > 0.65
-                isDragging = false
-                translation = 0
                 if shouldAct {
-                    isConnected ? onDisconnect() : beginConnecting()
+                    if isConnected {
+                        onDisconnect()
+                        withoutAnimation { translation = 0 }
+                    } else {
+                        beginConnecting(slideThumb: progress < 0.97)
+                    }
+                } else {
+                    withAnimation(reduceMotion ? nil : slideAnimation) {
+                        translation = 0
+                    }
                 }
             }
     }
 
-    private func synchronizeConnectionAnimation() {
-        if isConnecting || isPresentingConnection {
-            ignitionProgress = 0
-            busyPulseBright = false
-
-            guard !reduceMotion else {
-                ignitionProgress = 1
-                return
-            }
-
-            withAnimation(.easeOut(duration: 0.9)) {
-                ignitionProgress = 1
-            }
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                busyPulseBright = true
-            }
-        } else if isConnected {
-            ignitionProgress = 1
-            busyPulseBright = false
-        } else {
-            busyPulseBright = false
+    private func applyConnectionState(_ newState: RoutevaAppModel.ConnectionState) {
+        switch newState {
+        case .idle, .failed:
+            isPresentingConnection = false
+            stopBusyPulse()
             if reduceMotion {
                 ignitionProgress = 0
             } else {
@@ -1469,13 +1665,72 @@ private struct ConnectCapsule: View {
                     ignitionProgress = 0
                 }
             }
+        case .connected:
+            isPresentingConnection = false
+            stopBusyPulse()
+            ignitionProgress = 1
+        case .connecting:
+            if !isPresentingConnection {
+                isPresentingConnection = true
+                let lit = max(ignitionProgress, progress)
+                ignitionProgress = lit
+                settleIgnition(from: lit)
+            }
+            startBusyPulse()
         }
     }
 
-    private func beginConnecting() {
-        isPresentingConnection = true
-        synchronizeConnectionAnimation()
+    private func synchronizeConnectionAnimation() {
+        applyConnectionState(state)
+    }
+
+    private func beginConnecting(slideThumb: Bool) {
+        let lit = max(ignitionProgress, progress)
+        if slideThumb && !reduceMotion {
+            withAnimation(slideAnimation) {
+                isPresentingConnection = true
+                translation = 0
+            }
+        } else {
+            withoutAnimation {
+                isPresentingConnection = true
+                translation = 0
+            }
+        }
+        ignitionProgress = lit
+        settleIgnition(from: lit)
+        startBusyPulse()
         onConnect()
+    }
+
+    private func settleIgnition(from lit: CGFloat) {
+        guard lit < 1 else { return }
+        if reduceMotion {
+            ignitionProgress = 1
+        } else {
+            withAnimation(.easeOut(duration: 0.9)) {
+                ignitionProgress = 1
+            }
+        }
+    }
+
+    private func startBusyPulse() {
+        guard !reduceMotion, !isPulsing else { return }
+        isPulsing = true
+        withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+            busyPulseBright = true
+        }
+    }
+
+    private func stopBusyPulse() {
+        isPulsing = false
+        busyPulseBright = false
+    }
+
+    private func withoutAnimation(_ updates: () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction, updates)
     }
 }
 

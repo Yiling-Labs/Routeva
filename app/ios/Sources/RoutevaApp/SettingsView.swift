@@ -13,6 +13,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var screen: Screen = .root
     @State private var showsAddOverride = false
+    @State private var draftRoutingMode: RoutingMode = .automatic
 
     var body: some View {
         RoutevaField {
@@ -23,13 +24,11 @@ struct SettingsView: View {
                 case .routing:
                     picker(
                         title: "Routing mode",
-                        values: RoutingMode.allCases,
-                        selection: Binding(
-                            get: { model.routingMode },
-                            set: { model.setRoutingMode($0) }
-                        ),
+                        values: RoutingMode.userSelectable,
+                        selection: $draftRoutingMode,
                         titleFor: \.rawValue,
-                        detailFor: \.detail
+                        detailFor: \.detail,
+                        onBack: commitRoutingModeAndReturn
                     )
                 case .dns:
                     picker(
@@ -63,6 +62,9 @@ struct SettingsView: View {
         .onChange(of: screen) { _, value in
             if value == .overrides { Task { await model.syncOverrides() } }
         }
+        .onDisappear {
+            commitRoutingModeIfNeeded()
+        }
         .alert("Apply override changes?", isPresented: $model.overrideReconnectPrompt) {
             Button("Apply and reconnect") { model.applyOverrideChangesAndReconnect() }
             Button("Later", role: .cancel) { model.overrideReconnectPrompt = false }
@@ -90,7 +92,10 @@ struct SettingsView: View {
                             title: "Routing mode",
                             subtitle: "How traffic uses your proxy",
                             value: model.routingMode.rawValue
-                        ) { screen = .routing }
+                        ) {
+                            draftRoutingMode = model.routingMode
+                            screen = .routing
+                        }
                         SettingsDivider()
                         SettingsRow(
                             title: "DNS",
@@ -129,19 +134,30 @@ struct SettingsView: View {
         }
     }
 
+    private func commitRoutingModeIfNeeded() {
+        guard screen == .routing else { return }
+        model.setRoutingMode(draftRoutingMode)
+    }
+
+    private func commitRoutingModeAndReturn() {
+        commitRoutingModeIfNeeded()
+        screen = .root
+    }
+
     private func picker<Value: Identifiable & Equatable>(
         title: String,
         values: [Value],
         selection: Binding<Value>,
         titleFor: KeyPath<Value, String>,
-        detailFor: KeyPath<Value, String>
+        detailFor: KeyPath<Value, String>,
+        onBack: (() -> Void)? = nil
     ) -> some View {
         VStack(spacing: 0) {
             RoutevaNavigationHeader(
                 title: title,
                 backSystemName: "chevron.left",
                 backLabel: "Back"
-            ) { screen = .root }
+            ) { (onBack ?? { screen = .root })() }
 
             SettingsGroup {
                 ForEach(Array(values.enumerated()), id: \.element.id) { index, value in

@@ -18,7 +18,12 @@
 "Add exception" = "例外を追加";
 "Privacy Policy" = "プライバシーポリシー";
 "Terms of Use" = "利用規約";
-"Paste your subscription.\nWe handle the rest." = "サブスクリプションを貼り付け。\nあとはおまかせください。";
+"Paste" = "貼り付け";
+"Connect" = "接続";
+"Smart" = "スマート";
+"On device" = "この端末に";
+"No tracking" = "追跡なし";
+"Continue" = "続ける";
 "Use a link you already have. We don’t sell or recommend providers." = "お持ちのリンクを使用してください。プロバイダーの販売や推奨は行いません。";
 "Get started" = "はじめる";
 "Supported" = "検証済み";

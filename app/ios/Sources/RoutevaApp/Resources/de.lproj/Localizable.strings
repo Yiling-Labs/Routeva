@@ -18,7 +18,12 @@
 "Add exception" = "Ausnahme hinzufügen";
 "Privacy Policy" = "Datenschutzrichtlinie";
 "Terms of Use" = "Nutzungsbedingungen";
-"Paste your subscription.\nWe handle the rest." = "Füge dein Abonnement ein.\nWir erledigen den Rest.";
+"Paste" = "Einfügen";
+"Connect" = "Verbinden";
+"Smart" = "Smart";
+"On device" = "Auf dem Gerät";
+"No tracking" = "Kein Tracking";
+"Continue" = "Weiter";
 "Use a link you already have. We don’t sell or recommend providers." = "Verwende einen vorhandenen Link. Wir verkaufen oder empfehlen keine Anbieter.";
 "Get started" = "Loslegen";
 "Supported" = "Verifiziert";
