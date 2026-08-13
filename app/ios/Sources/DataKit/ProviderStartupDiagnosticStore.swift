@@ -37,6 +37,13 @@ public struct ProviderStartupDiagnosticSnapshot: Codable, Equatable, Sendable {
         self.stableErrorCode = stableErrorCode
         self.updatedAt = updatedAt
     }
+
+    /// `running` is positive startup evidence written immediately before the
+    /// provider completes `startTunnel`. It must never be surfaced as a
+    /// `provider.stage.running` failure.
+    public var confirmsRunning: Bool {
+        stage == .running && stableErrorCode == nil
+    }
 }
 
 /// A deliberately tiny, redacted handoff between the Packet Tunnel process

@@ -333,6 +333,79 @@ public struct ProviderDataPlaneSnapshot: Codable, Equatable, Sendable {
         self.coreDiagnosticCode = coreDiagnosticCode
     }
 
+    /// The provider retains only allowlisted categories, never the raw DNS
+    /// message or queried hostname. Any code in this family means sing-box
+    /// failed while reaching or using an upstream resolver.
+    public var dnsUpstreamFailureDiagnosticCode: String? {
+        guard let coreDiagnosticCode,
+              coreDiagnosticCode.hasPrefix("probe.core_dns_")
+        else { return nil }
+        return coreDiagnosticCode
+    }
+
+    /// Returns a sticky core DNS category only when the current observation
+    /// window also contains a new query without any healthy upstream answer.
+    /// This prevents an old transient transport error from poisoning later
+    /// post-connect probe classification after DNS has recovered.
+    public func dnsUpstreamFailureDiagnosticCode(since baseline: Self?) -> String? {
+        guard let code = dnsUpstreamFailureDiagnosticCode else { return nil }
+        // Without a baseline there is no current observation window. The core
+        // category is intentionally sticky, so treating it as current evidence
+        // could tear down a recovered session after an earlier transient error.
+        guard let baseline else { return nil }
+        guard sessionID == baseline.sessionID,
+              packetFlowToCoreDNSQueries >= baseline.packetFlowToCoreDNSQueries,
+              coreToPacketFlowDNSSuccessResponses
+                >= baseline.coreToPacketFlowDNSSuccessResponses,
+              coreToPacketFlowDNSEmptyResponses
+                >= baseline.coreToPacketFlowDNSEmptyResponses,
+              coreToPacketFlowDNSNameErrorResponses
+                >= baseline.coreToPacketFlowDNSNameErrorResponses,
+              packetFlowToCoreDNSQueries > baseline.packetFlowToCoreDNSQueries
+        else { return nil }
+        let healthyResponseAdvanced = coreToPacketFlowDNSSuccessResponses
+                > baseline.coreToPacketFlowDNSSuccessResponses
+            || coreToPacketFlowDNSEmptyResponses
+                > baseline.coreToPacketFlowDNSEmptyResponses
+            || coreToPacketFlowDNSNameErrorResponses
+                > baseline.coreToPacketFlowDNSNameErrorResponses
+        return healthyResponseAdvanced ? nil : code
+    }
+
+    /// Classifies an App-side DNS preflight that produced no usable address.
+    /// Counter deltas keep an old session total from being mistaken for the
+    /// current preflight, while the core's redacted code remains authoritative
+    /// when one is available.
+    public func dnsResolutionFailureDiagnosticCode(since baseline: Self?) -> String? {
+        if let code = dnsUpstreamFailureDiagnosticCode(since: baseline) {
+            return code
+        }
+        guard let baseline,
+              sessionID == baseline.sessionID,
+              packetFlowToCoreDNSQueries > baseline.packetFlowToCoreDNSQueries,
+              coreToPacketFlowDNSResponses >= baseline.coreToPacketFlowDNSResponses,
+              coreToPacketFlowDNSSuccessResponses
+                >= baseline.coreToPacketFlowDNSSuccessResponses,
+              coreToPacketFlowDNSEmptyResponses
+                >= baseline.coreToPacketFlowDNSEmptyResponses,
+              coreToPacketFlowDNSNameErrorResponses
+                >= baseline.coreToPacketFlowDNSNameErrorResponses
+        else { return nil }
+        if coreToPacketFlowDNSResponses == baseline.coreToPacketFlowDNSResponses {
+            return "probe.dns_response_missing"
+        }
+        let healthyResponseAdvanced = coreToPacketFlowDNSSuccessResponses
+                > baseline.coreToPacketFlowDNSSuccessResponses
+            || coreToPacketFlowDNSEmptyResponses
+                > baseline.coreToPacketFlowDNSEmptyResponses
+            || coreToPacketFlowDNSNameErrorResponses
+                > baseline.coreToPacketFlowDNSNameErrorResponses
+        if !healthyResponseAdvanced {
+            return "probe.dns_resolution_failed"
+        }
+        return nil
+    }
+
     public func probeFailureDiagnosticCode(fallback: String) -> String {
         let proxyDiagnosticCode = coreDiagnosticCode.flatMap {
             $0.hasPrefix("probe.core_proxy_") || $0.hasPrefix("probe.core_connection_")
@@ -465,6 +538,73 @@ public struct ProviderDataPlaneSnapshot: Codable, Equatable, Sendable {
               second.coreToPacketFlowPackets >= first.coreToPacketFlowPackets
         else { return (first, true) }
         return (second, false)
+    }
+}
+
+/// Debounces live DNS health using monotonic, privacy-safe provider counters.
+/// One transient lookup failure does not disconnect a session; repeated query
+/// windows with a current upstream error do. A successful answer immediately
+/// clears the pending failure streak.
+public struct ProviderDNSHealthMonitor: Sendable {
+    private let consecutiveFailureLimit: Int
+    private var previous: ProviderDataPlaneSnapshot?
+    private var consecutiveFailureWindows = 0
+
+    public init(consecutiveFailureLimit: Int = 2) {
+        self.consecutiveFailureLimit = max(1, consecutiveFailureLimit)
+    }
+
+    public mutating func observe(_ snapshot: ProviderDataPlaneSnapshot) -> String? {
+        defer { previous = snapshot }
+        guard let previous,
+              snapshot.sessionID == previous.sessionID,
+              snapshot.packetFlowToCoreDNSQueries >= previous.packetFlowToCoreDNSQueries,
+              snapshot.coreToPacketFlowDNSResponses
+                >= previous.coreToPacketFlowDNSResponses,
+              snapshot.coreToPacketFlowDNSSuccessResponses
+                >= previous.coreToPacketFlowDNSSuccessResponses,
+              snapshot.coreToPacketFlowDNSEmptyResponses
+                >= previous.coreToPacketFlowDNSEmptyResponses,
+              snapshot.coreToPacketFlowDNSNameErrorResponses
+                >= previous.coreToPacketFlowDNSNameErrorResponses,
+              snapshot.coreToPacketFlowDNSServerFailureResponses
+                >= previous.coreToPacketFlowDNSServerFailureResponses,
+              snapshot.coreToPacketFlowDNSOtherErrorResponses
+                >= previous.coreToPacketFlowDNSOtherErrorResponses,
+              snapshot.coreErrorLogEventsReceived >= previous.coreErrorLogEventsReceived
+        else {
+            consecutiveFailureWindows = 0
+            return nil
+        }
+
+        // NOERROR, an empty NOERROR answer, and NXDOMAIN all prove that an
+        // upstream resolver answered. They may be application-level misses,
+        // but they are not evidence that the VPN's DNS transport is unhealthy.
+        let healthyResponseAdvanced = snapshot.coreToPacketFlowDNSSuccessResponses
+                > previous.coreToPacketFlowDNSSuccessResponses
+            || snapshot.coreToPacketFlowDNSEmptyResponses
+                > previous.coreToPacketFlowDNSEmptyResponses
+            || snapshot.coreToPacketFlowDNSNameErrorResponses
+                > previous.coreToPacketFlowDNSNameErrorResponses
+        if healthyResponseAdvanced {
+            consecutiveFailureWindows = 0
+            return nil
+        }
+
+        let queryAdvanced = snapshot.packetFlowToCoreDNSQueries
+            > previous.packetFlowToCoreDNSQueries
+
+        guard queryAdvanced,
+              let code = snapshot.dnsUpstreamFailureDiagnosticCode
+        else { return nil }
+
+        consecutiveFailureWindows += 1
+        return consecutiveFailureWindows >= consecutiveFailureLimit ? code : nil
+    }
+
+    public mutating func reset() {
+        previous = nil
+        consecutiveFailureWindows = 0
     }
 }
 

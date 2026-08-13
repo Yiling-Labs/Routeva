@@ -101,6 +101,44 @@ final class ProviderConnectionCoordinatorTests: XCTestCase {
         XCTAssertEqual(startCount, 4)
     }
 
+    func testRecoveredSystemConnectionCanBeStopped() async {
+        let recorder = ProviderRecorder()
+        let coordinator = ProviderConnectionCoordinator()
+
+        await coordinator.reconcile(.connected(core: .singBox, since: nil))
+        await coordinator.stop(stopProvider: { core in await recorder.stopped(core) })
+
+        let events = await recorder.events
+        XCTAssertEqual(events, ["stop:sing-box"])
+        let state = await coordinator.state
+        XCTAssertEqual(state, .idle)
+    }
+
+    func testExternalDisconnectionAllowsAFormerlyConnectedCoordinatorToStartAgain() async throws {
+        let recorder = ProviderRecorder()
+        let coordinator = ProviderConnectionCoordinator()
+        let manifest = makeManifest(policy: .singBox)
+
+        _ = try await coordinator.start(
+            manifest: manifest,
+            health: availableHealth,
+            startProvider: { core, _ in await recorder.started(core) },
+            stopProvider: { core in await recorder.stopped(core) },
+            probe: { _ in }
+        )
+        await coordinator.reconcile(.disconnected)
+        _ = try await coordinator.start(
+            manifest: manifest,
+            health: availableHealth,
+            startProvider: { core, _ in await recorder.started(core) },
+            stopProvider: { core in await recorder.stopped(core) },
+            probe: { _ in }
+        )
+
+        let events = await recorder.events
+        XCTAssertEqual(events, ["start:sing-box", "start:sing-box"])
+    }
+
     private var availableHealth: [CoreIdentifier: CoreHealth] {
         [.singBox: CoreHealth(isAvailable: true)]
     }

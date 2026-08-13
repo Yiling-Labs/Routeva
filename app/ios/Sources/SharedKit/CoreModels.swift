@@ -4,6 +4,82 @@ public enum CoreIdentifier: String, Codable, CaseIterable, Sendable {
     case singBox = "sing-box"
 }
 
+/// System-owned tunnel state observed by the containing App. The Packet
+/// Tunnel extension can outlive the App process, so this snapshot—not a host
+/// lifecycle callback—is the source of truth after launch and foregrounding.
+public enum ProviderConnectionSnapshot: Equatable, Sendable {
+    case disconnected
+    case connecting(core: CoreIdentifier)
+    case connected(core: CoreIdentifier, since: Date?)
+    case reasserting(core: CoreIdentifier, since: Date?)
+    case disconnecting(core: CoreIdentifier)
+
+    public var core: CoreIdentifier? {
+        switch self {
+        case .disconnected:
+            nil
+        case let .connecting(core),
+             let .connected(core, _),
+             let .reasserting(core, _),
+             let .disconnecting(core):
+            core
+        }
+    }
+
+    public var connectedSince: Date? {
+        switch self {
+        case let .connected(_, since), let .reasserting(_, since):
+            since
+        default:
+            nil
+        }
+    }
+
+    public var presentsAsConnected: Bool {
+        switch self {
+        case .connected, .reasserting:
+            true
+        default:
+            false
+        }
+    }
+}
+
+/// Coalesces overlapping system-status refresh requests without discarding the
+/// result already in flight. A burst becomes at most the current pass plus one
+/// follow-up pass, so lifecycle events cannot starve UI reconciliation.
+public struct ProviderStatusRefreshGate: Equatable, Sendable {
+    private var isRefreshing = false
+    private var needsFollowUp = false
+
+    public init() {}
+
+    /// Returns `true` only to the caller that owns the refresh loop.
+    public mutating func requestRefresh() -> Bool {
+        guard !isRefreshing else {
+            needsFollowUp = true
+            return false
+        }
+        isRefreshing = true
+        return true
+    }
+
+    /// Returns `true` when the owner should immediately perform one more pass.
+    public mutating func finishPass() -> Bool {
+        guard needsFollowUp else {
+            isRefreshing = false
+            return false
+        }
+        needsFollowUp = false
+        return true
+    }
+
+    public mutating func cancel() {
+        isRefreshing = false
+        needsFollowUp = false
+    }
+}
+
 public enum CorePolicy: String, Codable, Sendable {
     case automatic
     case singBox = "sing-box"

@@ -136,9 +136,9 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertNil(servers.first?["detour"])
         XCTAssertNil(servers.first?["server"])
         XCTAssertEqual(servers.last?["tag"] as? String, "dns-remote")
-        XCTAssertEqual(servers.last?["type"] as? String, "local")
-        XCTAssertNil(servers.last?["server"])
-        XCTAssertNil(servers.last?["detour"])
+        XCTAssertEqual(servers.last?["type"] as? String, "https")
+        XCTAssertEqual(servers.last?["server"] as? String, "9.9.9.10")
+        XCTAssertEqual(servers.last?["detour"] as? String, "proxy")
 
         let outbounds = try XCTUnwrap(object["outbounds"] as? [[String: Any]])
         let coreProbe = try XCTUnwrap(outbounds.first(where: {
@@ -245,7 +245,7 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         }
     }
 
-    func testCompatibilityDNSUsesPhysicalNetworkResolverForReachability() throws {
+    func testCompatibilityDNSUsesEncryptedResolverThroughProxy() throws {
         let fixture = makeFixture(protocolKind: .trojan, transport: .tcp, security: .tls)
         let manifest = RuntimeManifest(
             corePolicy: .automatic,
@@ -260,9 +260,9 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         let singBox = try compiler.compile(
             manifest: manifest, node: fixture.node, credential: credential, for: .singBox
         )
-        XCTAssertTrue(singBox.json.contains("\"type\":\"local\""))
-        XCTAssertFalse(singBox.json.contains("9.9.9.10"))
-        XCTAssertFalse(singBox.json.contains("\"detour\":\"proxy\""))
+        XCTAssertTrue(singBox.json.contains("\"type\":\"https\""))
+        XCTAssertTrue(singBox.json.contains("9.9.9.10"))
+        XCTAssertTrue(singBox.json.contains("\"detour\":\"proxy\""))
     }
 
     func testPrivacyDNSUsesProxyDetourOutsideDirectMode() throws {
@@ -300,7 +300,7 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertFalse(direct.json.contains("\"detour\":\"proxy\""))
     }
 
-    func testAutomaticDNSUsesSystemTunnelDefaultInEveryRoutingMode() throws {
+    func testAutomaticDNSUsesProxyDetourOutsideDirectMode() throws {
         let fixture = makeFixture(protocolKind: .trojan, transport: .tcp, security: .tls)
         let credential = ProxyCredentialEnvelope(
             authentication: ["password": "synthetic-password"],
@@ -326,9 +326,9 @@ final class CoreConfigurationCompilerTests: XCTestCase {
             manifest: directManifest, node: fixture.node, credential: credential, for: .singBox
         )
 
-        XCTAssertTrue(global.json.contains("\"type\":\"local\""))
-        XCTAssertFalse(global.json.contains("9.9.9.10"))
-        XCTAssertFalse(global.json.contains("\"detour\":\"proxy\""))
+        XCTAssertTrue(global.json.contains("\"type\":\"https\""))
+        XCTAssertTrue(global.json.contains("9.9.9.10"))
+        XCTAssertTrue(global.json.contains("\"detour\":\"proxy\""))
         XCTAssertTrue(direct.json.contains("\"type\":\"local\""))
         XCTAssertFalse(direct.json.contains("9.9.9.10"))
         XCTAssertFalse(direct.json.contains("\"detour\":\"proxy\""))

@@ -45,4 +45,20 @@ final class ProviderStartupDiagnosticStoreTests: XCTestCase {
 
         XCTAssertNil(ProviderStartupDiagnosticStore(fileURL: fileURL).snapshot())
     }
+
+    func testOnlyRunningWithoutAnErrorConfirmsSuccessfulStartup() {
+        XCTAssertTrue(ProviderStartupDiagnosticSnapshot(
+            core: .singBox,
+            stage: .running
+        ).confirmsRunning)
+        XCTAssertFalse(ProviderStartupDiagnosticSnapshot(
+            core: .singBox,
+            stage: .running,
+            stableErrorCode: "provider.core_start_failed"
+        ).confirmsRunning)
+        XCTAssertFalse(ProviderStartupDiagnosticSnapshot(
+            core: .singBox,
+            stage: .startingCore
+        ).confirmsRunning)
+    }
 }

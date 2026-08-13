@@ -546,23 +546,20 @@ public struct CoreConfigurationCompiler: Sendable {
         routingMode: RuntimeManifest.RoutingMode
     ) -> [String: Any] {
         var server: [String: Any]
-        switch preset {
-        case .automatic, .compatibility:
-            // The pinned Apple Libbox build includes `with_dhcp`. Its local
-            // transport first discovers the active physical interface's DHCP
-            // resolvers inside Network Extension, matching the visible
-            // System / tunnel default contract without fixing Routeva to a
-            // public DNS vendor. `auto_detect_interface` and Routeva's
-            // platform monitor provide the interface required by that path.
+        if routingMode == .direct, preset != .privacy {
+            // Direct mode is an explicit request to use the physical network.
+            // Keep its Automatic / Compatibility DNS semantics local instead
+            // of silently introducing a remote resolver.
             server = [
                 "type": "local", "tag": "dns-remote",
             ]
-        case .privacy:
-            // Privacy is a separate policy: encrypt DNS and, whenever the
-            // session itself is proxied, carry it through the current node.
-            // An IP literal avoids a recursive bootstrap lookup. Direct mode
-            // deliberately omits detour so its encrypted resolver connection
-            // remains a direct connection.
+        } else {
+            // A proxied session must not resolve user destinations through the
+            // physical network: doing so leaks queries and can return poisoned
+            // or unreachable answers before the proxy is used. The IP literal
+            // removes recursive bootstrap, while TLS SNI retains certificate
+            // verification. sing-box 1.12+ DNS dialers are direct by default,
+            // so every non-Direct mode must set the proxy detour explicitly.
             server = [
                 "type": "https", "tag": "dns-remote", "server": "9.9.9.10",
                 "server_port": 443, "path": "/dns-query",

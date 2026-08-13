@@ -44,6 +44,23 @@ public actor ProviderConnectionCoordinator {
         self.now = now
     }
 
+    /// Aligns the in-process coordinator with NetworkExtension's system-owned
+    /// state. The provider can outlive the containing App, so coordinator state
+    /// must never be treated as durable across App or provider lifetimes.
+    public func reconcile(_ snapshot: ProviderConnectionSnapshot) {
+        switch snapshot {
+        case .disconnected:
+            state = .idle
+        case let .connecting(core):
+            state = .starting(core)
+        case let .connected(core, _), let .reasserting(core, _):
+            attemptDates.removeAll()
+            state = .connected(core, sessionID: UUID())
+        case let .disconnecting(core):
+            state = .stopping(core)
+        }
+    }
+
     public func start(
         manifest: RuntimeManifest,
         health: [CoreIdentifier: CoreHealth],

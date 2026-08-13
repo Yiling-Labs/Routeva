@@ -105,6 +105,56 @@ actor VPNProviderController {
         managers.forEach { $0.connection.stopVPNTunnel() }
     }
 
+    /// Reloads system preferences because the Packet Tunnel may have survived
+    /// the containing App process. An in-memory manager from a previous App
+    /// lifetime is never required for status recovery.
+    func connectionSnapshot() async throws -> ProviderConnectionSnapshot {
+        let managers = try await loadManagersFromPreferences()
+        let candidates = CoreIdentifier.allCases.compactMap { core -> (
+            core: CoreIdentifier,
+            manager: NETunnelProviderManager,
+            status: NEVPNStatus
+        )? in
+            guard let manager = managers[core] else { return nil }
+            // Read each connection status exactly once. Repeated status reads
+            // perform synchronous NetworkExtension IPC on a real device.
+            return (core, manager, manager.connection.status)
+        }
+
+        for desiredStatus in [
+            NEVPNStatus.connected,
+            .reasserting,
+            .connecting,
+            .disconnecting,
+        ] {
+            guard let candidate = candidates.first(where: {
+                $0.status == desiredStatus
+            }) else { continue }
+            activeManager = (candidate.core, candidate.manager)
+            switch desiredStatus {
+            case .connected:
+                return .connected(
+                    core: candidate.core,
+                    since: candidate.manager.connection.connectedDate
+                )
+            case .reasserting:
+                return .reasserting(
+                    core: candidate.core,
+                    since: candidate.manager.connection.connectedDate
+                )
+            case .connecting:
+                return .connecting(core: candidate.core)
+            case .disconnecting:
+                return .disconnecting(core: candidate.core)
+            default:
+                break
+            }
+        }
+
+        activeManager = nil
+        return .disconnected
+    }
+
     func start(core: CoreIdentifier, manifestID: UUID) async throws {
         try await removeLegacyRoutevaManagers()
         let existingManagers = try await loadManagersFromPreferences()
@@ -133,6 +183,7 @@ actor VPNProviderController {
         }
 
         startupDiagnostics.clear()
+        let startupRequestedAt = Date()
         do {
             try manager.connection.startVPNTunnel(options: [
                 ProviderStartOptionKey.manifestID: manifestID.uuidString as NSString,
@@ -166,7 +217,12 @@ actor VPNProviderController {
                 )
             }
         }
-        try await waitForStatus(manager, desired: .connected, timeout: .seconds(20))
+        try await waitForStatus(
+            manager,
+            desired: .connected,
+            timeout: .seconds(20),
+            startupRequestedAt: startupRequestedAt
+        )
         activeManager = (core, manager)
     }
 
@@ -436,7 +492,7 @@ actor VPNProviderController {
                 tunnelProtocol.excludeDeviceCommunication = false
             }
             manager.protocolConfiguration = tunnelProtocol
-            manager.localizedDescription = "Routeva (\(core.rawValue))"
+            manager.localizedDescription = "Routeva"
             manager.isEnabled = shouldEnable
             try await manager.saveToPreferences()
         }
@@ -476,7 +532,7 @@ actor VPNProviderController {
               tunnelProtocol.includeAllNetworks == true,
               tunnelProtocol.excludeLocalNetworks == false,
               tunnelProtocol.enforceRoutes == false,
-              manager.localizedDescription == "Routeva (\(core.rawValue))",
+              manager.localizedDescription == "Routeva",
               manager.isEnabled == shouldEnable
         else { return false }
         if #available(iOS 16.4, *),
@@ -596,39 +652,79 @@ actor VPNProviderController {
     private func waitForStatus(
         _ manager: NETunnelProviderManager,
         desired: NEVPNStatus,
-        timeout: Duration
+        timeout: Duration,
+        startupRequestedAt: Date? = nil
     ) async throws {
         let deadline = ContinuousClock.now + timeout
-        let disconnectedGraceDeadline = ContinuousClock.now + .seconds(2)
-        var observedStartupTransition = false
-        while manager.connection.status != desired {
+        while true {
             try Task.checkCancellation()
+            let status = manager.connection.status
+            if status == desired { return }
             let core = CoreIdentifier.allCases.first(where: {
                 ProviderBundleIdentifier.value(for: $0)
                     == (manager.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier
             }) ?? .singBox
-            switch manager.connection.status {
-            case .connecting, .reasserting, .disconnecting:
-                observedStartupTransition = true
+            switch status {
             case .invalid where desired == .connected:
                 throw VPNProviderControllerError.providerConfigurationMissing(core)
-            case .disconnected where desired == .connected
-                && (observedStartupTransition || ContinuousClock.now >= disconnectedGraceDeadline):
-                throw providerStartFailure(for: core)
+            case .disconnected where desired == .connected:
+                if let diagnostic = freshStartupDiagnostic(
+                    for: core,
+                    requestedAt: startupRequestedAt
+                ) {
+                    // The provider writes this immediately before completing
+                    // `startTunnel`. NEVPNConnection can still briefly expose
+                    // a stale `.disconnected` value at that boundary.
+                    if diagnostic.confirmsRunning { return }
+                    if diagnostic.stableErrorCode != nil {
+                        throw providerStartFailure(
+                            for: core,
+                            requestedAt: startupRequestedAt
+                        )
+                    }
+                }
             default:
                 break
             }
-            guard ContinuousClock.now < deadline else { throw VPNProviderControllerError.switchTimedOut }
+            guard ContinuousClock.now < deadline else {
+                if desired == .connected, status == .disconnected {
+                    throw providerStartFailure(
+                        for: core,
+                        requestedAt: startupRequestedAt
+                    )
+                }
+                throw VPNProviderControllerError.switchTimedOut
+            }
             try await Task.sleep(for: .milliseconds(100))
         }
     }
 
-    private func providerStartFailure(for core: CoreIdentifier) -> VPNProviderControllerError {
-        guard let snapshot = startupDiagnostics.snapshot(), snapshot.core == core else {
+    private func freshStartupDiagnostic(
+        for core: CoreIdentifier,
+        requestedAt: Date?
+    ) -> ProviderStartupDiagnosticSnapshot? {
+        guard let snapshot = startupDiagnostics.snapshot(),
+              snapshot.core == core,
+              requestedAt.map({ snapshot.updatedAt >= $0 }) ?? true
+        else { return nil }
+        return snapshot
+    }
+
+    private func providerStartFailure(
+        for core: CoreIdentifier,
+        requestedAt: Date? = nil
+    ) -> VPNProviderControllerError {
+        guard let snapshot = freshStartupDiagnostic(
+            for: core,
+            requestedAt: requestedAt
+        ) else {
             return .providerStartFailed(core, diagnosticCode: nil)
         }
-        let code = snapshot.stableErrorCode
-            ?? "provider.stage.\(snapshot.stage.rawValue)"
+        // Defensive fallback: `running` is success evidence, never a failure
+        // code, even if a caller reaches this path after a later session race.
+        let code = snapshot.stableErrorCode ?? (snapshot.confirmsRunning
+            ? nil
+            : "provider.stage.\(snapshot.stage.rawValue)")
         return .providerStartFailed(core, diagnosticCode: code)
     }
 }

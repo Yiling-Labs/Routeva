@@ -2,6 +2,7 @@ import CoreBridge
 import DataKit
 import Foundation
 import Network
+@preconcurrency import NetworkExtension
 import SharedKit
 import SwiftUI
 
@@ -73,6 +74,7 @@ final class RoutevaAppModel: ObservableObject {
     private static let latencyRoundCompletedAtKey = "routeva.latency.round-completed-at"
     /// Weak cache TTL for silent full-table latency (implementation constant S).
     private static let latencyCacheTTL: TimeInterval = 6 * 60 * 60
+    private static let orphanedProviderConnectingTimeout: Duration = .seconds(20)
     #if DEBUG
     private static let debugStartupDurationKey = "routeva.debug.last-startup-duration"
     private static let debugProviderStartupDurationKey =
@@ -107,12 +109,20 @@ final class RoutevaAppModel: ObservableObject {
     /// Privacy-safe probe counter vector (counts only) from the latest failed
     /// connection attempt. Surfaced only in the DEBUG failure notice.
     private var probeCounterSummary: String?
+    private var dnsHealthMonitor = ProviderDNSHealthMonitor()
     private var isHomeVisible = false
     private var isSceneActive = true
     private let deviceID: String
     private var overrideSyncService: CloudOverrideSyncService?
     private var silentLatencyTask: Task<Void, Never>?
     private var latencyRoundGeneration = 0
+    private var providerStatusObservationTask: Task<Void, Never>?
+    private var providerConnectingRecoveryTask: Task<Void, Never>?
+    private var providerConnectingRecoveryID: UUID?
+    private var providerStatusRefreshGate = ProviderStatusRefreshGate()
+    private var providerStatusNotificationRevision = 0
+    private var lastObservedProviderStatus: NEVPNStatus?
+    private var hasResolvedProviderStatus = false
     /// Once the user picks a Cover Flow card or Location Preferred, silent
     /// latency pre-stop / reload must not steal that focus.
     private var nodeSelectionOwnedByUser = false
@@ -191,14 +201,26 @@ final class RoutevaAppModel: ObservableObject {
             importService = nil
             secrets = nil
         }
+        observeProviderStatusChanges()
         Task { [weak self] in
-            await self?.reloadSubscriptions()
-            await self?.refreshActiveSubscriptionOnColdLaunchIfNeeded()
-            await self?.reloadOverrides()
-            await self?.reloadLatestActivity()
-            await self?.syncOverrides()
-            await self?.scheduleSilentLatencyTestIfNeeded()
+            guard let self else { return }
+            // Resolve the system tunnel before loading the node catalog. A
+            // surviving tunnel must suppress idle-only latency work from the
+            // first cold-launch database refresh onward.
+            await reconcileProviderConnectionStatus()
+            await reloadSubscriptions()
+            await refreshActiveSubscriptionOnColdLaunchIfNeeded()
+            await reconcileSelectedNodeIfNeeded()
+            await reloadOverrides()
+            await reloadLatestActivity()
+            await syncOverrides()
+            scheduleSilentLatencyTestIfNeeded()
         }
+    }
+
+    deinit {
+        providerStatusObservationTask?.cancel()
+        providerConnectingRecoveryTask?.cancel()
     }
 
     var activeSubscription: SubscriptionSummary? {
@@ -297,6 +319,7 @@ final class RoutevaAppModel: ObservableObject {
             return
         }
         guard connectionTask == nil, disconnectionTask == nil else { return }
+        cancelProviderConnectingRecovery()
         connectionFailureMessage = nil
         nodeFailoverToast = nil
         cancelNodeSelection()
@@ -312,7 +335,7 @@ final class RoutevaAppModel: ObservableObject {
         let startupStartedAt = Date()
         connectionTask = Task { [weak self] in
             guard let self else { return }
-            defer { connectionTask = nil }
+            defer { finishConnectionTransaction() }
             let trace = ConnectionDiagnosticTrace()
             do {
                 try await establishConnection(trace: trace)
@@ -333,8 +356,10 @@ final class RoutevaAppModel: ObservableObject {
 
     func disconnect() {
         guard case .connected = connectionState, disconnectionTask == nil else { return }
+        let core = connectedCore ?? .singBox
         connectionTask?.cancel()
         connectionTask = nil
+        cancelProviderConnectingRecovery()
         cancelNodeSelection()
         cancelPostConnectProbe()
         stopTrafficPolling()
@@ -351,11 +376,13 @@ final class RoutevaAppModel: ObservableObject {
             guard let self else { return }
             defer {
                 disconnectionTask = nil
+                Task { [weak self] in
+                    await self?.reconcileProviderConnectionStatus()
+                }
                 scheduleSilentLatencyTestIfNeeded()
             }
-            await connectionCoordinator.stop(
-                stopProvider: { core in await controller.requestStop(core: core) }
-            )
+            await controller.requestStop(core: core)
+            await connectionCoordinator.reconcile(.disconnected)
             #if DEBUG
             print(String(
                 format: "Routeva VPN stop command submitted in %.3fs",
@@ -378,11 +405,295 @@ final class RoutevaAppModel: ObservableObject {
         refreshTrafficPolling()
         if active {
             Task {
+                await reconcileProviderConnectionStatus()
                 await syncOverrides()
                 await reconcileSelectedNodeIfNeeded()
                 scheduleSilentLatencyTestIfNeeded()
             }
         }
+    }
+
+    private func observeProviderStatusChanges() {
+        providerStatusObservationTask = Task { [weak self] in
+            for await notification in NotificationCenter.default.notifications(
+                named: .NEVPNStatusDidChange
+            ) {
+                guard !Task.isCancelled, let self else { return }
+                guard let connection = notification.object as? NEVPNConnection else { continue }
+                // The notification already carries the live connection object.
+                // Do not reload manager preferences here: doing so creates a
+                // fresh extended-status request and another notification.
+                let status = connection.status
+                guard status != lastObservedProviderStatus,
+                      let snapshot = Self.providerConnectionSnapshot(for: status)
+                else { continue }
+                lastObservedProviderStatus = status
+                await applyProviderStatusNotification(snapshot)
+            }
+        }
+    }
+
+    private static func providerConnectionSnapshot(
+        for status: NEVPNStatus
+    ) -> ProviderConnectionSnapshot? {
+        switch status {
+        case .invalid, .disconnected:
+            .disconnected
+        case .connecting:
+            .connecting(core: .singBox)
+        case .connected:
+            .connected(core: .singBox, since: nil)
+        case .reasserting:
+            .reasserting(core: .singBox, since: nil)
+        case .disconnecting:
+            .disconnecting(core: .singBox)
+        @unknown default:
+            nil
+        }
+    }
+
+    private func applyProviderStatusNotification(
+        _ snapshot: ProviderConnectionSnapshot
+    ) async {
+        guard connectionTask == nil,
+              disconnectionTask == nil,
+              repairTask == nil
+        else { return }
+
+        providerStatusNotificationRevision += 1
+        await connectionCoordinator.reconcile(snapshot)
+        guard connectionTask == nil,
+              disconnectionTask == nil,
+              repairTask == nil
+        else { return }
+
+        hasResolvedProviderStatus = true
+        applyProviderConnectionSnapshot(snapshot)
+        await reconcileSelectedNodeIfNeeded()
+    }
+
+    private func finishConnectionTransaction() {
+        connectionTask = nil
+        Task { [weak self] in
+            await self?.reconcileProviderConnectionStatus()
+        }
+    }
+
+    /// Reconciles only when no App-owned connection transaction is active.
+    /// This prevents transient `.disconnected` notifications from the
+    /// stop-before-reconnect path from overwriting the in-flight UI state.
+    private func reconcileProviderConnectionStatus() async {
+        guard connectionTask == nil,
+              disconnectionTask == nil,
+              repairTask == nil
+        else { return }
+        guard providerStatusRefreshGate.requestRefresh() else { return }
+
+        while true {
+            guard connectionTask == nil,
+                  disconnectionTask == nil,
+                  repairTask == nil
+            else {
+                providerStatusRefreshGate.cancel()
+                return
+            }
+
+            let snapshot: ProviderConnectionSnapshot
+            do {
+                snapshot = try await providerController.connectionSnapshot()
+            } catch {
+                // A preferences read failure is unknown, not Disconnected. Keep
+                // the last honest UI state and retry on the next lifecycle event.
+                #if DEBUG
+                print("Routeva VPN status reconciliation: provider.preferences_unavailable")
+                #endif
+                guard providerStatusRefreshGate.finishPass() else { return }
+                continue
+            }
+            guard connectionTask == nil,
+                  disconnectionTask == nil,
+                  repairTask == nil
+            else {
+                providerStatusRefreshGate.cancel()
+                return
+            }
+
+            // Capture this after the system read completes. A notification
+            // arriving later is newer and must win while the coordinator call
+            // below is suspended.
+            let notificationRevisionAtSnapshot = providerStatusNotificationRevision
+            await connectionCoordinator.reconcile(snapshot)
+            guard connectionTask == nil,
+                  disconnectionTask == nil,
+                  repairTask == nil
+            else {
+                providerStatusRefreshGate.cancel()
+                return
+            }
+            if notificationRevisionAtSnapshot == providerStatusNotificationRevision {
+                hasResolvedProviderStatus = true
+                applyProviderConnectionSnapshot(snapshot)
+            }
+
+            guard providerStatusRefreshGate.finishPass() else { return }
+        }
+    }
+
+    private func applyProviderConnectionSnapshot(_ snapshot: ProviderConnectionSnapshot) {
+        if snapshot.presentsAsConnected, let core = snapshot.core {
+            cancelProviderConnectingRecovery()
+            let shouldProbeRecoveredSession: Bool
+            let existingStart: Date?
+            if connectedCore == core,
+               case let .connected(sessionStartedAt) = connectionState {
+                existingStart = sessionStartedAt
+                shouldProbeRecoveredSession = false
+            } else {
+                existingStart = nil
+                shouldProbeRecoveredSession = true
+                cancelNodeSelection()
+                cancelPostConnectProbe()
+                clearConnectedNodeState()
+                sessionDownloadedBytes = 0
+                sessionUploadedBytes = 0
+            }
+            pauseSilentLatencyTest()
+            connectedCore = core
+            currentDiagnosticResult = nil
+            connectionFailureMessage = nil
+            connectionState = .connected(
+                sessionStartedAt: snapshot.connectedSince ?? existingStart ?? .now
+            )
+            refreshTrafficPolling()
+            if shouldProbeRecoveredSession {
+                startPostConnectProbe(core: core, excludedNodeAddresses: nil)
+            }
+            return
+        }
+
+        switch snapshot {
+        case let .connecting(core):
+            pauseSilentLatencyTest()
+            cancelNodeSelection()
+            cancelPostConnectProbe()
+            stopTrafficPolling()
+            clearConnectedNodeState()
+            connectedCore = core
+            connectionState = .connecting
+            scheduleProviderConnectingRecovery(for: core)
+
+        case .disconnecting:
+            cancelProviderConnectingRecovery()
+            clearProviderConnectionPresentationIfNeeded()
+
+        case .disconnected:
+            cancelProviderConnectingRecovery()
+            clearProviderConnectionPresentationIfNeeded()
+            scheduleSilentLatencyTestIfNeeded()
+
+        case .connected, .reasserting:
+            break
+        }
+    }
+
+    private func clearProviderConnectionPresentationIfNeeded() {
+        let hadManagedSession = connectedCore != nil || {
+            switch connectionState {
+            case .connecting, .connected:
+                true
+            case .idle, .failed:
+                false
+            }
+        }()
+        guard hadManagedSession else { return }
+        cancelNodeSelection()
+        cancelPostConnectProbe()
+        stopTrafficPolling()
+        connectedCore = nil
+        clearConnectedNodeState()
+        connectionState = .idle
+        sessionDownloadedBytes = 0
+        sessionUploadedBytes = 0
+    }
+
+    /// A `.connecting` snapshot without an App-owned transaction can be left
+    /// behind by a terminated host process. Recheck it once at the same bound
+    /// used by normal startup, then stop only Routeva's still-stuck provider.
+    private func scheduleProviderConnectingRecovery(for core: CoreIdentifier) {
+        guard providerConnectingRecoveryTask == nil else { return }
+        let recoveryID = UUID()
+        providerConnectingRecoveryID = recoveryID
+        let controller = providerController
+        providerConnectingRecoveryTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                if providerConnectingRecoveryID == recoveryID {
+                    providerConnectingRecoveryTask = nil
+                    providerConnectingRecoveryID = nil
+                }
+            }
+            do {
+                try await Task.sleep(for: Self.orphanedProviderConnectingTimeout)
+            } catch {
+                return
+            }
+            guard providerConnectingRecoveryID == recoveryID,
+                  connectionTask == nil,
+                  disconnectionTask == nil,
+                  repairTask == nil,
+                  connectedCore == core,
+                  case .connecting = connectionState
+            else { return }
+
+            let snapshot: ProviderConnectionSnapshot
+            do {
+                snapshot = try await controller.connectionSnapshot()
+            } catch {
+                return
+            }
+            guard !Task.isCancelled,
+                  providerConnectingRecoveryID == recoveryID,
+                  connectionTask == nil,
+                  disconnectionTask == nil,
+                  repairTask == nil
+            else { return }
+
+            guard snapshot == .connecting(core: core) else {
+                await connectionCoordinator.reconcile(snapshot)
+                guard !Task.isCancelled,
+                      providerConnectingRecoveryID == recoveryID,
+                      connectionTask == nil,
+                      disconnectionTask == nil,
+                      repairTask == nil
+                else { return }
+                hasResolvedProviderStatus = true
+                applyProviderConnectionSnapshot(snapshot)
+                return
+            }
+
+            await controller.requestStop(core: core)
+            guard !Task.isCancelled,
+                  providerConnectingRecoveryID == recoveryID,
+                  connectionTask == nil,
+                  disconnectionTask == nil,
+                  repairTask == nil
+            else { return }
+            await connectionCoordinator.reconcile(.disconnected)
+            hasResolvedProviderStatus = true
+            clearProviderConnectionPresentationIfNeeded()
+            #if DEBUG
+            connectionFailureMessage =
+                "VPN connection timed out. Try again. [provider.orphaned_connecting_timeout]"
+            #else
+            connectionFailureMessage = "VPN connection timed out. Try again."
+            #endif
+        }
+    }
+
+    private func cancelProviderConnectingRecovery() {
+        providerConnectingRecoveryTask?.cancel()
+        providerConnectingRecoveryTask = nil
+        providerConnectingRecoveryID = nil
     }
 
     func setRoutingMode(_ mode: RoutingMode) {
@@ -447,6 +758,8 @@ final class RoutevaAppModel: ObservableObject {
     func applyOverrideChangesAndReconnect() {
         overrideReconnectPrompt = false
         guard connectionTask == nil, disconnectionTask == nil else { return }
+        let coreToStop = connectedCore
+        cancelProviderConnectingRecovery()
         cancelNodeSelection()
         cancelPostConnectProbe()
         stopTrafficPolling()
@@ -455,11 +768,13 @@ final class RoutevaAppModel: ObservableObject {
         let startupStartedAt = Date()
         connectionTask = Task { [weak self] in
             guard let self else { return }
-            defer { connectionTask = nil }
-            await connectionCoordinator.stop(
-                stopProvider: { core in await controller.stop(core: core) }
-            )
-            try? await controller.disconnectAll()
+            defer { finishConnectionTransaction() }
+            if let coreToStop {
+                await controller.stop(core: coreToStop)
+            } else {
+                try? await controller.disconnectAll()
+            }
+            await connectionCoordinator.reconcile(.disconnected)
             connectedCore = nil
             clearConnectedNodeState()
             let trace = ConnectionDiagnosticTrace()
@@ -493,6 +808,9 @@ final class RoutevaAppModel: ObservableObject {
             defer {
                 repairTask = nil
                 repairState = .idle
+                Task { [weak self] in
+                    await self?.reconcileProviderConnectionStatus()
+                }
             }
             do {
                 _ = try await repairCoordinator.execute(
@@ -1070,6 +1388,7 @@ final class RoutevaAppModel: ObservableObject {
         runtimeCatalogNodeIDs.removeAll(keepingCapacity: false)
         connectedTunnelProbeAddressSets = []
         connectedDirectRouteAddresses = []
+        dnsHealthMonitor.reset()
     }
 
     /// User-visible Location *Test* — same pipeline as silent latency.
@@ -1079,6 +1398,9 @@ final class RoutevaAppModel: ObservableObject {
 
     /// Schedule a silent full-table TCP latency round when idle and cache is cold.
     func scheduleSilentLatencyTestIfNeeded() {
+        // Until NetworkExtension preferences have been read, `.idle` is only
+        // a launch placeholder and must not start work beside a surviving VPN.
+        guard hasResolvedProviderStatus else { return }
         guard isIdleForLatencyWork else { return }
         guard activeSubscription != nil, !availableNodes.isEmpty else { return }
         guard !isTestingNodes, silentLatencyTask == nil else { return }
@@ -1425,6 +1747,9 @@ final class RoutevaAppModel: ObservableObject {
 
     private func establishConnection(trace: ConnectionDiagnosticTrace) async throws {
         probeCounterSummary = nil
+        // NetworkExtension is authoritative. A coordinator retained from an
+        // earlier externally-ended session must not reject this fresh request.
+        await connectionCoordinator.reconcile(.disconnected)
         let candidates = NodeFailoverPlanner().candidates(
             routingMode: routingMode.runtimeValue,
             isPreferredPinned: activeSubscription?.preferredNodeID != nil,
@@ -1452,6 +1777,8 @@ final class RoutevaAppModel: ObservableObject {
                 return
             } catch is CancellationError {
                 throw CancellationError()
+            } catch let error as NonFailoverConnectionError {
+                throw error
             } catch {
                 lastError = error
             }
@@ -1518,13 +1845,15 @@ final class RoutevaAppModel: ObservableObject {
                     throw error
                 }
             },
-                stopProvider: { core in await controller.stop(core: core) },
+                stopProvider: { core in await controller.requestStop(core: core) },
                 probe: { _ in
                     // Tunnel readiness only. Through-proxy health is verified
                     // immediately after Connected via startPostConnectProbe.
                     await trace.record(.init(layer: .probe, status: .passed))
                 }
             )
+        } catch is CancellationError {
+            throw CancellationError()
         } catch let error as ProviderConnectionError {
             // These failures can happen before a provider closure runs. Record
             // an explicit layer so the UI never degrades to diagnostic.unknown.
@@ -1544,7 +1873,12 @@ final class RoutevaAppModel: ObservableObject {
             case .allCandidatesFailed:
                 break // Provider/probe closures have already written the cause.
             }
-            throw error
+            throw NonFailoverConnectionError.providerUnavailable
+        } catch {
+            // Changing nodes cannot repair a provider configuration, system
+            // permission, preference, or startup-state failure. Surface it
+            // immediately instead of repeating the same 20-second startup.
+            throw NonFailoverConnectionError.providerUnavailable
         }
         try Task.checkCancellation()
         #if DEBUG
@@ -1560,6 +1894,7 @@ final class RoutevaAppModel: ObservableObject {
         sessionDownloadedBytes = 0
         sessionUploadedBytes = 0
         currentDiagnosticResult = nil
+        hasResolvedProviderStatus = true
         connectionState = .connected(sessionStartedAt: .now)
         refreshTrafficPolling()
         startPostConnectProbe(
@@ -1570,7 +1905,7 @@ final class RoutevaAppModel: ObservableObject {
 
     private func startPostConnectProbe(
         core: CoreIdentifier,
-        excludedNodeAddresses: [String]
+        excludedNodeAddresses suppliedExcludedNodeAddresses: [String]?
     ) {
         cancelPostConnectProbe()
         let taskID = UUID()
@@ -1586,11 +1921,24 @@ final class RoutevaAppModel: ObservableObject {
                 }
             }
             do {
+                var excludedNodeAddresses = suppliedExcludedNodeAddresses
+                if excludedNodeAddresses == nil,
+                   let manifest = await currentRuntimeManifest() {
+                    guard !Task.isCancelled,
+                          postConnectProbeTaskID == taskID,
+                          connectedCore == core else { return }
+                    applyReloadedManifestState(manifest)
+                    excludedNodeAddresses = manifest.directRouteAddresses
+                }
+                let resolvedExcludedNodeAddresses = excludedNodeAddresses ?? []
                 // Keep the health request away from the traffic sampler's
                 // immediate warm-up pair and from the provider's 200ms IPC
                 // pacing window.
                 try await Task.sleep(for: .milliseconds(500))
                 guard connectedCore == core else { return }
+                let baseline = core == .singBox
+                    ? try? await controller.queryDataPlane(core: core)
+                    : nil
                 let tunnelProbeAddressSets: [ProviderTunnelProbeAddressSet]
                 if core == .singBox {
                     let resolvedAddressSets = await DomainRouteResolver()
@@ -1602,19 +1950,42 @@ final class RoutevaAppModel: ObservableObject {
                           connectedCore == core else { return }
                     connectedTunnelProbeAddressSets = resolvedAddressSets
                     tunnelProbeAddressSets = filteredTunnelProbeAddressSets(
-                        excluding: excludedNodeAddresses
+                        excluding: resolvedExcludedNodeAddresses
                     )
                     if #available(iOS 18.0, *), tunnelProbeAddressSets.isEmpty {
-                        // Probe DNS is post-connect telemetry. Its absence must
-                        // neither delay startup nor create a false health warning.
+                        // DNS-SD can return no usable IPv4 callback while an
+                        // existing tunnel remains healthy (for example after
+                        // foreground recovery or a cache-only answer). Treat the
+                        // empty probe result as inconclusive unless this exact
+                        // counter window proves an upstream DNS failure.
+                        try? await Task.sleep(for: .milliseconds(250))
+                        guard !Task.isCancelled,
+                              postConnectProbeTaskID == taskID,
+                              connectedCore == core else { return }
+                        let dataPlane = try? await controller.queryDataPlane(core: core)
+                        probeCounterSummary = (dataPlane?.probeCounterSummary ?? "snapshot=none")
+                            + " " + SystemProxyDiagnostics.summary
+                        if let errorCode = dataPlane?
+                            .dnsResolutionFailureDiagnosticCode(since: baseline) {
+                            await tearDownUnhealthySession(
+                                core: core,
+                                postConnectTaskID: taskID,
+                                errorCode: errorCode
+                            )
+                        } else {
+                            #if DEBUG
+                            print(
+                                "Routeva VPN DNS preflight inconclusive; "
+                                    + "keeping session under live monitoring "
+                                    + "[\(probeCounterSummary ?? "snapshot=none")]"
+                            )
+                            #endif
+                        }
                         return
                     }
                 } else {
                     tunnelProbeAddressSets = []
                 }
-                let baseline = core == .singBox
-                    ? try? await controller.queryDataPlane(core: core)
-                    : nil
                 let probeStartedAt = Date()
                 do {
                     if core == .singBox {
@@ -1623,7 +1994,9 @@ final class RoutevaAppModel: ObservableObject {
                             tunnelProbeAddressSets: tunnelProbeAddressSets
                         )
                     } else {
-                        try await probe.run(excludedRouteAddresses: excludedNodeAddresses)
+                        try await probe.run(
+                            excludedRouteAddresses: resolvedExcludedNodeAddresses
+                        )
                     }
                     guard !Task.isCancelled,
                           postConnectProbeTaskID == taskID,
@@ -1654,16 +2027,20 @@ final class RoutevaAppModel: ObservableObject {
                     let fallback = VPNProviderController.stableCoreProbeDiagnosticCode(for: error)
                     let diagnosticSummary = (dataPlane?.probeCounterSummary ?? "snapshot=none")
                         + " " + SystemProxyDiagnostics.summary
-                    let trafficProvesTunnel = !countersReset
+                    let dnsFailureCode = dataPlane?
+                        .dnsUpstreamFailureDiagnosticCode(since: baseline)
+                    let trafficProvesTunnel = dnsFailureCode == nil
+                        && !countersReset
                         && baseline.map { baseline in
                             dataPlane?.provesBidirectionalIPv4TunnelProgress(since: baseline)
                                 == true
                         } == true
-                    let errorCode = trafficProvesTunnel
+                    let nonDNSFailureCode = trafficProvesTunnel
                         ? "probe.post_connect_endpoint_unavailable"
                         : (countersReset
                             ? "probe.bridge_counters_reset"
                             : dataPlaneProbeDiagnosticCode(dataPlane, fallback: fallback))
+                    let errorCode = dnsFailureCode ?? nonDNSFailureCode
                     probeCounterSummary = diagnosticSummary
                     #if DEBUG
                     print(
@@ -1671,14 +2048,14 @@ final class RoutevaAppModel: ObservableObject {
                             + "[\(diagnosticSummary)]"
                     )
                     #endif
-                    // Public CDN probe can fail while the tunnel still carries
-                    // real traffic — keep the session in that case. When the
-                    // data-plane also shows no progress, treat it as a dead
-                    // node: tear down and ask the user to switch.
+                    // Public CDN probe failure may be endpoint-specific only
+                    // when DNS is healthy and the data plane proves full
+                    // bidirectional progress. Upstream DNS failure is never
+                    // masked by unrelated packet activity.
                     if !trafficProvesTunnel {
-                        await tearDownDeadNodeSession(
+                        await tearDownUnhealthySession(
                             core: core,
-                            taskID: taskID,
+                            postConnectTaskID: taskID,
                             errorCode: errorCode
                         )
                     }
@@ -1691,31 +2068,50 @@ final class RoutevaAppModel: ObservableObject {
         }
     }
 
-    /// Stop a session that came up but failed through-proxy health without
-    /// data-plane progress — the "fake connected" case.
-    private func tearDownDeadNodeSession(
+    private func currentRuntimeManifest() async -> RuntimeManifest? {
+        guard let database,
+              let record = try? await database.currentRuntimeManifest()
+        else { return nil }
+        return try? JSONDecoder().decode(RuntimeManifest.self, from: record.manifestData)
+    }
+
+    /// Stop a session whose system tunnel is running but whose verified
+    /// Internet path is not healthy. A post-connect task detaches itself before
+    /// teardown; a live monitor cancels any independent probe still in flight.
+    private func tearDownUnhealthySession(
         core: CoreIdentifier,
-        taskID: UUID,
+        postConnectTaskID taskID: UUID? = nil,
         errorCode: String
     ) async {
-        guard postConnectProbeTaskID == taskID, connectedCore == core else { return }
+        guard connectedCore == core else { return }
+        if let taskID {
+            guard postConnectProbeTaskID == taskID else { return }
+        }
         #if DEBUG
-        print("Routeva VPN dead-node teardown: \(errorCode)")
+        print("Routeva VPN unhealthy-session teardown: \(errorCode)")
         #endif
-        // Detach this task's IDs without cancelling ourselves mid-teardown.
-        postConnectProbeTask = nil
-        postConnectProbeTaskID = nil
+        if taskID != nil {
+            // Detach this task's IDs without cancelling ourselves mid-teardown.
+            postConnectProbeTask = nil
+            postConnectProbeTaskID = nil
+        } else {
+            cancelPostConnectProbe()
+        }
         stopTrafficPolling()
         let controller = providerController
-        await connectionCoordinator.stop(
-            stopProvider: { identifier in await controller.requestStop(core: identifier) }
-        )
+        await controller.requestStop(core: core)
+        await connectionCoordinator.reconcile(.disconnected)
         connectedCore = nil
         clearConnectedNodeState()
         connectionState = .idle
         sessionDownloadedBytes = 0
         sessionUploadedBytes = 0
-        connectionFailureMessage = Self.nodeUnreachableUserMessage
+        let message = Self.healthFailureUserMessage(for: errorCode)
+        #if DEBUG
+        connectionFailureMessage = "\(message) [\(errorCode)]"
+        #else
+        connectionFailureMessage = message
+        #endif
     }
 
     private func cancelPostConnectProbe() {
@@ -1726,6 +2122,18 @@ final class RoutevaAppModel: ObservableObject {
 
     private static let nodeUnreachableUserMessage =
         "This node isn’t responding. Try another node."
+
+    private static let dnsUnreachableUserMessage =
+        "DNS isn’t responding through this VPN. Try reconnecting or another node."
+
+    private static func healthFailureUserMessage(for errorCode: String) -> String {
+        if errorCode.hasPrefix("probe.core_dns_")
+            || errorCode.hasPrefix("probe.dns_")
+            || errorCode == "probe.tunnel_dns_resolution_failed" {
+            return dnsUnreachableUserMessage
+        }
+        return nodeUnreachableUserMessage
+    }
 
     private func presentDiagnostic(from trace: ConnectionDiagnosticTrace) async {
         let result = await recordDiagnostic(from: trace)
@@ -1883,8 +2291,8 @@ final class RoutevaAppModel: ObservableObject {
                     trafficTaskID = nil
                 }
             }
-            #if DEBUG
             var pollingIteration = 0
+            #if DEBUG
             var lastDataPlaneSummary: String?
             #endif
             while !Task.isCancelled {
@@ -1898,6 +2306,7 @@ final class RoutevaAppModel: ObservableObject {
                 } catch {
                     guard !Task.isCancelled, trafficTaskID == taskID else { break }
                     if !(await providerController.isConnectionActive(core: core)) {
+                        await connectionCoordinator.reconcile(.disconnected)
                         connectedCore = nil
                         clearConnectedNodeState()
                         connectionState = .idle
@@ -1912,26 +2321,32 @@ final class RoutevaAppModel: ObservableObject {
                         break
                     }
                 }
-                #if DEBUG
                 // Provider IPC is globally limited to one request per 200 ms.
                 // Sample the existing privacy-safe data-plane snapshot only
-                // every third traffic tick and keep a deliberate gap from the
-                // traffic request. This makes post-Connected Safari failures
-                // visible in the host Xcode console without logging payloads,
-                // hosts, node details, or raw core errors.
+                // every third traffic tick. Release builds use the same sample
+                // to debounce sustained DNS failure; DEBUG additionally prints
+                // the redacted counters.
                 pollingIteration += 1
                 if pollingIteration.isMultiple(of: 3) {
                     try? await Task.sleep(for: .milliseconds(250))
                     guard !Task.isCancelled else { break }
                     if let snapshot = try? await providerController.queryDataPlane(core: core) {
+                        if let errorCode = dnsHealthMonitor.observe(snapshot) {
+                            await tearDownUnhealthySession(
+                                core: core,
+                                errorCode: errorCode
+                            )
+                            break
+                        }
+                        #if DEBUG
                         let summary = snapshot.probeCounterSummary
                         if summary != lastDataPlaneSummary {
                             print("Routeva VPN live data-plane: [\(summary)]")
                             lastDataPlaneSummary = summary
                         }
+                        #endif
                     }
                 }
-                #endif
                 try? await Task.sleep(for: .milliseconds(500))
             }
         }
@@ -2047,6 +2462,9 @@ enum RoutingMode: String, CaseIterable, Identifiable {
     case automatic = "Smart"
     case global = "Global"
     case direct = "Direct"
+
+    /// Home 与 Settings 共用的用户可选闭集。Direct 仅作运行时遗留态，不再出现在选择器里。
+    static let userSelectable: [RoutingMode] = [.automatic, .global]
 
     var id: String { rawValue }
 
@@ -2244,6 +2662,10 @@ enum DiagnosticCase: String, CaseIterable, Identifiable {
 private actor ConnectionDiagnosticTrace {
     private(set) var checks: [DiagnosticCheck] = []
     func record(_ check: DiagnosticCheck) { checks.append(check) }
+}
+
+private enum NonFailoverConnectionError: Error {
+    case providerUnavailable
 }
 
 /// Serializes only Provider mutations, not UI intent or verification. A later

@@ -3,6 +3,46 @@ import SharedKit
 import XCTest
 
 final class ProviderMessageTests: XCTestCase {
+    func testProviderStatusRefreshGateCoalescesABurstWithoutDiscardingCurrentPass() {
+        var gate = ProviderStatusRefreshGate()
+
+        XCTAssertTrue(gate.requestRefresh())
+        XCTAssertFalse(gate.requestRefresh())
+        XCTAssertFalse(gate.requestRefresh())
+        XCTAssertTrue(gate.finishPass())
+        XCTAssertFalse(gate.finishPass())
+        XCTAssertTrue(gate.requestRefresh())
+    }
+
+    func testProviderConnectionSnapshotKeepsReassertingVisibleAsConnected() {
+        let since = Date(timeIntervalSinceReferenceDate: 1_000)
+        let connected = ProviderConnectionSnapshot.connected(
+            core: .singBox,
+            since: since
+        )
+        let reasserting = ProviderConnectionSnapshot.reasserting(
+            core: .singBox,
+            since: since
+        )
+
+        XCTAssertTrue(connected.presentsAsConnected)
+        XCTAssertTrue(reasserting.presentsAsConnected)
+        XCTAssertEqual(connected.core, .singBox)
+        XCTAssertEqual(reasserting.connectedSince, since)
+    }
+
+    func testProviderConnectionSnapshotDoesNotPresentTransitionsAsConnected() {
+        let snapshots: [ProviderConnectionSnapshot] = [
+            .disconnected,
+            .connecting(core: .singBox),
+            .disconnecting(core: .singBox),
+        ]
+
+        XCTAssertTrue(snapshots.allSatisfy { !$0.presentsAsConnected })
+        XCTAssertNil(ProviderConnectionSnapshot.disconnected.core)
+        XCTAssertNil(ProviderConnectionSnapshot.connecting(core: .singBox).connectedSince)
+    }
+
     func testClassifiesRedactedCoreDNSFailures() {
         XCTAssertEqual(
             CoreLogDiagnosticClassifier.stableCode(
@@ -694,6 +734,207 @@ final class ProviderMessageTests: XCTestCase {
         )
     }
 
+    func testDNSHealthMonitorRequiresSustainedUpstreamFailure() {
+        let sessionID = UUID()
+        var monitor = ProviderDNSHealthMonitor(consecutiveFailureLimit: 2)
+
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 10,
+            successes: 10,
+            coreErrors: 0
+        )))
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 11,
+            successes: 10,
+            coreErrors: 1,
+            code: "probe.core_dns_remote_timeout"
+        )))
+        XCTAssertEqual(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 12,
+            successes: 10,
+            coreErrors: 2,
+            code: "probe.core_dns_remote_timeout"
+        )), "probe.core_dns_remote_timeout")
+    }
+
+    func testDNSHealthMonitorClearsPendingFailureAfterSuccessfulAnswer() {
+        let sessionID = UUID()
+        var monitor = ProviderDNSHealthMonitor(consecutiveFailureLimit: 2)
+
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 1,
+            successes: 1,
+            coreErrors: 0
+        )))
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 2,
+            successes: 1,
+            coreErrors: 1,
+            code: "probe.core_dns_upstream_failed"
+        )))
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 3,
+            successes: 2,
+            coreErrors: 1,
+            code: "probe.core_dns_upstream_failed"
+        )))
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 4,
+            successes: 2,
+            coreErrors: 2,
+            code: "probe.core_dns_upstream_failed"
+        )))
+    }
+
+    func testDNSHealthMonitorTreatsNameErrorAsHealthyUpstreamResponse() {
+        let sessionID = UUID()
+        var monitor = ProviderDNSHealthMonitor(consecutiveFailureLimit: 2)
+
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 1,
+            responses: 1,
+            successes: 1,
+            coreErrors: 0
+        )))
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 2,
+            responses: 1,
+            successes: 1,
+            coreErrors: 1,
+            code: "probe.core_dns_upstream_failed"
+        )))
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 3,
+            responses: 2,
+            successes: 1,
+            nameErrors: 1,
+            coreErrors: 1,
+            code: "probe.core_dns_upstream_failed"
+        )))
+        XCTAssertNil(monitor.observe(dnsSnapshot(
+            sessionID: sessionID,
+            queries: 4,
+            responses: 2,
+            successes: 1,
+            nameErrors: 1,
+            coreErrors: 2,
+            code: "probe.core_dns_upstream_failed"
+        )))
+    }
+
+    func testDNSResolutionFailurePrefersRedactedCoreCodeAndUsesCounterFallback() {
+        let sessionID = UUID()
+        let baseline = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 3,
+            successes: 2,
+            coreErrors: 0
+        )
+        let missingResponse = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 4,
+            successes: 2,
+            coreErrors: 0
+        )
+        let classified = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 5,
+            successes: 2,
+            coreErrors: 1,
+            code: "probe.core_dns_remote_timeout"
+        )
+
+        XCTAssertEqual(
+            missingResponse.dnsResolutionFailureDiagnosticCode(since: baseline),
+            "probe.dns_response_missing"
+        )
+        XCTAssertEqual(
+            classified.dnsResolutionFailureDiagnosticCode(since: baseline),
+            "probe.core_dns_remote_timeout"
+        )
+    }
+
+    func testDNSResolutionFailureTreatsAnsweredNoAddressAsHealthyTransport() {
+        let sessionID = UUID()
+        let baseline = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 3,
+            responses: 3,
+            successes: 3,
+            coreErrors: 0
+        )
+        let answeredWithoutAddress = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 5,
+            responses: 5,
+            successes: 3,
+            emptyResponses: 1,
+            nameErrors: 1,
+            coreErrors: 0
+        )
+        let serverFailure = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 4,
+            responses: 4,
+            successes: 3,
+            serverFailures: 1,
+            coreErrors: 0
+        )
+
+        XCTAssertNil(
+            answeredWithoutAddress.dnsResolutionFailureDiagnosticCode(since: baseline)
+        )
+        XCTAssertEqual(
+            serverFailure.dnsResolutionFailureDiagnosticCode(since: baseline),
+            "probe.dns_resolution_failed"
+        )
+    }
+
+    func testDNSFailureClassificationIgnoresStickyCodeAfterHealthyAnswer() {
+        let sessionID = UUID()
+        let baseline = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 3,
+            responses: 3,
+            successes: 3,
+            coreErrors: 0
+        )
+        let recovered = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 4,
+            responses: 4,
+            successes: 4,
+            coreErrors: 1,
+            code: "probe.core_dns_upstream_transport_failed"
+        )
+        let currentFailure = dnsSnapshot(
+            sessionID: sessionID,
+            queries: 5,
+            responses: 4,
+            successes: 4,
+            coreErrors: 2,
+            code: "probe.core_dns_upstream_transport_failed"
+        )
+
+        XCTAssertNil(recovered.dnsUpstreamFailureDiagnosticCode(since: baseline))
+        XCTAssertNil(recovered.dnsResolutionFailureDiagnosticCode(since: baseline))
+        XCTAssertNil(currentFailure.dnsUpstreamFailureDiagnosticCode(since: nil))
+        XCTAssertEqual(
+            currentFailure.dnsUpstreamFailureDiagnosticCode(since: recovered),
+            "probe.core_dns_upstream_transport_failed"
+        )
+    }
+
     func testProbeCounterSummaryContainsOnlyCountsAndStableCode() {
         let snapshot = ProviderDataPlaneSnapshot(
             sessionID: UUID(),
@@ -809,6 +1050,38 @@ final class ProviderMessageTests: XCTestCase {
                 "HTTP/1.1 nope\r\nConnection: close\r\n\r\n".utf8
             )),
             .invalid
+        )
+    }
+
+    private func dnsSnapshot(
+        sessionID: UUID,
+        queries: UInt64,
+        responses: UInt64? = nil,
+        successes: UInt64,
+        emptyResponses: UInt64 = 0,
+        nameErrors: UInt64 = 0,
+        serverFailures: UInt64 = 0,
+        otherErrors: UInt64 = 0,
+        coreErrors: UInt64,
+        code: String? = nil
+    ) -> ProviderDataPlaneSnapshot {
+        let responseCount = responses
+            ?? successes + emptyResponses + nameErrors + serverFailures + otherErrors
+        return ProviderDataPlaneSnapshot(
+            sessionID: sessionID,
+            packetFlowToCorePackets: queries,
+            packetFlowToCoreBytes: queries * 80,
+            coreToPacketFlowPackets: responseCount,
+            coreToPacketFlowBytes: responseCount * 80,
+            packetFlowToCoreDNSQueries: queries,
+            coreToPacketFlowDNSResponses: responseCount,
+            coreToPacketFlowDNSSuccessResponses: successes,
+            coreToPacketFlowDNSEmptyResponses: emptyResponses,
+            coreToPacketFlowDNSNameErrorResponses: nameErrors,
+            coreToPacketFlowDNSServerFailureResponses: serverFailures,
+            coreToPacketFlowDNSOtherErrorResponses: otherErrors,
+            coreErrorLogEventsReceived: coreErrors,
+            coreDiagnosticCode: code
         )
     }
 }
