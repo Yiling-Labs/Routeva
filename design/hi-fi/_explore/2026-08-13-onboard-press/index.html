@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="design_doc_mode" content="canvas" />
+  <title>Routeva · Current + publication</title>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body, #root { height: 100%; margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", system-ui, sans-serif;
+      background: #f0eee9;
+    }
+    .wd-noise {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.05;
+      background-image: radial-gradient(circle at 1px 1px, #000 1px, transparent 0);
+      background-size: 4px 4px; mix-blend-mode: overlay;
+    }
+    .wd-map {
+      position: absolute; inset: 0; opacity: 0.07; pointer-events: none;
+      background-size: 130% auto; background-position: center 42%; background-repeat: no-repeat;
+    }
+    .wd-halftone {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 40%;
+      pointer-events: none; opacity: 0.15;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.55) 0.85px, transparent 1.05px);
+      background-size: 4.5px 4.5px;
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+      mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+    }
+    .wd-press {
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .wd-press:active { transform: scale(0.97); }
+    .wd-press:focus-visible {
+      outline: 2px solid rgba(140, 220, 190, 0.9);
+      outline-offset: 3px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .wd-press { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="./design-canvas.jsx"></script>
+  <script type="text/babel" src="./kit.jsx"></script>
+  <script type="text/babel" src="./app.jsx"></script>
+</body>
+</html>

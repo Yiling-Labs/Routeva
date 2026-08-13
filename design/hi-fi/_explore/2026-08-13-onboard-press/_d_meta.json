@@ -1,0 +1,23 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "Current publication": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-08-13T06:58:08.496Z",
+          "status": "needs-review",
+          "subtitle": "Chapter / Serif / Signature / Interior",
+          "viewport": {
+            "width": 1680,
+            "height": 980
+          }
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-08-13T06:58:08.502Z",
+  "updatedAt": "2026-08-13T06:58:08.502Z"
+}

@@ -1,0 +1,23 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "First-run craft": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-08-13T06:39:47.529Z",
+          "status": "needs-review",
+          "subtitle": "0 + Folio / Capsule / Rings / Last mint / Caret",
+          "viewport": {
+            "width": 1680,
+            "height": 980
+          }
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-08-13T06:39:47.535Z",
+  "updatedAt": "2026-08-13T06:39:47.535Z"
+}

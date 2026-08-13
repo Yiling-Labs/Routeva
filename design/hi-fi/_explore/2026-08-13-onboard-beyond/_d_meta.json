@@ -1,0 +1,23 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "Beyond Current": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-08-13T06:47:33.856Z",
+          "status": "needs-review",
+          "subtitle": "Sealed / Stress / Gravity / Rule / Hang",
+          "viewport": {
+            "width": 1680,
+            "height": 980
+          }
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-08-13T06:47:33.864Z",
+  "updatedAt": "2026-08-13T06:47:33.864Z"
+}

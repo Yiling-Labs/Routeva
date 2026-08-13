@@ -1,0 +1,23 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "Welcome distill": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-08-13T04:31:49.887Z",
+          "status": "needs-review",
+          "subtitle": "Current + Stack / Breath / Caption",
+          "viewport": {
+            "width": 1440,
+            "height": 920
+          }
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-08-13T04:31:49.891Z",
+  "updatedAt": "2026-08-13T04:31:49.891Z"
+}

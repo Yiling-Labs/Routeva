@@ -1,0 +1,23 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "Data Privacy distill": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-08-13T06:28:47.367Z",
+          "status": "needs-review",
+          "subtitle": "Current + Stack / Breath / Caption",
+          "viewport": {
+            "width": 1440,
+            "height": 920
+          }
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-08-13T06:28:47.389Z",
+  "updatedAt": "2026-08-13T06:28:47.389Z"
+}
