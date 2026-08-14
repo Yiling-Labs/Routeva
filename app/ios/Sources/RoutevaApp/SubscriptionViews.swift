@@ -392,6 +392,10 @@ struct SubscriptionsView: View {
                             )
                         }
                     }
+                    .animation(
+                        .routevaEase,
+                        value: model.subscriptions.filter(\.isActive).map(\.id)
+                    )
                     .padding(.top, 4)
                     .padding(.bottom, 12)
                 }
@@ -504,12 +508,6 @@ private struct SubscriptionCard: View {
 
                 if subscription.isActive {
                     ActiveBadge()
-                } else {
-                    Button("Set active", action: setActive)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.white.opacity(0.72))
-                        .frame(minWidth: 44, minHeight: 44)
-                        .buttonStyle(RoutevaPressStyle())
                 }
             }
 
@@ -542,6 +540,17 @@ private struct SubscriptionCard: View {
                         isEnabled: !isUpdating && !isDeleting,
                         action: update
                     )
+                }
+
+                if !subscription.isActive {
+                    SubscriptionCardAction(
+                        title: "Set active",
+                        systemName: "checkmark",
+                        isSecondary: true,
+                        isEnabled: !isDeleting,
+                        action: setActive
+                    )
+                    .accessibilityIdentifier("subscriptions.setActive")
                 }
 
                 SubscriptionCardAction(
@@ -580,6 +589,7 @@ private struct SubscriptionCardAction: View {
     let title: String
     let systemName: String?
     var isDestructive = false
+    var isSecondary = false
     var isEnabled = true
     let action: () -> Void
 
@@ -594,43 +604,70 @@ private struct SubscriptionCardAction: View {
         )
     }
 
+    private var labelColor: Color {
+        guard isEnabled else { return RoutevaTheme.quiet }
+        if isDestructive { return .white }
+        if isSecondary { return RoutevaTheme.primary }
+        return Color(red: 10 / 255, green: 31 / 255, blue: 24 / 255)
+    }
+
+    private var secondaryFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.white.opacity(0.14),
+                Color.white.opacity(0.05),
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 7) {
-                if let systemName { Image(systemName: systemName) }
-                Text(LocalizedStringKey(title))
-            }
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(
-                isEnabled
-                    ? (isDestructive ? Color.white : Color(red: 10 / 255, green: 31 / 255, blue: 24 / 255))
-                    : RoutevaTheme.quiet
-            )
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 13)
-            .background(
-                isEnabled
-                    ? AnyShapeStyle(isDestructive ? destructiveButton : RoutevaTheme.mintButton)
-                    : AnyShapeStyle(.white.opacity(0.06)),
-                in: RoundedRectangle(cornerRadius: 15, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(
-                        .white.opacity(isEnabled ? 0.16 : 0.08),
-                        lineWidth: 0.8
-                    )
-            }
-            .shadow(
-                color: isEnabled
-                    ? (isDestructive ? Color(red: 1, green: 82 / 255, blue: 100 / 255).opacity(0.24) : RoutevaTheme.mint.opacity(0.24))
-                    : .clear,
-                radius: 12,
-                y: 7
-            )
+            actionLabel
+                .background(
+                    isEnabled
+                        ? AnyShapeStyle(
+                            isDestructive ? destructiveButton
+                                : isSecondary ? secondaryFill
+                                : RoutevaTheme.mintButton
+                        )
+                        : AnyShapeStyle(.white.opacity(0.06)),
+                    in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(
+                            .white.opacity(isEnabled ? (isSecondary ? 0.20 : 0.16) : 0.08),
+                            lineWidth: 0.8
+                        )
+                }
+                .shadow(
+                    color: isEnabled
+                        ? (isDestructive
+                            ? Color(red: 1, green: 82 / 255, blue: 100 / 255).opacity(0.24)
+                            : isSecondary ? Color.black.opacity(0.22)
+                            : RoutevaTheme.mint.opacity(0.24))
+                        : .clear,
+                    radius: isSecondary ? 8 : 12,
+                    y: isSecondary ? 5 : 7
+                )
         }
         .buttonStyle(RoutevaPressStyle())
         .disabled(!isEnabled)
+    }
+
+    private var actionLabel: some View {
+        HStack(spacing: 7) {
+            if let systemName { Image(systemName: systemName) }
+            Text(LocalizedStringKey(title))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+        }
+        .font(.system(size: 14, weight: .bold))
+        .foregroundStyle(labelColor)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 13)
     }
 }
 

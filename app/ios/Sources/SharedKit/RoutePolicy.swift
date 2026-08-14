@@ -16,8 +16,12 @@ public enum ProviderLogicalRuleMode: String, Codable, Equatable, Sendable {
 
 /// A provider rule condition kept independently from its Routeva egress
 /// action. Cases mirror the metadata that an Apple TUN-capable core can
-/// actually observe; unsupported provider kinds are rejected during import
-/// instead of being silently discarded or changing the final action.
+/// actually observe. Unknown kinds are rejected during import so a future
+/// rule cannot silently become "match nothing". Kinds that an Apple TUN
+/// cannot observe (process name, inbound port, SSID, …) are skipped:
+/// they would never match, so omitting them does not change the remaining
+/// first-match policy. That is what lets common ACL4SSR Clash profiles
+/// import instead of failing on three desktop-only PROCESS-NAME lines.
 public indirect enum RouteRuleMatch: Codable, Equatable, Sendable {
     case domain(String)
     case domainSuffix(String)
@@ -169,6 +173,21 @@ public struct ProviderProxyGroup: Equatable, Sendable {
 /// direct/proxy-current-node/reject contract. Group membership never constrains
 /// the final proxy node; it is consulted only to preserve a recursively chosen
 /// DIRECT or REJECT default.
+/// Provider rule kinds that cannot be evaluated on Routeva's Apple TUN.
+/// Skipping them is equivalent to the rule never matching.
+public enum ProviderRouteRuleSupport: Sendable {
+    public static let unobservableOnAppleTUN: Set<String> = [
+        "PROCESS-NAME", "PROCESS-NAME-WILDCARD", "PROCESS-NAME-REGEX",
+        "PROCESS-PATH", "PROCESS-PATH-WILDCARD", "PROCESS-PATH-REGEX",
+        "UID",
+        "IN-PORT", "IN-TYPE", "IN-USER", "IN-NAME",
+        "SSID", "CELLULAR-RADIO", "DEVICE-NAME",
+        "DSCP",
+        "USER-AGENT", "URL-REGEX",
+        "SCRIPT",
+    ]
+}
+
 public struct BinarySmartPolicyNormalizer: Sendable {
     public init() {}
 

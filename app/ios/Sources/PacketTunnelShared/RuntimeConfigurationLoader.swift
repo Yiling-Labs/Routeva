@@ -167,6 +167,8 @@ func stableProviderStartupErrorCode(_ error: Error) -> String {
             return "provider.configuration_core_unsupported"
         case .unsupportedProxyPlugin:
             return "provider.configuration_plugin_unsupported"
+        case .unsupportedProxyOption:
+            return "provider.configuration_proxy_option_unsupported"
         case .unsupportedRouteRule:
             return "provider.configuration_route_rule_unsupported"
         case .invalidJSON:

@@ -465,58 +465,5 @@ final class SingBoxRuntime: @unchecked Sendable {
     }
 }
 #else
-final class SingBoxPlatformInterface: @unchecked Sendable {
-    init(
-        tunnel: AnyObject,
-        runtimeState: ProviderRuntimeStateStore,
-        directRouteAddresses: [String],
-        onBridgeStarting: @escaping @Sendable () -> Void,
-        onBridgeFailure: @escaping @Sendable (PacketTunnelRuntimeError) -> Void
-    ) {}
-
-    func stopPacketBridge() {}
-}
-
-final class SingBoxRuntime: @unchecked Sendable {
-    func start(
-        json: String,
-        platform: SingBoxPlatformInterface,
-        initialNodeID: UUID,
-        availableNodeIDs: Set<UUID>,
-        onFailure: @escaping @Sendable (ProviderStartupStage, String) -> Void = { _, _ in },
-        onStage: @escaping @Sendable (ProviderStartupStage) -> Void
-    ) throws {
-        throw PacketTunnelRuntimeError.coreNotLinked(.singBox)
-    }
-
-    func stop() {}
-
-    func probe() throws -> ProviderCoreProbeSnapshot {
-        throw SingBoxCoreProbeError.unavailable
-    }
-
-    func selectNode(_ nodeID: UUID) throws -> UUID {
-        throw SingBoxNodeSelectionError.unavailable
-    }
-
-    func currentSelectedNode() throws -> UUID {
-        throw SingBoxNodeSelectionError.unavailable
-    }
-
-    func reloadConfiguration(
-        json: String,
-        initialNodeID: UUID,
-        availableNodeIDs: Set<UUID>,
-        directRouteAddresses: [String]
-    ) throws -> UUID {
-        throw SingBoxNodeSelectionError.unavailable
-    }
-
-    func finalizeConfigurationReload(
-        expectedNodeID: UUID,
-        accept: Bool
-    ) throws -> UUID {
-        throw SingBoxNodeSelectionError.unavailable
-    }
-}
+#error("RoutevaPacketTunnelSingBox requires Libbox.xcframework")
 #endif

@@ -44,6 +44,9 @@ struct ClashRoutePolicyDecoder {
                 defaultAction = action
                 break
             }
+            if ProviderRouteRuleSupport.unobservableOnAppleTUN.contains(kind) {
+                continue
+            }
             guard fields.count >= 3 else {
                 throw SubscriptionParserError.invalidRouteRule(line)
             }

@@ -295,6 +295,11 @@ final class ProviderRuntimeStateStore: @unchecked Sendable {
                     requestID: request.requestID,
                     errorCode: "provider.node_selection_unsupported"
                 )
+            case .entryLatency:
+                return ProviderMessageResponse(
+                    requestID: request.requestID,
+                    errorCode: ProviderEntryLatencyCode.physicalPathUnavailable
+                )
             }
         }
         return try? ProviderMessageCodec.encode(response)

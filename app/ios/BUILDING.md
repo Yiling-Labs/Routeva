@@ -55,7 +55,8 @@ The core script performs these verifiable operations:
 1. Downloads and SHA-verifies Go 1.26.2 for Darwin arm64.
 2. Checks out sing-box commit
    `1086ab2563320e0da0c23b3a491d8dfa0939dff4`.
-3. Verifies and applies the checked-in Routeva sing-box patch.
+3. Verifies and applies the checked-in Routeva sing-box bridge and uTLS ECH
+   retry patches.
 4. Resolves sing-tun v0.8.9, then verifies and applies the checked-in sing-tun
    PacketFlow patch.
 5. Builds `Vendor/Libbox.xcframework` with the pinned gomobile toolchain.

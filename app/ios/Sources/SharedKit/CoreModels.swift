@@ -102,6 +102,7 @@ public enum ProxyProtocol: String, Codable, CaseIterable, Sendable {
 
 public enum TransportKind: String, Codable, CaseIterable, Sendable {
     case tcp
+    case http
     case webSocket
     case grpc
     case httpUpgrade
@@ -161,7 +162,7 @@ public extension CoreIdentifier {
         case .singBox:
             CoreCapabilities(
                 protocols: [.shadowsocks, .vmess, .vless, .trojan, .hysteria2],
-                transports: [.tcp, .webSocket, .grpc, .httpUpgrade, .quic],
+                transports: [.tcp, .http, .webSocket, .grpc, .httpUpgrade, .quic],
                 security: [.none, .tls, .reality],
                 supportsUDP: true
             )

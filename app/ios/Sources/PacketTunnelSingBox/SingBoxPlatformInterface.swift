@@ -138,9 +138,10 @@ final class SingBoxPlatformInterface: NSObject, LibboxPlatformInterfaceProtocol,
 
     func useProcFS() -> Bool { false }
     func underNetworkExtension() -> Bool { true }
-    // Must mirror NETunnelProviderProtocol.includeAllNetworks. sing-tun uses
-    // this to select its include-all-compatible gVisor forwarding behavior.
-    func includeAllNetworks() -> Bool { true }
+    // Must mirror NETunnelProviderProtocol.includeAllNetworks. Routeva uses
+    // explicit default routes plus host-sized physical-path exclusions rather
+    // than Apple's stronger include-all capture mode.
+    func includeAllNetworks() -> Bool { false }
     func localDNSTransport() -> LibboxLocalDNSTransportProtocol? { nil }
     func systemCertificates() -> LibboxStringIteratorProtocol? { nil }
     func readWIFIState() -> LibboxWIFIState? { nil }
@@ -487,4 +488,6 @@ private final class PathMonitorReadiness: @unchecked Sendable {
         semaphore.wait(timeout: timeout) == .success
     }
 }
+#else
+#error("RoutevaPacketTunnelSingBox requires Libbox.xcframework")
 #endif

@@ -323,13 +323,39 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
 
     public func resolveClipboardText(_ text: String) async throws -> ResolvedSubscriptionPayload {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let url = URL(string: trimmed), url.scheme?.lowercased() == "https", url.host != nil {
+        if let url = Self.remoteHTTPSURL(fromClipboard: trimmed) {
             return try await remotePayload(from: url)
         }
-        if let url = URL(string: trimmed), ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+        if Self.containsInsecureRemoteURL(trimmed) {
             throw SubscriptionPayloadLoaderError.insecureRemoteURL
         }
         return ResolvedSubscriptionPayload(data: Data(trimmed.utf8), source: .clipboard)
+    }
+
+    /// Picks the first fetchable HTTPS subscription URL out of a paste.
+    /// Accepts a bare link, surrounding quotes, mixed title+URL text, and
+    /// one-click install schemes (`clash://install-config?url=`).
+    public static func remoteHTTPSURL(fromClipboard text: String) -> URL? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”‘’"))
+        if let url = httpsURL(trimmed) { return url }
+        if let url = oneClickInstallURL(trimmed) { return url }
+        // A pasted node list / Clash document can embed `https://` inside
+        // query values (notably `ech=cover+https://dns…`). Those are not
+        // subscription URLs.
+        let lowered = trimmed.lowercased()
+        let proxySchemes = ["ss://", "vmess://", "vless://", "trojan://", "hysteria2://", "hy2://"]
+        if proxySchemes.contains(where: { lowered.contains($0) }) { return nil }
+        if lowered.contains("proxies:") { return nil }
+        guard let match = trimmed.range(
+            of: #"https://[^\s<>\"'`]+"#,
+            options: .regularExpression
+        ) else { return nil }
+        var candidate = String(trimmed[match])
+        while let last = candidate.last, ".,);]}".contains(last) {
+            candidate.removeLast()
+        }
+        return httpsURL(candidate)
     }
 
     public func remotePayload(from url: URL) async throws -> ResolvedSubscriptionPayload {
@@ -342,6 +368,22 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
             timeoutInterval: 20
         )
         request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+        // Identify the real client. Do not impersonate or advertise another
+        // format in User-Agent: provider panels commonly negotiate payloads
+        // from this header, and forcing a Clash conversion can discard fields
+        // that Routeva's native URI parser preserves (for example an explicit
+        // query-based ECH resolver). The parser determines the actual format
+        // from Content-Type/body with its legacy fallbacks.
+        request.setValue(
+            Self.subscriptionUserAgent(version: Bundle.main.object(
+                forInfoDictionaryKey: "CFBundleShortVersionString"
+            ) as? String),
+            forHTTPHeaderField: "User-Agent"
+        )
+        request.setValue(
+            "application/json, text/yaml;q=0.9, application/yaml;q=0.9, text/plain;q=0.8, */*;q=0.5",
+            forHTTPHeaderField: "Accept"
+        )
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
@@ -358,5 +400,47 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
             source: .remoteURL(url),
             usage: SubscriptionUsage.parse(header: http.value(forHTTPHeaderField: "subscription-userinfo"))
         )
+    }
+
+    private static func containsInsecureRemoteURL(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”‘’"))
+        if let url = URL(string: trimmed), url.scheme?.lowercased() == "http" {
+            return true
+        }
+        guard let components = URLComponents(string: trimmed),
+              let encoded = components.queryItems?.first(where: {
+                  $0.name.lowercased() == "url"
+              })?.value,
+              let nested = URL(string: encoded)
+        else { return false }
+        return nested.scheme?.lowercased() == "http"
+    }
+
+    static func subscriptionUserAgent(version: String?) -> String {
+        let normalized = version?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { $0.isASCII && ($0.isLetter || $0.isNumber || ".-_".contains($0)) }
+        let safeVersion = normalized.flatMap { $0.isEmpty ? nil : $0 } ?? "1.0"
+        return "Routeva/\(safeVersion)"
+    }
+
+    private static func httpsURL(_ raw: String) -> URL? {
+        guard let url = URL(string: raw),
+              url.scheme?.lowercased() == "https",
+              url.host != nil
+        else { return nil }
+        return url
+    }
+
+    private static func oneClickInstallURL(_ text: String) -> URL? {
+        guard let components = URLComponents(string: text),
+              let scheme = components.scheme?.lowercased(),
+              ["clash", "clashmeta", "stash", "surge"].contains(scheme),
+              let encoded = components.queryItems?.first(where: {
+                  $0.name.lowercased() == "url"
+              })?.value
+        else { return nil }
+        return httpsURL(encoded)
     }
 }

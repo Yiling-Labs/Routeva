@@ -15,6 +15,7 @@ struct LocationView: View {
                 ) {
                     LocationTestButton(
                         isTesting: model.isTestingNodes,
+                        isEnabled: model.canStartLocationLatencyTest,
                         action: { Task { await model.testNodeLatencies() } }
                     )
                 }
@@ -56,12 +57,47 @@ struct LocationView: View {
             .padding(.horizontal, 22)
             .safeAreaPadding(.top, 4)
             .safeAreaPadding(.bottom, 12)
+            .overlay(alignment: .top) {
+                if model.latencyTestUnavailableToast {
+                    LocationLatencyUnavailableToast()
+                        .padding(.top, 58)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .task {
+                            try? await Task.sleep(for: .seconds(2.5))
+                            guard model.latencyTestUnavailableToast else { return }
+                            withAnimation(.routevaEase) { model.latencyTestUnavailableToast = false }
+                        }
+                }
+            }
         }
+        .onDisappear {
+            model.cancelLocationLatencyTest()
+        }
+    }
+}
+
+private struct LocationLatencyUnavailableToast: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark")
+                .font(.system(size: 13, weight: .heavy))
+                .foregroundStyle(Color(red: 37 / 255, green: 20 / 255, blue: 15 / 255))
+                .frame(width: 28, height: 28)
+                .background(RoutevaTheme.warning, in: Circle())
+            Text("Couldn’t test latency on this connection.")
+                .font(.system(size: 14, weight: .bold))
+            Spacer()
+        }
+        .padding(12)
+        .routevaToast(cornerRadius: 16)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("location.test.unavailable")
     }
 }
 
 private struct LocationTestButton: View {
     let isTesting: Bool
+    let isEnabled: Bool
     let action: () -> Void
 
     var body: some View {
@@ -84,7 +120,7 @@ private struct LocationTestButton: View {
             .routevaGlass(cornerRadius: 999, highlighted: isTesting)
         }
         .buttonStyle(RoutevaPressStyle())
-        .disabled(isTesting)
+        .disabled(isTesting || !isEnabled)
         .accessibilityIdentifier("location.test")
         .accessibilityLabel(isTesting ? "Testing latency" : "Test latency")
     }

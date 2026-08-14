@@ -129,6 +129,7 @@
 | # | 项 | iOS | Android |
 |---|---|---|---|
 | 3.4.1 | 单列表；Active 高亮；Set active；底 Add | [ ] | [ ] |
+| 3.4.1a | Connected / Connecting 时 Set active：先停会话再切 Active；**不**自动重连 | [ ] | [ ] |
 | 3.4.2 | Meta：nodes · Expires/Expired 有标签 · Updated；未知整槽省略 | [ ] | [ ] |
 | 3.4.3 | 有远程源：Update；busy *Updating…* | [ ] | [ ] |
 | 3.4.4 | **1d** 无远程源：*Can’t update automatically* + hint；**无**假 Update | [ ] | [ ] |

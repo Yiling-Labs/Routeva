@@ -50,7 +50,11 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         let manifest = RuntimeManifest(
             corePolicy: .singBox,
             profile: profiles[1],
-            profiles: profiles
+            profiles: profiles,
+            dnsBootstrapAddressMap: [
+                "first.example.invalid": ["203.0.113.11"],
+                "second.example.invalid": ["203.0.113.12"],
+            ]
         )
         let compiled = try compiler.compile(
             manifest: manifest,
@@ -78,6 +82,95 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertEqual(selector["outbounds"] as? [String], nodeTags)
         XCTAssertEqual(selector["default"] as? String, nodeTags[1])
         XCTAssertEqual(selector["interrupt_exist_connections"] as? Bool, true)
+        for outbound in outbounds.prefix(2) {
+            XCTAssertEqual(
+                (outbound["domain_resolver"] as? [String: Any])?["server"] as? String,
+                "dns-endpoint"
+            )
+        }
+        let dns = try XCTUnwrap(object["dns"] as? [String: Any])
+        let servers = try XCTUnwrap(dns["servers"] as? [[String: Any]])
+        let endpointResolver = try XCTUnwrap(servers.first(where: {
+            $0["tag"] as? String == "dns-endpoint"
+        }))
+        let predefined = try XCTUnwrap(
+            endpointResolver["predefined"] as? [String: [String]]
+        )
+        XCTAssertEqual(predefined["first.example.invalid"], ["203.0.113.11"])
+        XCTAssertEqual(predefined["second.example.invalid"], ["203.0.113.12"])
+        XCTAssertTrue(compiled.manifest.directRouteAddresses.contains("203.0.113.11"))
+        XCTAssertTrue(compiled.manifest.directRouteAddresses.contains("203.0.113.12"))
+    }
+
+    func testPreservesQueryBasedECHAndConvertsMihomoBase64Config() throws {
+        let fixture = makeFixture(protocolKind: .vless, transport: .webSocket, security: .tls)
+
+        let fromURI = try compiler.compile(
+            manifest: fixture.manifest,
+            node: fixture.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: [
+                    "sni": "edge.example.invalid",
+                    "fp": "chrome",
+                    "host": "edge.example.invalid",
+                    "path": "/",
+                    "ech": "cloudflare-ech.com+https://dns.alidns.com/dns-query",
+                ]
+            ),
+            for: .singBox
+        )
+        XCTAssertTrue(fromURI.json.contains("\"ech\":"))
+        XCTAssertTrue(fromURI.json.contains("\"query_server_name\":\"cloudflare-ech.com\""))
+        XCTAssertTrue(fromURI.json.contains("\"query_type\":[\"HTTPS\"]"))
+        XCTAssertTrue(fromURI.manifest.directRouteAddresses.contains("223.5.5.5"))
+
+        let clashFixture = makeFixture(protocolKind: .vless, transport: .webSocket, security: .tls)
+        let fromClash = try compiler.compile(
+            manifest: clashFixture.manifest,
+            node: clashFixture.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: [
+                    "sni": "edge.example.invalid",
+                    "ech-opts.enable": "true",
+                    "ech-opts.query-server-name": "cloudflare-ech.com",
+                ]
+            ),
+            for: .singBox
+        )
+        XCTAssertTrue(fromClash.json.contains("\"ech\":"))
+        XCTAssertTrue(fromClash.json.contains("\"query_server_name\":\"cloudflare-ech.com\""))
+        XCTAssertTrue(fromClash.manifest.directRouteAddresses.contains("223.5.5.5"))
+
+        let base64 = Data([0, 4, 1, 2, 3, 4]).base64EncodedString()
+        let fromBase64 = try compiler.compile(
+            manifest: fixture.manifest,
+            node: fixture.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: [
+                    "sni": "edge.example.invalid",
+                    "ech-opts.enable": "true",
+                    "ech-opts.config": base64,
+                ]
+            ),
+            for: .singBox
+        )
+        XCTAssertTrue(fromBase64.json.contains("\"ech\":{"))
+        XCTAssertTrue(fromBase64.json.contains("BEGIN ECH CONFIGS"))
+
+        XCTAssertThrowsError(try compiler.compile(
+            manifest: fixture.manifest,
+            node: fixture.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: ["ech-opts.enable": "true", "ech-opts.config": "not/base64!"]
+            ),
+            for: .singBox
+        )) { error in
+            XCTAssertEqual(error as? CoreConfigurationError, .unsupportedProxyOption("ech.config"))
+        }
     }
 
     func testCompilesHysteria2ForSingBox() throws {
@@ -99,6 +192,95 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         )
         let outbounds = try XCTUnwrap(object["outbounds"] as? [[String: Any]])
         XCTAssertEqual(outbounds.first?["type"] as? String, "hysteria2")
+    }
+
+    func testCompilesCommonTLSWebSocketHTTPAndHysteria2Options() throws {
+        let webSocket = makeFixture(protocolKind: .vless, transport: .webSocket, security: .tls)
+        let compiledWebSocket = try compiler.compile(
+            manifest: webSocket.manifest,
+            node: webSocket.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: [
+                    "sni": "edge.example.invalid",
+                    "skip-cert-verify": "true",
+                    "alpn": "[h2, http/1.1]",
+                    "ws-opts.max-early-data": "2048",
+                    "ws-opts.early-data-header-name": "Sec-WebSocket-Protocol",
+                ]
+            ),
+            for: .singBox
+        )
+        let wsObject = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(compiledWebSocket.json.utf8)) as? [String: Any]
+        )
+        let wsOutbound = try XCTUnwrap((wsObject["outbounds"] as? [[String: Any]])?.first)
+        let tls = try XCTUnwrap(wsOutbound["tls"] as? [String: Any])
+        XCTAssertEqual(tls["insecure"] as? Bool, true)
+        XCTAssertEqual(tls["alpn"] as? [String], ["h2", "http/1.1"])
+        let transport = try XCTUnwrap(wsOutbound["transport"] as? [String: Any])
+        XCTAssertEqual(transport["max_early_data"] as? Int, 2_048)
+        XCTAssertEqual(transport["early_data_header_name"] as? String, "Sec-WebSocket-Protocol")
+
+        let http = makeFixture(protocolKind: .vless, transport: .http, security: .tls)
+        let compiledHTTP = try compiler.compile(
+            manifest: http.manifest,
+            node: http.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: ["host": "edge.example.invalid", "path": "/h2"]
+            ),
+            for: .singBox
+        )
+        XCTAssertTrue(compiledHTTP.json.contains("\"transport\":{\"host\":[\"edge.example.invalid\"],\"path\":\"\\/h2\",\"type\":\"http\"}"))
+
+        let hysteria2 = makeFixture(protocolKind: .hysteria2, transport: .quic, security: .tls)
+        let compiledHysteria2 = try compiler.compile(
+            manifest: hysteria2.manifest,
+            node: hysteria2.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["password": "synthetic-password"],
+                options: [
+                    "obfs": "salamander", "obfs-password": "obfs-secret",
+                    "up": "50", "down": "100", "ports": "20000-30000",
+                    "hop-interval": "30",
+                ]
+            ),
+            for: .singBox
+        )
+        XCTAssertTrue(compiledHysteria2.json.contains("\"obfs\":{\"password\":\"obfs-secret\",\"type\":\"salamander\"}"))
+        XCTAssertTrue(compiledHysteria2.json.contains("\"server_ports\":[\"20000-30000\"]"))
+        XCTAssertTrue(compiledHysteria2.json.contains("\"hop_interval\":\"30s\""))
+        XCTAssertTrue(compiledHysteria2.json.contains("\"up_mbps\":50"))
+        XCTAssertTrue(compiledHysteria2.json.contains("\"down_mbps\":100"))
+    }
+
+    func testCompilesV2RayQUICAndFailsClosedForUnsupportedXHTTP() throws {
+        let quic = makeFixture(protocolKind: .vmess, transport: .quic, security: .tls)
+        let compiledQUIC = try compiler.compile(
+            manifest: quic.manifest,
+            node: quic.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"]
+            ),
+            for: .singBox
+        )
+        XCTAssertTrue(compiledQUIC.json.contains("\"transport\":{\"type\":\"quic\"}"))
+
+        let xhttp = makeFixture(protocolKind: .vless, transport: .splitHTTP, security: .tls)
+        XCTAssertThrowsError(try compiler.compile(
+            manifest: xhttp.manifest,
+            node: xhttp.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"]
+            ),
+            for: .singBox
+        )) { error in
+            XCTAssertEqual(
+                error as? CoreConfigurationError,
+                .coreUnsupported(.singBox)
+            )
+        }
     }
 
     func testSingBoxTunRequestsPlatformDefaultRoutes() throws {
@@ -125,20 +307,22 @@ final class CoreConfigurationCompilerTests: XCTestCase {
 
         let route = try XCTUnwrap(object["route"] as? [String: Any])
         let resolver = try XCTUnwrap(route["default_domain_resolver"] as? [String: Any])
-        XCTAssertEqual(resolver["server"] as? String, "dns-bootstrap")
+        XCTAssertEqual(resolver["server"] as? String, "dns-real")
         let routeRules = try XCTUnwrap(route["rules"] as? [[String: Any]])
         XCTAssertEqual(routeRules.first?["port"] as? Int, 53)
         XCTAssertEqual(routeRules.first?["action"] as? String, "hijack-dns")
         let dns = try XCTUnwrap(object["dns"] as? [String: Any])
         let servers = try XCTUnwrap(dns["servers"] as? [[String: Any]])
-        XCTAssertEqual(servers.first?["tag"] as? String, "dns-bootstrap")
-        XCTAssertEqual(servers.first?["type"] as? String, "local")
-        XCTAssertNil(servers.first?["detour"])
-        XCTAssertNil(servers.first?["server"])
-        XCTAssertEqual(servers.last?["tag"] as? String, "dns-remote")
-        XCTAssertEqual(servers.last?["type"] as? String, "https")
-        XCTAssertEqual(servers.last?["server"] as? String, "9.9.9.10")
-        XCTAssertEqual(servers.last?["detour"] as? String, "proxy")
+        XCTAssertNil(servers.first(where: { $0["tag"] as? String == "dns-bootstrap" }))
+        let real = try XCTUnwrap(servers.first(where: { $0["tag"] as? String == "dns-real" }))
+        XCTAssertEqual(real["type"] as? String, "local")
+        XCTAssertNil(real["server"])
+        XCTAssertNil(real["detour"])
+        XCTAssertNil(servers.first(where: { $0["type"] as? String == "fakeip" }))
+        XCTAssertEqual(dns["final"] as? String, "dns-real")
+        XCTAssertEqual(dns["reverse_mapping"] as? Bool, true)
+        XCTAssertFalse(compiled.json.contains("9.9.9.10"))
+        XCTAssertFalse(compiled.json.contains("\"detour\":\"proxy\""))
 
         let outbounds = try XCTUnwrap(object["outbounds"] as? [[String: Any]])
         let coreProbe = try XCTUnwrap(outbounds.first(where: {
@@ -245,7 +429,7 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         }
     }
 
-    func testCompatibilityDNSUsesEncryptedResolverThroughProxy() throws {
+    func testCompatibilityDNSUsesDirectUDPResolverWithoutFakeIP() throws {
         let fixture = makeFixture(protocolKind: .trojan, transport: .tcp, security: .tls)
         let manifest = RuntimeManifest(
             corePolicy: .automatic,
@@ -260,12 +444,16 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         let singBox = try compiler.compile(
             manifest: manifest, node: fixture.node, credential: credential, for: .singBox
         )
-        XCTAssertTrue(singBox.json.contains("\"type\":\"https\""))
-        XCTAssertTrue(singBox.json.contains("9.9.9.10"))
-        XCTAssertTrue(singBox.json.contains("\"detour\":\"proxy\""))
+        XCTAssertTrue(singBox.json.contains("\"tag\":\"dns-real\""))
+        XCTAssertTrue(singBox.json.contains("\"type\":\"udp\""))
+        XCTAssertTrue(singBox.json.contains("\"server\":\"223.5.5.5\""))
+        XCTAssertFalse(singBox.json.contains("\"type\":\"fakeip\""))
+        XCTAssertFalse(singBox.json.contains("9.9.9.10"))
+        XCTAssertFalse(singBox.json.contains("\"detour\":\"proxy\""))
+        XCTAssertTrue(singBox.manifest.directRouteAddresses.contains("223.5.5.5"))
     }
 
-    func testPrivacyDNSUsesProxyDetourOutsideDirectMode() throws {
+    func testPrivacyDNSUsesProxyInProxyModesAndDirectResolverInDirectMode() throws {
         let fixture = makeFixture(protocolKind: .trojan, transport: .tcp, security: .tls)
         let credential = ProxyCredentialEnvelope(
             authentication: ["password": "synthetic-password"],
@@ -294,13 +482,17 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertTrue(global.json.contains("\"type\":\"https\""))
         XCTAssertTrue(global.json.contains("\"server\":\"9.9.9.10\""))
         XCTAssertTrue(global.json.contains("\"server_name\":\"dns10.quad9.net\""))
+        XCTAssertFalse(global.json.contains("\"type\":\"fakeip\""))
         XCTAssertTrue(global.json.contains("\"detour\":\"proxy\""))
+        XCTAssertFalse(global.manifest.directRouteAddresses.contains("9.9.9.10"))
         XCTAssertTrue(direct.json.contains("\"type\":\"https\""))
         XCTAssertTrue(direct.json.contains("\"server\":\"9.9.9.10\""))
+        XCTAssertFalse(direct.json.contains("\"type\":\"fakeip\""))
         XCTAssertFalse(direct.json.contains("\"detour\":\"proxy\""))
+        XCTAssertTrue(direct.manifest.directRouteAddresses.contains("9.9.9.10"))
     }
 
-    func testAutomaticDNSUsesProxyDetourOutsideDirectMode() throws {
+    func testAutomaticDNSUsesSystemResolverInAllModes() throws {
         let fixture = makeFixture(protocolKind: .trojan, transport: .tcp, security: .tls)
         let credential = ProxyCredentialEnvelope(
             authentication: ["password": "synthetic-password"],
@@ -326,12 +518,216 @@ final class CoreConfigurationCompilerTests: XCTestCase {
             manifest: directManifest, node: fixture.node, credential: credential, for: .singBox
         )
 
-        XCTAssertTrue(global.json.contains("\"type\":\"https\""))
-        XCTAssertTrue(global.json.contains("9.9.9.10"))
-        XCTAssertTrue(global.json.contains("\"detour\":\"proxy\""))
+        XCTAssertTrue(global.json.contains("\"tag\":\"dns-real\""))
+        XCTAssertTrue(global.json.contains("\"type\":\"local\""))
+        XCTAssertFalse(global.json.contains("223.5.5.5"))
+        XCTAssertFalse(global.json.contains("\"type\":\"fakeip\""))
+        XCTAssertFalse(global.json.contains("9.9.9.10"))
+        XCTAssertFalse(global.json.contains("\"detour\":\"proxy\""))
+        XCTAssertFalse(global.manifest.directRouteAddresses.contains("9.9.9.10"))
         XCTAssertTrue(direct.json.contains("\"type\":\"local\""))
+        XCTAssertFalse(direct.json.contains("223.5.5.5"))
+        XCTAssertFalse(direct.json.contains("\"type\":\"fakeip\""))
         XCTAssertFalse(direct.json.contains("9.9.9.10"))
         XCTAssertFalse(direct.json.contains("\"detour\":\"proxy\""))
+    }
+
+    func testRuntimeManifestPrioritizesCompilerRequiredRoutesAtTheAddressLimit() throws {
+        let base = makeFixture(protocolKind: .vless, transport: .webSocket, security: .tls)
+        let fixture = (
+            manifest: base.manifest,
+            node: NodeRecord(
+                id: base.node.id,
+                subscriptionID: base.node.subscriptionID,
+                sortIndex: base.node.sortIndex,
+                displayName: base.node.displayName,
+                protocolKind: base.node.protocolKind,
+                transport: base.node.transport,
+                security: base.node.security,
+                requiresUDP: base.node.requiresUDP,
+                endpointHost: "203.0.113.10",
+                endpointPort: base.node.endpointPort,
+                credentialReference: base.node.credentialReference
+            )
+        )
+        let manifest = RuntimeManifest(
+            corePolicy: .automatic,
+            profile: fixture.manifest.profile,
+            directRouteAddresses: (0..<DirectRouteAddressValidator.maximumAddressCount).map {
+                "2001:db8::\(String($0, radix: 16))"
+            }
+        )
+
+        let compiled = try compiler.compile(
+            manifest: manifest,
+            node: fixture.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: [
+                    "sni": "edge.example.invalid",
+                    "ech-opts.enable": "true",
+                    "ech-opts.query-server-name": "cloudflare-ech.com",
+                ]
+            ),
+            for: .singBox
+        )
+
+        XCTAssertEqual(
+            compiled.manifest.directRouteAddresses.count,
+            DirectRouteAddressValidator.maximumAddressCount
+        )
+        XCTAssertTrue(compiled.manifest.directRouteAddresses.contains("223.5.5.5"))
+        XCTAssertTrue(compiled.manifest.directRouteAddresses.contains(fixture.node.endpointHost))
+    }
+
+    func testCompilesVLESSWebSocketTLSFromURIOptions() throws {
+        let parsed = try SubscriptionParser().parse(
+            """
+            vless://11111111-2222-3333-4444-555555555555@203.0.113.10:443?\
+            security=tls&type=ws&ech=cloudflare-ech.com+https://dns.alidns.com/dns-query\
+            &host=edge.example.invalid&fp=chrome&sni=edge.example.invalid&path=/
+            """
+        )
+        let node = parsed.nodes[0]
+        let record = NodeRecord(
+            id: UUID(),
+            subscriptionID: UUID(),
+            sortIndex: 0,
+            displayName: node.displayName,
+            protocolKind: node.protocolKind,
+            transport: node.transport,
+            security: node.security,
+            requiresUDP: node.requiresUDP,
+            endpointHost: node.endpointHost,
+            endpointPort: node.endpointPort,
+            credentialReference: "vless-ws"
+        )
+        let manifest = RuntimeManifest(
+            corePolicy: .automatic,
+            profile: RuntimeProfile(
+                id: record.id,
+                protocolKind: record.protocolKind,
+                transport: record.transport,
+                security: record.security,
+                requiresUDP: record.requiresUDP,
+                credential: SecretReference(keychainIdentifier: record.credentialReference)
+            )
+        )
+        let compiled = try compiler.compile(
+            manifest: manifest,
+            node: record,
+            credential: node.credential,
+            for: .singBox
+        )
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(compiled.json.utf8)) as? [String: Any]
+        )
+        let outbound = try XCTUnwrap(
+            (object["outbounds"] as? [[String: Any]])?.first
+        )
+        XCTAssertEqual(outbound["type"] as? String, "vless")
+        XCTAssertEqual(outbound["server"] as? String, "203.0.113.10")
+        XCTAssertEqual(outbound["packet_encoding"] as? String, "xudp")
+        let tls = try XCTUnwrap(outbound["tls"] as? [String: Any])
+        XCTAssertEqual(tls["server_name"] as? String, "edge.example.invalid")
+        XCTAssertEqual((tls["utls"] as? [String: Any])?["fingerprint"] as? String, "chrome")
+        let ech = try XCTUnwrap(tls["ech"] as? [String: Any])
+        XCTAssertEqual(ech["enabled"] as? Bool, true)
+        XCTAssertEqual(ech["query_server_name"] as? String, "cloudflare-ech.com")
+        let transport = try XCTUnwrap(outbound["transport"] as? [String: Any])
+        XCTAssertEqual(transport["type"] as? String, "ws")
+        XCTAssertEqual(transport["path"] as? String, "/")
+        XCTAssertEqual((transport["headers"] as? [String: Any])?["Host"] as? String, "edge.example.invalid")
+    }
+
+    func testCompatibilityPreservesECHAndRoutesItsHTTPSLookupToBootstrap() throws {
+        let fixture = makeFixture(protocolKind: .vless, transport: .webSocket, security: .tls)
+        let manifest = RuntimeManifest(
+            corePolicy: .automatic,
+            profile: fixture.manifest.profile,
+            dnsPreset: .compatibility
+        )
+        let compiled = try compiler.compile(
+            manifest: manifest,
+            node: fixture.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: [
+                    "sni": "edge.example.invalid",
+                    "ech": "cloudflare-ech.com+https://dns.alidns.com/dns-query",
+                ]
+            ),
+            for: .singBox
+        )
+        XCTAssertTrue(compiled.json.contains("\"ech\":"))
+        XCTAssertTrue(compiled.json.contains("cloudflare-ech.com"))
+        XCTAssertTrue(compiled.json.contains("\"server\":\"dns-bootstrap\""))
+        XCTAssertTrue(compiled.json.contains("\"server\":\"223.5.5.5\""))
+        XCTAssertTrue(compiled.json.contains("\"server_name\":\"dns.alidns.com\""))
+        XCTAssertTrue(compiled.json.contains("\"query_type\":[\"HTTPS\"]"))
+        XCTAssertFalse(compiled.json.contains("\"type\":\"fakeip\""))
+        XCTAssertTrue(compiled.manifest.directRouteAddresses.contains("223.5.5.5"))
+    }
+
+    func testECHUsesProviderDeclaredDoHWithPreflightAddress() throws {
+        let fixture = makeFixture(protocolKind: .vless, transport: .webSocket, security: .tls)
+        let manifest = RuntimeManifest(
+            corePolicy: .automatic,
+            profile: fixture.manifest.profile,
+            dnsBootstrapAddressMap: ["resolver.example": ["203.0.113.53"]]
+        )
+        let compiled = try compiler.compile(
+            manifest: manifest,
+            node: fixture.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                options: [
+                    "sni": "edge.example.invalid",
+                    "ech": "cloudflare-ech.com+https://resolver.example:8443/custom-dns",
+                ]
+            ),
+            for: .singBox
+        )
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(compiled.json.utf8)) as? [String: Any]
+        )
+        let dns = try XCTUnwrap(object["dns"] as? [String: Any])
+        let servers = try XCTUnwrap(dns["servers"] as? [[String: Any]])
+        let bootstrap = try XCTUnwrap(servers.first(where: {
+            $0["tag"] as? String == "dns-bootstrap"
+        }))
+        XCTAssertEqual(bootstrap["server"] as? String, "203.0.113.53")
+        XCTAssertEqual(bootstrap["server_port"] as? Int, 8443)
+        XCTAssertEqual(bootstrap["path"] as? String, "/custom-dns")
+        XCTAssertEqual(
+            (bootstrap["tls"] as? [String: Any])?["server_name"] as? String,
+            "resolver.example"
+        )
+        XCTAssertFalse(servers.contains { $0["server"] as? String == "223.5.5.5" })
+        XCTAssertTrue(compiled.manifest.directRouteAddresses.contains("203.0.113.53"))
+    }
+
+    func testECHFailsClosedForUnresolvedOrInsecureDeclaredResolver() throws {
+        let fixture = makeFixture(protocolKind: .vless, transport: .webSocket, security: .tls)
+        for raw in [
+            "cloudflare-ech.com+https://unresolved.example/dns-query",
+            "cloudflare-ech.com+http://203.0.113.53/dns-query",
+        ] {
+            XCTAssertThrowsError(try compiler.compile(
+                manifest: fixture.manifest,
+                node: fixture.node,
+                credential: ProxyCredentialEnvelope(
+                    authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                    options: ["sni": "edge.example.invalid", "ech": raw]
+                ),
+                for: .singBox
+            )) { error in
+                guard case let CoreConfigurationError.unsupportedProxyOption(option) = error else {
+                    return XCTFail("Unexpected error: \(error)")
+                }
+                XCTAssertTrue(["ech.resolver", "ech.resolver_unresolved"].contains(option))
+            }
+        }
     }
 
     func testBinarySmartCompilesDirectCurrentNodeAndReject() throws {
@@ -518,8 +914,10 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         )
         let singBoxRoute = try XCTUnwrap(singBoxObject["route"] as? [String: Any])
         let singBoxRules = try XCTUnwrap(singBoxRoute["rules"] as? [[String: Any]])
-        XCTAssertEqual(singBoxRules.count, 4, "DNS hijack plus three bounded domain batches")
-        XCTAssertEqual(singBoxRules[1]["domain_suffix"] as? [String],
+        XCTAssertEqual(singBoxRules.count, 5, "DNS hijack, sniff, plus three bounded domain batches")
+        XCTAssertEqual(singBoxRules[0]["action"] as? String, "hijack-dns")
+        XCTAssertEqual(singBoxRules[1]["action"] as? String, "sniff")
+        XCTAssertEqual(singBoxRules[2]["domain_suffix"] as? [String],
                        rules.prefix(512).compactMap { rule in
                            if case let .domainSuffix(value) = rule.match { return value }
                            return nil

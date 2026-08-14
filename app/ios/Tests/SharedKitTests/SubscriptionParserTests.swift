@@ -1,4 +1,4 @@
-import DataKit
+@testable import DataKit
 import Foundation
 import SharedKit
 import XCTest
@@ -106,6 +106,83 @@ final class SubscriptionParserTests: XCTestCase {
         )
         XCTAssertEqual(parsed.nodes[1].transport, .quic)
         XCTAssertEqual(parsed.skippedNodeCount, 1)
+    }
+
+    func testPreservesNestedECHTLSWebSocketAndHysteria2Options() throws {
+        let yaml = """
+        proxies:
+          - name: TEST-ECH
+            type: vless
+            server: 203.0.113.10
+            port: 443
+            uuid: 11111111-2222-3333-4444-555555555555
+            network: ws
+            tls: true
+            sni: edge.example.invalid
+            skip-cert-verify: false
+            alpn:
+              - h2
+              - http/1.1
+            ech-opts:
+              enable: true
+              query-server-name: cloudflare-ech.com
+            ws-opts:
+              path: /socket
+              max-early-data: 2048
+              early-data-header-name: Sec-WebSocket-Protocol
+              headers:
+                Host: edge.example.invalid
+          - name: TEST-HY2
+            type: hysteria2
+            server: hy2.example.invalid
+            port: 443
+            password: synthetic
+            obfs: salamander
+            obfs-password: obfs-secret
+            up: 50
+            down: 100
+            ports: 20000-30000
+            hop-interval: 30
+        """
+
+        let parsed = try parser.parse(yaml)
+        XCTAssertEqual(parsed.nodes.count, 2)
+        let ech = parsed.nodes[0].credential.options
+        XCTAssertEqual(ech["ech-opts.enable"], "true")
+        XCTAssertEqual(ech["ech-opts.query-server-name"], "cloudflare-ech.com")
+        XCTAssertEqual(ech["alpn"], "h2,http/1.1")
+        XCTAssertEqual(ech["ws-opts.max-early-data"], "2048")
+        XCTAssertEqual(ech["ws-opts.headers.Host"], "edge.example.invalid")
+
+        let hysteria2 = parsed.nodes[1].credential.options
+        XCTAssertEqual(hysteria2["obfs"], "salamander")
+        XCTAssertEqual(hysteria2["obfs-password"], "obfs-secret")
+        XCTAssertEqual(hysteria2["ports"], "20000-30000")
+        XCTAssertEqual(hysteria2["hop-interval"], "30")
+    }
+
+    func testFlattensInlineNestedClashOptions() throws {
+        let parsed = try parser.parse(
+            """
+            proxies:
+              - { name: INLINE-ECH, type: vless, server: 203.0.113.10, port: 443, uuid: 11111111-2222-3333-4444-555555555555, network: ws, tls: true, ech-opts: { enable: true, query-server-name: cloudflare-ech.com }, ws-opts: { path: /socket, headers: { Host: edge.example.invalid } } }
+            """
+        )
+
+        let options = try XCTUnwrap(parsed.nodes.first?.credential.options)
+        XCTAssertEqual(options["ech-opts.enable"], "true")
+        XCTAssertEqual(options["ech-opts.query-server-name"], "cloudflare-ech.com")
+        XCTAssertEqual(options["ws-opts.path"], "/socket")
+        XCTAssertEqual(options["ws-opts.headers.Host"], "edge.example.invalid")
+    }
+
+    func testMapsH2TransportInsteadOfSilentlyDowngradingToTCP() throws {
+        let parsed = try parser.parse(
+            "vless://11111111-2222-3333-4444-555555555555@node.example.invalid:443"
+                + "?security=tls&type=h2&host=edge.example.invalid&path=/h2#H2"
+        )
+
+        XCTAssertEqual(parsed.nodes.first?.transport, .http)
     }
 
     func testNormalizesClashGroupsIntoBinarySmartActions() throws {
@@ -235,6 +312,32 @@ final class SubscriptionParserTests: XCTestCase {
             policy.ruleSets.first(where: { $0.tag == "local-domains" })?.source,
             .inline([.domainSuffix("corp.example"), .domainSuffix("exact.example")])
         )
+        XCTAssertEqual(policy.defaultAction, .proxyCurrentNode)
+    }
+
+    func testClashSmartSkipsProcessNameBecauseAppleTUNCannotObserveIt() throws {
+        let yaml = """
+        proxies:
+          - { name: HK-01, type: trojan, server: hk.example.invalid, port: 443, password: synthetic }
+        proxy-groups:
+          - name: Proxy
+            type: select
+            proxies: [HK-01]
+        rules:
+          - DOMAIN-SUFFIX,example.com,Proxy
+          - PROCESS-NAME,com.viu.phone,Proxy
+          - PROCESS-NAME,Telegram.exe,Proxy
+          - DOMAIN-SUFFIX,viu.com,Proxy
+          - MATCH,Proxy
+        """
+
+        let parsed = try parser.parse(yaml)
+        XCTAssertEqual(parsed.nodes.map(\.displayName), ["HK-01"])
+        let policy = try XCTUnwrap(parsed.routePolicy)
+        XCTAssertEqual(policy.rules, [
+            ProviderRouteRule(match: .domainSuffix("example.com"), action: .proxyCurrentNode),
+            ProviderRouteRule(match: .domainSuffix("viu.com"), action: .proxyCurrentNode),
+        ])
         XCTAssertEqual(policy.defaultAction, .proxyCurrentNode)
     }
 
@@ -421,19 +524,34 @@ final class SubscriptionParserTests: XCTestCase {
         }
     }
 
-    func testSurgeSmartRejectsInboundPortThatTunCannotObserve() {
+    func testSurgeSmartSkipsInboundPortThatTunCannotObserve() throws {
         let surge = """
         [Proxy]
         TEST-SS = ss, ss.example.invalid, 8388, encrypt-method=aes-128-gcm, password=synthetic
 
         [Rule]
         IN-PORT,7890,TEST-SS
+        DOMAIN-SUFFIX,example.com,TEST-SS
         FINAL,TEST-SS
         """
 
-        XCTAssertThrowsError(try parser.parse(surge)) { error in
-            XCTAssertEqual(error as? SubscriptionParserError, .unsupportedRouteRule("IN-PORT"))
-        }
+        let policy = try XCTUnwrap(parser.parse(surge).routePolicy)
+        XCTAssertEqual(policy.rules, [
+            ProviderRouteRule(match: .domainSuffix("example.com"), action: .proxyCurrentNode),
+        ])
+        XCTAssertEqual(policy.defaultAction, .proxyCurrentNode)
+    }
+
+    func testURIListSkipsMalformedLineInsteadOfFailingTheWholeList() throws {
+        let payload = [
+            "not a uri at all",
+            "vless://11111111-2222-3333-4444-555555555555@good.example.invalid:443?security=tls#GOOD",
+            "vless://missing-host-and-port",
+        ].joined(separator: "\n")
+
+        let parsed = try parser.parse(payload)
+        XCTAssertEqual(parsed.nodes.map(\.displayName), ["GOOD"])
+        XCTAssertEqual(parsed.skippedNodeCount, 2)
     }
 
     func testBinarySmartUsesCurrentNodeOutsideProviderGroup() {
@@ -457,6 +575,63 @@ final class SubscriptionParserTests: XCTestCase {
         XCTAssertThrowsError(try parser.parse(yaml)) { error in
             XCTAssertEqual(error as? SubscriptionParserError, .unsafeYAMLFeature)
         }
+    }
+}
+
+final class SubscriptionPayloadLoaderClipboardTests: XCTestCase {
+    func testUsesProductUserAgentWithoutImpersonatingAFormat() {
+        XCTAssertEqual(
+            SubscriptionPayloadLoader.subscriptionUserAgent(version: "1.2.3"),
+            "Routeva/1.2.3"
+        )
+        XCTAssertEqual(
+            SubscriptionPayloadLoader.subscriptionUserAgent(version: "1.2 beta!"),
+            "Routeva/1.2beta"
+        )
+        XCTAssertEqual(
+            SubscriptionPayloadLoader.subscriptionUserAgent(version: nil),
+            "Routeva/1.0"
+        )
+    }
+
+    func testExtractsBareQuotedAndMixedHTTPSLinks() {
+        let url = URL(string: "https://provider.example.invalid/sub")!
+        XCTAssertEqual(
+            SubscriptionPayloadLoader.remoteHTTPSURL(fromClipboard: url.absoluteString),
+            url
+        )
+        XCTAssertEqual(
+            SubscriptionPayloadLoader.remoteHTTPSURL(fromClipboard: "\"\(url.absoluteString)\""),
+            url
+        )
+        XCTAssertEqual(
+            SubscriptionPayloadLoader.remoteHTTPSURL(
+                fromClipboard: "碧影订阅 \(url.absoluteString) 备用"
+            ),
+            url
+        )
+    }
+
+    func testExtractsClashOneClickInstallURL() {
+        let encoded = "clash://install-config?url=https%3A%2F%2Fprovider.example.invalid%2Fsub"
+        XCTAssertEqual(
+            SubscriptionPayloadLoader.remoteHTTPSURL(fromClipboard: encoded)?.absoluteString,
+            "https://provider.example.invalid/sub"
+        )
+    }
+
+    func testIgnoresPlainNodeURI() {
+        XCTAssertNil(
+            SubscriptionPayloadLoader.remoteHTTPSURL(
+                fromClipboard: "vless://11111111-2222-3333-4444-555555555555@node.example.invalid:443"
+            )
+        )
+    }
+
+    func testDoesNotTreatECHQueryDNSAsSubscriptionURL() {
+        let uri = "vless://11111111-2222-3333-4444-555555555555@node.example.invalid:443"
+            + "?security=tls&ech=cloudflare-ech.com+https://dns.alidns.com/dns-query#DE"
+        XCTAssertNil(SubscriptionPayloadLoader.remoteHTTPSURL(fromClipboard: uri))
     }
 }
 

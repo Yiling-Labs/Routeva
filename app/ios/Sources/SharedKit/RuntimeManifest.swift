@@ -73,7 +73,7 @@ public enum SingBoxRuntimeCatalogPlanner {
 }
 
 public struct RuntimeManifest: Codable, Equatable, Sendable {
-    public static let currentSchemaVersion = 5
+    public static let currentSchemaVersion = 6
     /// Each endpoint hostname may preflight up to eight addresses and the
     /// Packet Tunnel accepts at most 256 host-sized excluded routes.
     public static let maximumSingBoxCatalogProfiles = 32
@@ -103,6 +103,11 @@ public struct RuntimeManifest: Codable, Equatable, Sendable {
     public let routingMode: RoutingMode
     public let dnsPreset: DNSPreset
     public let directRouteAddresses: [String]
+    /// Physical-network A/AAAA results captured before the Packet Tunnel
+    /// publishes its DNS settings. Keys are proxy-endpoint or ECH-resolver
+    /// bootstrap hostnames; values are numeric addresses only. Older manifests
+    /// decode this as empty.
+    public let dnsBootstrapAddressMap: [String: [String]]
     public let providerRoutePolicy: ProviderRoutePolicy?
     public let domainOverrides: [RuntimeDomainOverride]
 
@@ -116,6 +121,7 @@ public struct RuntimeManifest: Codable, Equatable, Sendable {
         routingMode: RoutingMode = .automatic,
         dnsPreset: DNSPreset = .automatic,
         directRouteAddresses: [String] = [],
+        dnsBootstrapAddressMap: [String: [String]] = [:],
         providerRoutePolicy: ProviderRoutePolicy? = nil,
         domainOverrides: [RuntimeDomainOverride] = []
     ) {
@@ -128,13 +134,14 @@ public struct RuntimeManifest: Codable, Equatable, Sendable {
         self.routingMode = routingMode
         self.dnsPreset = dnsPreset
         self.directRouteAddresses = directRouteAddresses
+        self.dnsBootstrapAddressMap = dnsBootstrapAddressMap
         self.providerRoutePolicy = providerRoutePolicy
         self.domainOverrides = domainOverrides
     }
 
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, manifestID, createdAt, corePolicy, profile, profiles, routingMode, dnsPreset
-        case directRouteAddresses, providerRoutePolicy, domainOverrides
+        case directRouteAddresses, dnsBootstrapAddressMap, providerRoutePolicy, domainOverrides
     }
 
     public init(from decoder: Decoder) throws {
@@ -148,6 +155,10 @@ public struct RuntimeManifest: Codable, Equatable, Sendable {
         routingMode = try values.decodeIfPresent(RoutingMode.self, forKey: .routingMode) ?? .automatic
         dnsPreset = try values.decodeIfPresent(DNSPreset.self, forKey: .dnsPreset) ?? .automatic
         directRouteAddresses = try values.decodeIfPresent([String].self, forKey: .directRouteAddresses) ?? []
+        dnsBootstrapAddressMap = try values.decodeIfPresent(
+            [String: [String]].self,
+            forKey: .dnsBootstrapAddressMap
+        ) ?? [:]
         providerRoutePolicy = try values.decodeIfPresent(ProviderRoutePolicy.self, forKey: .providerRoutePolicy)
         domainOverrides = try values.decodeIfPresent([RuntimeDomainOverride].self, forKey: .domainOverrides) ?? []
     }

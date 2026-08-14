@@ -261,6 +261,77 @@ final class SingBoxConfigurationValidationTests: XCTestCase {
         XCTAssertNil(validationError)
     }
 
+    func testCompiledQueryECHAndCommonTransportsPassLinkedLibboxValidation() throws {
+        for (transport, options) in [
+            (
+                TransportKind.webSocket,
+                [
+                    "sni": "edge.example.invalid",
+                    "ech": "cloudflare-ech.com+https://resolver.example/dns-query",
+                    "ws-opts.path": "/socket",
+                    "ws-opts.max-early-data": "2048",
+                    "ws-opts.early-data-header-name": "Sec-WebSocket-Protocol",
+                    "alpn": "[h2, http/1.1]",
+                ]
+            ),
+            (
+                TransportKind.http,
+                [
+                    "sni": "edge.example.invalid",
+                    "host": "edge.example.invalid",
+                    "path": "/h2",
+                ]
+            ),
+        ] {
+            let nodeID = UUID()
+            let credentialReference = "synthetic-credential-\(nodeID.uuidString)"
+            let node = NodeRecord(
+                id: nodeID,
+                subscriptionID: UUID(),
+                sortIndex: 0,
+                displayName: "TEST-VLESS",
+                protocolKind: .vless,
+                transport: transport,
+                security: .tls,
+                requiresUDP: true,
+                endpointHost: "203.0.113.10",
+                endpointPort: 443,
+                credentialReference: credentialReference
+            )
+            let manifest = RuntimeManifest(
+                corePolicy: .singBox,
+                profile: RuntimeProfile(
+                    id: nodeID,
+                    protocolKind: .vless,
+                    transport: transport,
+                    security: .tls,
+                    requiresUDP: true,
+                    credential: SecretReference(keychainIdentifier: credentialReference)
+                ),
+                dnsPreset: .automatic,
+                dnsBootstrapAddressMap: [
+                    "resolver.example": ["203.0.113.53"],
+                ]
+            )
+            let compiled = try CoreConfigurationCompiler().compile(
+                manifest: manifest,
+                node: node,
+                credential: ProxyCredentialEnvelope(
+                    authentication: ["uuid": "11111111-2222-3333-4444-555555555555"],
+                    options: options
+                ),
+                for: .singBox
+            )
+
+            var validationError: NSError?
+            XCTAssertTrue(
+                LibboxCheckConfig(compiled.json, &validationError),
+                validationError?.localizedDescription ?? ""
+            )
+            XCTAssertNil(validationError)
+        }
+    }
+
     func testCompiledShadowsocksPluginsPassLinkedLibboxValidation() throws {
         let nodeID = UUID()
         let credentialReference = "synthetic-credential-\(nodeID.uuidString)"
@@ -288,7 +359,10 @@ final class SingBoxConfigurationValidationTests: XCTestCase {
                 credential: SecretReference(keychainIdentifier: credentialReference)
             ),
             routingMode: .global,
-            dnsPreset: .automatic
+            dnsPreset: .automatic,
+            dnsBootstrapAddressMap: [
+                "proxy.example.invalid": ["203.0.113.20"],
+            ]
         )
         let authentication = [
             "method": "aes-128-gcm",
@@ -797,7 +871,7 @@ private final class SyntheticPacketFlowPlatform: NSObject,
     func autoDetectControl(_ fd: Int32) throws {}
     func useProcFS() -> Bool { false }
     func underNetworkExtension() -> Bool { true }
-    func includeAllNetworks() -> Bool { true }
+    func includeAllNetworks() -> Bool { false }
     func localDNSTransport() -> LibboxLocalDNSTransportProtocol? { nil }
     func systemCertificates() -> LibboxStringIteratorProtocol? { nil }
     func readWIFIState() -> LibboxWIFIState? { nil }

@@ -1,0 +1,67 @@
+diff --git a/common/tls/utls_client.go b/common/tls/utls_client.go
+index 941192ba1..29eac651f 100644
+--- a/common/tls/utls_client.go
++++ b/common/tls/utls_client.go
+@@ -6,6 +6,7 @@ import (
+ 	"context"
+ 	"crypto/tls"
+ 	"crypto/x509"
++	"errors"
+ 	"math/rand"
+ 	"net"
+ 	"os"
+@@ -139,7 +140,15 @@ func (c *utlsALPNWrapper) HandshakeContext(ctx context.Context) error {
+ 			}
+ 		}
+ 	}
+-	return c.UConn.HandshakeContext(ctx)
++	return translateUTLSECHRejection(c.UConn.HandshakeContext(ctx))
++}
++
++func translateUTLSECHRejection(err error) error {
++	var echErr *utls.ECHRejectionError
++	if errors.As(err, &echErr) {
++		return &tls.ECHRejectionError{RetryConfigList: echErr.RetryConfigList}
++	}
++	return err
+ }
+ 
+ func NewUTLSClient(ctx context.Context, logger logger.ContextLogger, serverAddress string, options option.OutboundTLSOptions) (Config, error) {
+diff --git a/common/tls/utls_client_test.go b/common/tls/utls_client_test.go
+new file mode 100644
+index 000000000..93e188529
+--- /dev/null
++++ b/common/tls/utls_client_test.go
+@@ -0,0 +1,32 @@
++//go:build with_utls
++
++package tls
++
++import (
++	"crypto/tls"
++	"errors"
++	"testing"
++
++	utls "github.com/metacubex/utls"
++)
++
++func TestTranslateUTLSECHRejection(t *testing.T) {
++	retryConfigList := []byte{1, 2, 3, 4}
++	err := translateUTLSECHRejection(&utls.ECHRejectionError{
++		RetryConfigList: retryConfigList,
++	})
++	var echErr *tls.ECHRejectionError
++	if !errors.As(err, &echErr) {
++		t.Fatalf("expected crypto/tls ECHRejectionError, got %T", err)
++	}
++	if string(echErr.RetryConfigList) != string(retryConfigList) {
++		t.Fatalf("unexpected retry config list: %v", echErr.RetryConfigList)
++	}
++}
++
++func TestTranslateUTLSECHRejectionPreservesOtherErrors(t *testing.T) {
++	original := errors.New("unrelated")
++	if translated := translateUTLSECHRejection(original); translated != original {
++		t.Fatal("non-ECH error identity changed")
++	}
++}

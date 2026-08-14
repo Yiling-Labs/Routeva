@@ -9,13 +9,14 @@ public enum DirectRouteAddressValidator {
         var result: [String] = []
         result.reserveCapacity(min(addresses.count, maximumAddressCount))
 
-        for address in addresses.prefix(maximumAddressCount) {
+        for address in addresses {
             guard address == address.trimmingCharacters(in: .whitespacesAndNewlines),
                   IPv4Address(address) != nil || IPv6Address(address) != nil,
                   seen.insert(address).inserted else {
                 continue
             }
             result.append(address)
+            if result.count == maximumAddressCount { break }
         }
         return result
     }

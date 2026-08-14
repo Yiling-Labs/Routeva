@@ -10,10 +10,12 @@ extension and reconstructs its configuration from a versioned manifest and
 shared Keychain material at startup.
 
 The sing-box runtime is pinned to v1.13.12 at commit
-`1086ab2563320e0da0c23b3a491d8dfa0939dff4`. Routeva applies the two checked-in
+`1086ab2563320e0da0c23b3a491d8dfa0939dff4`. Routeva applies three checked-in
 patches: `0001-packet-flow-datagram-bridge.patch` adds the
 Libbox platform bridge contract, and `0002-sing-tun-packet-flow-readv.patch`
-selects sing-tun v0.8.9's socketpair-compatible gVisor reader. Routeva uses
+selects sing-tun v0.8.9's socketpair-compatible gVisor reader;
+`0003-utls-ech-retry.patch` preserves the browser fingerprint while feeding
+uTLS ECH retry configurations into sing-box's existing retry path. Routeva uses
 only the public `NEPacketTunnelFlow` packet APIs. The extension does not extract
 Apple's private `socket.fileDescriptor` value.
 

@@ -19,6 +19,7 @@ final class RuntimeManifestTests: XCTestCase {
         object.removeValue(forKey: "routingMode")
         object.removeValue(forKey: "dnsPreset")
         object.removeValue(forKey: "directRouteAddresses")
+        object.removeValue(forKey: "dnsBootstrapAddressMap")
         object.removeValue(forKey: "providerRoutePolicy")
         object.removeValue(forKey: "domainOverrides")
         object.removeValue(forKey: "profiles")
@@ -31,12 +32,13 @@ final class RuntimeManifestTests: XCTestCase {
         XCTAssertEqual(decoded.routingMode, .automatic)
         XCTAssertEqual(decoded.dnsPreset, .automatic)
         XCTAssertTrue(decoded.directRouteAddresses.isEmpty)
+        XCTAssertTrue(decoded.dnsBootstrapAddressMap.isEmpty)
         XCTAssertNil(decoded.providerRoutePolicy)
         XCTAssertTrue(decoded.domainOverrides.isEmpty)
         XCTAssertEqual(decoded.profiles, [decoded.profile])
     }
 
-    func testSchemaFiveCatalogAndStableOutboundTagsRoundTrip() throws {
+    func testSchemaSixCatalogBootstrapAddressesAndStableOutboundTagsRoundTrip() throws {
         let first = RuntimeProfile(
             id: UUID(), protocolKind: .shadowsocks, transport: .tcp,
             security: .none, requiresUDP: true,
@@ -50,15 +52,19 @@ final class RuntimeManifestTests: XCTestCase {
         let manifest = RuntimeManifest(
             corePolicy: .singBox,
             profile: second,
-            profiles: [first, second]
+            profiles: [first, second],
+            dnsBootstrapAddressMap: [
+                "resolver.example": ["203.0.113.53", "2001:db8::53"],
+            ]
         )
 
         let decoded = try JSONDecoder().decode(
             RuntimeManifest.self,
             from: JSONEncoder().encode(manifest)
         )
-        XCTAssertEqual(decoded.schemaVersion, 5)
+        XCTAssertEqual(decoded.schemaVersion, 6)
         XCTAssertEqual(decoded.profiles, [first, second])
+        XCTAssertEqual(decoded.dnsBootstrapAddressMap, manifest.dnsBootstrapAddressMap)
         for profile in decoded.profiles {
             let tag = SingBoxNodeSelector.outboundTag(for: profile.id)
             XCTAssertEqual(SingBoxNodeSelector.nodeID(fromOutboundTag: tag), profile.id)
@@ -102,6 +108,16 @@ final class RuntimeManifestTests: XCTestCase {
         XCTAssertEqual(
             DirectRouteAddressValidator.validated(input).count,
             DirectRouteAddressValidator.maximumAddressCount
+        )
+    }
+
+    func testInvalidDirectRouteValuesDoNotConsumeTheValidAddressLimit() {
+        let input = Array(repeating: "resolver.example.invalid", count: 300)
+            + ["203.0.113.53"]
+
+        XCTAssertEqual(
+            DirectRouteAddressValidator.validated(input),
+            ["203.0.113.53"]
         )
     }
 

@@ -86,7 +86,7 @@
 - **VPN 权限（Platform Realization）：** 首次真正连接手势时出 **系统 VPN 授权**（iOS：系统 VPN 弹窗；Android：VpnService / 系统 VPN 权限流）；拒绝 → 回 Home Idle；同意 → 连接至 Connection Success。用途说明放商店/隐私文案，不单独做应用内说明屏。不要求注册/邮箱。
 - **Add Subscription：** Paste from Clipboard 为主，Scan QR / Import file 为辅；**无**手填主 UI、**无**「剪贴板已发现」独立页。解析为叠在 Add 上的 **Parsing 模态**（源相关文案：*Reading from Clipboard…* / *Reading QR code…* / *Reading file…*）。失败：页内短句 + Paste again；**不覆盖**已有配置。
 - **导入成功：** 直接回 **Home Idle（同壳）** + 短 toast（**Subscription Display Name · 节点数**；**2–3s** 自动消失）；设 Active；**不**自动连；**不**强制命名（自动取名 + Subscriptions 内可选 Rename，见 ADR 0033）。详细字段（到期/流量/更新时间等）进订阅详情，不挡首次路径。
-- **多订阅模型（Active Subscription）：** 可保存多份 Subscription；同一时间仅 **1 个 Active** 用于连接 / 选节点 / Probe / 诊断 / Repair / Failover。切换 Active 须用户明确操作，记入 Activity；不默认合并多订阅节点池；不做多隧道并行。首次导入的订阅自动成为 Active。
+- **多订阅模型（Active Subscription）：** 可保存多份 Subscription；同一时间仅 **1 个 Active** 用于连接 / 选节点 / Probe / 诊断 / Repair / Failover。切换 Active 须用户明确操作，记入 Activity；**若当前 Connected / Connecting，先停止会话再切，不自动重连**；不默认合并多订阅节点池；不做多隧道并行。首次导入的订阅自动成为 Active。
 - **Subscription Refresh（少打扰 · ADR 0015）：**
   - **用户总闸：** Settings › App · **Auto-update subscription**（全局 Toggle，**默认开**）。关 → 无自动路径。
   - **内容：** 成功则**整份替换**（节点 + 可解析服务商规则/策略组 + 有则到期/流量元数据 + *Updated*）；用户 Rename 的显示名不覆盖。

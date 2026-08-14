@@ -36,3 +36,4 @@
 "Unknown location" = "Unknown location";
 "Selected" = "Selected";
 "Couldn’t switch node. Kept previous connection." = "Couldn’t switch node. Kept previous connection.";
+"Couldn’t test latency on this connection." = "Couldn’t test latency on this connection.";

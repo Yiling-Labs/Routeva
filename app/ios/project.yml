@@ -112,6 +112,7 @@ targets:
       - target: DataKit
       - target: CoreConfigKit
       - target: PacketTunnelBridgeKit
+      - framework: Vendor/Libbox.xcframework
       - sdk: UIKit.framework
       - sdk: libresolv.tbd
     entitlements:

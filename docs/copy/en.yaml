@@ -189,6 +189,12 @@ strings:
     tier: shell
     surface: location
 
+  - key: location.test.unavailable
+    en: Couldn’t test latency on this connection.
+    tier: shell
+    surface: location
+    notes: "Connected Test when entry path is unavailable · ADR 0069 · not a disconnect prompt"
+
   - key: location.row.a11y.selected
     en: "{name}, {protocol}, selected, latency {latency}"
     tier: shell

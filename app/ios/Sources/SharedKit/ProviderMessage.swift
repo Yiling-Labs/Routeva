@@ -9,6 +9,23 @@ public enum ProviderMessageKind: String, Codable, Sendable {
     case selectedNode = "selected_node"
     case reloadConfiguration = "reload_configuration"
     case finalizeConfigurationReload = "finalize_configuration_reload"
+    /// Connected 时对节点入口做物理路径 TCP RTT（ADR 0069）。只传 node UUID。
+    case entryLatency = "entry_latency"
+}
+
+public enum ProviderEntryLatencyCode {
+    public static let physicalPathUnavailable = "latency.physical_path_unavailable"
+    public static let maximumBatchCount = 6
+}
+
+public struct ProviderEntryLatencySample: Codable, Equatable, Sendable {
+    public let nodeID: UUID
+    public let milliseconds: UInt32?
+
+    public init(nodeID: UUID, milliseconds: UInt32?) {
+        self.nodeID = nodeID
+        self.milliseconds = milliseconds
+    }
 }
 
 public enum ProviderTunnelProbeCatalog {
@@ -51,6 +68,8 @@ public struct ProviderMessageRequest: Codable, Equatable, Sendable {
     /// Two-phase catalog reload decision. `true` releases the previous runtime
     /// snapshot after verification; `false` restores it in the same NE session.
     public let acceptConfigurationReload: Bool?
+    /// UUID-only batch for `entryLatency`. Endpoints stay in the App Group DB.
+    public let entryLatencyNodeIDs: [UUID]?
 
     public init(
         schemaVersion: Int = ProviderMessageRequest.currentSchemaVersion,
@@ -59,7 +78,8 @@ public struct ProviderMessageRequest: Codable, Equatable, Sendable {
         tunnelProbeAddressSets: [ProviderTunnelProbeAddressSet]? = nil,
         nodeID: UUID? = nil,
         manifestID: UUID? = nil,
-        acceptConfigurationReload: Bool? = nil
+        acceptConfigurationReload: Bool? = nil,
+        entryLatencyNodeIDs: [UUID]? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.requestID = requestID
@@ -68,6 +88,7 @@ public struct ProviderMessageRequest: Codable, Equatable, Sendable {
         self.nodeID = nodeID
         self.manifestID = manifestID
         self.acceptConfigurationReload = acceptConfigurationReload
+        self.entryLatencyNodeIDs = entryLatencyNodeIDs
     }
 }
 
@@ -254,7 +275,6 @@ public struct ProviderDataPlaneSnapshot: Codable, Equatable, Sendable {
     /// error-level core event. Raw logs, hosts, domains, and payloads never
     /// cross the provider message boundary.
     public let coreDiagnosticCode: String?
-
     public init(
         sessionID: UUID,
         packetFlowReadCallbacks: UInt64 = 0,
@@ -622,6 +642,8 @@ public struct ProviderMessageResponse: Codable, Equatable, Sendable {
     /// schema-1 responses remain decodable during an in-place update.
     public let tunnelProbeSucceeded: Bool?
     public let errorCode: String?
+    /// Entry-path RTT samples for `entryLatency`. `milliseconds == nil` is Timeout.
+    public let entryLatencies: [ProviderEntryLatencySample]?
 
     public init(
         schemaVersion: Int = ProviderMessageRequest.currentSchemaVersion,
@@ -632,7 +654,8 @@ public struct ProviderMessageResponse: Codable, Equatable, Sendable {
         coreProbe: ProviderCoreProbeSnapshot? = nil,
         selectedNodeID: UUID? = nil,
         tunnelProbeSucceeded: Bool? = nil,
-        errorCode: String? = nil
+        errorCode: String? = nil,
+        entryLatencies: [ProviderEntryLatencySample]? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.requestID = requestID
@@ -643,6 +666,7 @@ public struct ProviderMessageResponse: Codable, Equatable, Sendable {
         self.selectedNodeID = selectedNodeID
         self.tunnelProbeSucceeded = tunnelProbeSucceeded
         self.errorCode = errorCode
+        self.entryLatencies = entryLatencies
     }
 }
 
@@ -711,22 +735,76 @@ public enum ProviderMessageCodec {
 /// vocabulary. The original message is never retained or returned.
 public enum CoreLogDiagnosticClassifier {
     public static func stableCode(level: Int32, message: String) -> String? {
-        // sing-box levels: panic 0, fatal 1, error 2, warn 3, ...
-        guard level <= 2 else { return nil }
         let value = message.lowercased()
+
+        // Libbox's platform stream and its replayable command stream do not
+        // expose a reliable severity for every forwarded line. Require an
+        // explicit failure marker in the text instead of trusting `level`
+        // alone; successful DNS/info lines must never become diagnostics.
+        let containsFailureMarker = [
+            " error ", "error[", " failed", " failure", " timeout",
+            " refused", " unreachable", " no route", "host is down",
+            "not permitted", "unexpected", "bad status", "certificate",
+            "x509", "tls:", "handshake", "connection reset", "broken pipe",
+            "closed network connection", "canceled", "cancelled", " eof",
+        ].contains(where: value.contains)
+        guard level <= 2 || containsFailureMarker else { return nil }
 
         if value.contains("missing default interface") {
             return "probe.core_default_interface_missing"
         }
 
-        let isProxyFailure = value.contains("[proxy]")
+        // These labels describe only the coarse failing layer. They never
+        // retain destinations, addresses, UUIDs, or provider-supplied text.
+        if value.contains("websocket")
+            || value.contains("bad status")
+            || value.contains("unexpected status")
+            || value.contains("unexpected http response status") {
+            return "probe.core_proxy_websocket_failed"
+        }
+
+        // Query-based ECH fails while opening the selected proxy transport.
+        // Classify it before the nested DNS wording below so a provider-side
+        // ECH incompatibility is not presented as ordinary user DNS failure.
+        if value.contains("fetch ech config list") {
+            return "probe.core_proxy_ech_dns_failed"
+        }
+        if value.contains("no ech config found in dns records") {
+            return "probe.core_proxy_ech_record_missing"
+        }
+        if value.contains("decode ech config") {
+            return "probe.core_proxy_ech_config_invalid"
+        }
+
+        // Runtime node outbounds use a per-node `routeva-node-*` tag. Keep
+        // accepting the legacy/static `proxy` tag for older sessions and
+        // tests, but do not require it or real provider failures disappear
+        // into the generic DNS bucket.
+        let isSelectedProxy = value.contains("[proxy]")
+            || value.contains("[routeva-node-")
+        let isProxyFailure = isSelectedProxy
             && (value.contains("open connection to ")
                 || value.contains("open packet connection to ")
                 || value.contains("listen packet connection using "))
         if isProxyFailure {
+            if value.contains("ech rejected without retry config") {
+                return "probe.core_proxy_ech_no_retry_config"
+            }
+            if value.contains("ech retry rejected") {
+                return "probe.core_proxy_ech_retry_rejected"
+            }
+            if value.contains("ech retry unsupported by tls config") {
+                return "probe.core_proxy_ech_retry_unsupported"
+            }
+            if value.contains("ech")
+                || value.contains("encrypted client hello") {
+                return "probe.core_proxy_ech_rejected"
+            }
             if value.contains("network is unreachable")
                 || value.contains("no route to host")
-                || value.contains("network unreachable") {
+                || value.contains("network unreachable")
+                || value.contains("host is down")
+                || value.contains("operation not permitted") {
                 return "probe.core_proxy_unreachable"
             }
             if value.contains("connection refused") {
@@ -734,7 +812,10 @@ public enum CoreLogDiagnosticClassifier {
             }
             if value.contains("certificate")
                 || value.contains("tls handshake")
-                || value.contains("x509") {
+                || value.contains("x509")
+                || value.contains("tls:")
+                || value.contains("utls")
+                || value.contains("remote error: tls") {
                 return "probe.core_proxy_tls_failed"
             }
             if value.contains("i/o timeout")
@@ -746,9 +827,16 @@ public enum CoreLogDiagnosticClassifier {
             if value.contains("authentication")
                 || value.contains("bad response")
                 || value.contains("unexpected eof")
+                || value.hasSuffix(": eof")
                 || value.contains("connection reset")
                 || value.contains("broken pipe") {
                 return "probe.core_proxy_transport_failed"
+            }
+            if value.contains("use of closed network connection")
+                || value.contains("operation canceled")
+                || value.contains("context canceled")
+                || value.contains("cancelled") {
+                return "probe.core_proxy_cancelled"
             }
             return "probe.core_proxy_failed"
         }
@@ -773,7 +861,10 @@ public enum CoreLogDiagnosticClassifier {
         let scope: String
         if value.contains("dns-bootstrap") {
             scope = "bootstrap"
-        } else if value.contains("dns-remote") {
+        } else if value.contains("dns-real") || value.contains("dns-remote") {
+            // `dns-real` is the current destination and proxy-endpoint DNS
+            // plane. `dns-remote` remains so logs from older sessions still
+            // classify.
             scope = "remote"
         } else {
             scope = "upstream"
@@ -809,6 +900,15 @@ public enum CoreLogDiagnosticClassifier {
     public static func priority(of code: String?) -> Int {
         guard let code else { return 0 }
         if code == "probe.core_default_interface_missing" { return 4 }
+        if code == "probe.core_proxy_ech_no_retry_config"
+            || code == "probe.core_proxy_ech_retry_rejected"
+            || code == "probe.core_proxy_ech_retry_unsupported" {
+            return 4
+        }
+        if code.hasPrefix("probe.core_proxy_")
+            || code.hasPrefix("probe.core_connection_") {
+            return 3
+        }
         if code.hasSuffix("_failed") && !code.hasSuffix("_transport_failed") { return 1 }
         return 3
     }

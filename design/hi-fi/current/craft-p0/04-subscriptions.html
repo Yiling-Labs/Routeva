@@ -87,9 +87,10 @@
     <h1>Subscriptions · Single list</h1>
     <p>
       One screen: all subscriptions listed; <strong>Active</strong> marked on the row in use.
-      No separate “All subscriptions” layer. Update sits on the Active card; Add at the bottom.
+      No separate “All subscriptions” layer. Update sits on the Active card; <strong>Set active</strong> is the same card-action slot on a non-Active row (glass secondary — not quiet header text). Add at the bottom.
       Meta slots: <strong>nodes</strong> · labeled <strong>Expires / Expired</strong> (omit if unknown) · <strong>Updated</strong> — never a bare date next to node count.
       <strong>Rename</strong> = light path (pencil by display name → sheet); not a primary list CTA (ADR 0033).
+      Frames 1 / 1b are live: tap <strong>Set active</strong> to move Active.
     </p>
     <div class="tags">
       <span class="tag">ADR 0020</span>
@@ -103,7 +104,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { IconClose, IconRefresh, IconChevron, IconPencil } = window.RoutevaIcons;
+    const { IconClose, IconRefresh, IconChevron, IconPencil, IconCheck } = window.RoutevaIcons;
     const TYPE = { font: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif' };
     const FIELD = 'linear-gradient(168deg, #2e343a 0%, #171c21 42%, #0b0e11 100%)';
     const CTA = 'linear-gradient(160deg, #8fe8c0 0%, #4bb98a 48%, #2f9a6c 100%)';
@@ -282,6 +283,40 @@
       );
     }
 
+    /** Card-level Set active — same slot as Update; glass, not mint, not header text */
+    function SetActiveButton({ onClick }) {
+      return (
+        <button
+          type="button"
+          onClick={onClick}
+          style={{
+            border: '1px solid rgba(255,255,255,0.20)',
+            cursor: 'pointer',
+            width: '100%',
+            padding: '13px 18px',
+            minHeight: 44,
+            borderRadius: 14,
+            background: 'linear-gradient(155deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 100%)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 18px rgba(0,0,0,0.22)',
+            backdropFilter: 'blur(14px)',
+            color: T.primary,
+            fontFamily: TYPE.font,
+            fontSize: 15,
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <span style={{ display: 'flex', color: T.primary }} aria-hidden="true">
+            <IconCheck size={16} stroke={2} />
+          </span>
+          Set active
+        </button>
+      );
+    }
+
     function MapWash() {
       return (
         <div aria-hidden="true" style={{
@@ -388,7 +423,7 @@
       );
     }
 
-    function SubRow({ sub, refreshing, onRenameRequest }) {
+    function SubRow({ sub, refreshing, onRenameRequest, onSetActive }) {
       const isActive = !!sub.active;
       const remote = sub.remote !== false;
       const expiry = formatExpiry(sub.expiresAt);
@@ -414,6 +449,7 @@
               : '0 10px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08)',
             color: '#fff',
             fontFamily: TYPE.font,
+            transition: 'border-color 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
@@ -484,28 +520,10 @@
                 Updated {sub.updated}
               </div>
             </div>
-            {isActive ? (
-              <ActiveBadge />
-            ) : (
-              <button
-                type="button"
-                style={{
-                  border: 'none', background: 'transparent', cursor: 'pointer',
-                  fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.72)',
-                  whiteSpace: 'nowrap',
-                  minHeight: 44, minWidth: 44,
-                  padding: '10px 8px',
-                  margin: '-6px -8px 0 0',
-                  fontFamily: TYPE.font,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                Set active
-              </button>
-            )}
+            {isActive ? <ActiveBadge /> : null}
           </div>
 
-          {isActive && (
+          {isActive ? (
             <>
               <TrafficBar used={sub.usedGb} total={sub.totalGb} />
               {remote ? (
@@ -551,6 +569,10 @@
                 </div>
               )}
             </>
+          ) : (
+            <div style={{ marginTop: 14 }}>
+              <SetActiveButton onClick={() => onSetActive && onSetActive(sub.id)} />
+            </div>
           )}
         </div>
       );
@@ -764,6 +786,10 @@
         setDraft(sub.name);
       };
 
+      const setActive = (id) => {
+        setItems((list) => list.map((s) => ({ ...s, active: s.id === id })));
+      };
+
       const saveRename = () => {
         const next = (draft || '').trim();
         if (!next || !renaming) return;
@@ -786,6 +812,7 @@
                     sub={s}
                     refreshing={refreshing && s.active}
                     onRenameRequest={openRename}
+                    onSetActive={setActive}
                   />
                 ))}
               </div>
@@ -930,7 +957,7 @@
       return (
         <div className="row">
           <div className="phone-col">
-            <div className="lab">1 · List (Active rich)<span>Pencil by name · Expires labeled · Orbit Expired</span></div>
+            <div className="lab">1 · List (Active rich)<span>Set active = glass card action · tap to switch</span></div>
             <SubscriptionsList variant="full" />
           </div>
           <div className="phone-col">

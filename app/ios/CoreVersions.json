@@ -16,13 +16,17 @@
         "path": "CoreSources/SingBoxBridge/patches/0001-packet-flow-datagram-bridge.patch",
         "sha256": "be6557d22e4c0194b6786d8d15bd5e49194d038d17716c33597f6ffa433dc44f"
       },
+      "utlsECHRetryPatch": {
+        "path": "CoreSources/SingBoxBridge/patches/0003-utls-ech-retry.patch",
+        "sha256": "77bdbe98e6c6c0156cb522e81e2dc8b17821bb1d153e60982887636782754ab9"
+      },
       "singTunPatch": {
         "version": "v0.8.9",
         "path": "CoreSources/SingBoxBridge/patches/0002-sing-tun-packet-flow-readv.patch",
         "sha256": "045cec7c97940569fc92f70e59d099a07a586e4b293793a4518b71f872a5821b"
       },
       "license": "GPL-3.0-or-later",
-      "deviceBinarySHA256": "acbb79bdef53f9f430621046e36bb06ca97b2b8073f5dd950259501431fb9f69",
+      "deviceBinarySHA256": "9e1fe76814e38a44d158464185c4463f171f89a5930e7d54a3019d3a7b614dd3",
       "distributionStatus": "gpl-source-ready-device-and-store-review-pending"
     }
   },

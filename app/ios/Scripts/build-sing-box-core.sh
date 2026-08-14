@@ -10,6 +10,7 @@ SOURCE_ROOT="$BUILD_ROOT/sing-box"
 VENDOR_OUTPUT="$IOS_ROOT/Vendor/Libbox.xcframework"
 SING_BOX_COMMIT="1086ab2563320e0da0c23b3a491d8dfa0939dff4"
 PATCH_FILE="$IOS_ROOT/CoreSources/SingBoxBridge/patches/0001-packet-flow-datagram-bridge.patch"
+UTLS_ECH_PATCH_FILE="$IOS_ROOT/CoreSources/SingBoxBridge/patches/0003-utls-ech-retry.patch"
 SING_TUN_VERSION="v0.8.9"
 SING_TUN_PATCH_FILE="$IOS_ROOT/CoreSources/SingBoxBridge/patches/0002-sing-tun-packet-flow-readv.patch"
 
@@ -26,6 +27,13 @@ else
   git -C "$SOURCE_ROOT" apply "$PATCH_FILE"
 fi
 shasum -a 256 "$PATCH_FILE"
+if git -C "$SOURCE_ROOT" apply --reverse --check "$UTLS_ECH_PATCH_FILE" >/dev/null 2>&1; then
+  echo "Routeva uTLS ECH retry patch is already applied."
+else
+  git -C "$SOURCE_ROOT" apply --check "$UTLS_ECH_PATCH_FILE"
+  git -C "$SOURCE_ROOT" apply "$UTLS_ECH_PATCH_FILE"
+fi
+shasum -a 256 "$UTLS_ECH_PATCH_FILE"
 
 export GOMODCACHE="$IOS_ROOT/.build/go/pkg/mod"
 export GOCACHE="$IOS_ROOT/.build/go/cache"

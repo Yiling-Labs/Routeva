@@ -1,5 +1,6 @@
 import DataKit
 import Foundation
+import Network
 import SharedKit
 
 public struct CompiledCoreConfiguration: @unchecked Sendable {
@@ -23,6 +24,7 @@ public enum CoreConfigurationError: Error, Equatable, Sendable {
     case credentialInvalid
     case coreUnsupported(CoreIdentifier)
     case unsupportedProxyPlugin(String)
+    case unsupportedProxyOption(String)
     case unsupportedRouteRule(String)
     case missingCredentialField
     case invalidJSON
@@ -32,12 +34,24 @@ public struct CoreConfigurationCompiler: Sendable {
     /// Serialization batch size only. Unlike the removed 4096 logical cap,
     /// this never drops a provider rule or changes first-match ordering.
     private static let maximumValuesPerRouteRule = 512
+    private static let compatibilityDNSAddress = "223.5.5.5"
+    private static let privacyDNSAddress = "9.9.9.10"
 
     private enum DomainBatchKind: Equatable {
         case exact
         case suffix
         case keyword
         case regex
+    }
+
+    private struct ECHDNSRequirement: Hashable {
+        let queryDomain: String
+        let resolver: ECHDNSResolver
+    }
+
+    private enum ECHDNSResolver: Hashable {
+        case fallback
+        case https(host: String, port: Int, path: String)
     }
 
     private struct SingBoxCatalogEntry {
@@ -64,15 +78,20 @@ public struct CoreConfigurationCompiler: Sendable {
             core: core
         )
 
-        let object = try singBoxConfiguration(
-            manifest: manifest,
-            catalog: [SingBoxCatalogEntry(
-                profile: manifest.profile,
-                node: node,
-                credential: credential
-            )]
+        let catalog = [SingBoxCatalogEntry(
+            profile: manifest.profile,
+            node: node,
+            credential: credential,
+        )]
+        let runtimeManifest = try manifestAddingRequiredDirectRoutes(
+            manifest,
+            catalog: catalog
         )
-        return try encodedConfiguration(manifest: manifest, object: object)
+        let object = try singBoxConfiguration(
+            manifest: runtimeManifest,
+            catalog: catalog
+        )
+        return try encodedConfiguration(manifest: runtimeManifest, object: object)
     }
 
     /// Compiles the complete selector catalog used by the running sing-box
@@ -105,8 +124,90 @@ public struct CoreConfigurationCompiler: Sendable {
             try validate(profile: profile, node: node, credential: credential, core: core)
             return SingBoxCatalogEntry(profile: profile, node: node, credential: credential)
         }
-        let object = try singBoxConfiguration(manifest: manifest, catalog: catalog)
-        return try encodedConfiguration(manifest: manifest, object: object)
+        let runtimeManifest = try manifestAddingRequiredDirectRoutes(
+            manifest,
+            catalog: catalog
+        )
+        let object = try singBoxConfiguration(manifest: runtimeManifest, catalog: catalog)
+        return try encodedConfiguration(manifest: runtimeManifest, object: object)
+    }
+
+    /// NetworkExtension applies its default route before sing-box opens proxy
+    /// and direct DNS sockets. The Apple platform bridge does not provide a
+    /// per-socket protect callback, so every numeric physical-path target must
+    /// also be a host-sized excluded route. Derive this from the same parsed
+    /// credentials and DNS policy that generate the core JSON; keeping a
+    /// second hand-maintained list in the host App would drift as subscription
+    /// formats evolve.
+    private func manifestAddingRequiredDirectRoutes(
+        _ manifest: RuntimeManifest,
+        catalog: [SingBoxCatalogEntry]
+    ) throws -> RuntimeManifest {
+        var requiredAddresses: [String] = []
+
+        switch manifest.dnsPreset {
+        case .automatic:
+            break
+        case .privacy where manifest.routingMode == .direct:
+            requiredAddresses.append(Self.privacyDNSAddress)
+        case .privacy:
+            break
+        case .compatibility:
+            requiredAddresses.append(Self.compatibilityDNSAddress)
+        }
+
+        for entry in catalog where ipLiteral(entry.node.endpointHost) != nil {
+            requiredAddresses.append(entry.node.endpointHost)
+        }
+
+        for entry in catalog {
+            guard let requirement = try echDNSRequirement(
+                node: entry.node,
+                options: normalized(entry.credential.options)
+            ) else { continue }
+            switch requirement.resolver {
+            case .fallback:
+                requiredAddresses.append(Self.compatibilityDNSAddress)
+            case .https:
+                requiredAddresses.append(try echDNSAddress(
+                    resolver: requirement.resolver,
+                    bootstrapAddresses: manifest.dnsBootstrapAddressMap
+                ))
+            }
+        }
+
+        // Domain-based proxy endpoints are resolved by the host App before
+        // NetworkExtension takes over the default route. Keep those exact
+        // addresses ahead of the bounded route list: the generated outbound
+        // uses the same map as a non-networking `hosts` DNS transport, so its
+        // bootstrap cannot depend on user DNS or recursively enter the TUN.
+        for entry in catalog where ipLiteral(entry.node.endpointHost) == nil {
+            requiredAddresses.append(contentsOf: bootstrapAddresses(
+                for: entry.node.endpointHost,
+                in: manifest.dnsBootstrapAddressMap
+            ))
+        }
+
+        let directRouteAddresses = DirectRouteAddressValidator.validated(
+            requiredAddresses + manifest.directRouteAddresses
+        )
+        guard directRouteAddresses != manifest.directRouteAddresses else {
+            return manifest
+        }
+        return RuntimeManifest(
+            schemaVersion: manifest.schemaVersion,
+            manifestID: manifest.manifestID,
+            createdAt: manifest.createdAt,
+            corePolicy: manifest.corePolicy,
+            profile: manifest.profile,
+            profiles: manifest.profiles,
+            routingMode: manifest.routingMode,
+            dnsPreset: manifest.dnsPreset,
+            directRouteAddresses: directRouteAddresses,
+            dnsBootstrapAddressMap: manifest.dnsBootstrapAddressMap,
+            providerRoutePolicy: manifest.providerRoutePolicy,
+            domainOverrides: manifest.domainOverrides
+        )
     }
 
     private func validate(
@@ -151,11 +252,29 @@ public struct CoreConfigurationCompiler: Sendable {
         let selectedTag = SingBoxNodeSelector.outboundTag(for: manifest.profile.id)
         let nodeTags = catalog.map { SingBoxNodeSelector.outboundTag(for: $0.profile.id) }
         let nodeOutbounds = try catalog.map { entry in
-            try singBoxOutbound(
+            let endpointAddresses = bootstrapAddresses(
+                for: entry.node.endpointHost,
+                in: manifest.dnsBootstrapAddressMap
+            )
+            return try singBoxOutbound(
                 node: entry.node,
                 credential: entry.credential,
-                tag: SingBoxNodeSelector.outboundTag(for: entry.profile.id)
+                tag: SingBoxNodeSelector.outboundTag(for: entry.profile.id),
+                endpointResolver: ipLiteral(entry.node.endpointHost) != nil
+                    ? nil
+                    : (endpointAddresses.isEmpty
+                        ? Self.dnsSystemTag
+                        : Self.dnsEndpointTag)
             )
+        }
+        let echDNSRequirements = try catalog.compactMap { entry in
+            try echDNSRequirement(
+                node: entry.node,
+                options: normalized(entry.credential.options)
+            )
+        }
+        let proxyEndpointDomains = catalog.compactMap { entry in
+            ipLiteral(entry.node.endpointHost) == nil ? entry.node.endpointHost.lowercased() : nil
         }
         let effective = effectiveRoutePolicy(manifest)
         let dnsHijackRule: [String: Any] = [
@@ -163,17 +282,20 @@ public struct CoreConfigurationCompiler: Sendable {
             "action": "hijack-dns",
         ]
         var routePreamble = [dnsHijackRule]
-        if effective.rules.contains(where: { containsProtocolMatch($0.match) }) {
-            // `protocol` matches sniffed metadata. A non-final sniff action
-            // enriches the connection and then continues through the original
-            // ordered provider rules; omit it entirely for subscriptions that
-            // do not use protocol conditions.
+        if effective.rules.contains(where: { containsProtocolMatch($0.match) })
+            || effective.rules.contains(where: { containsDomainMatch($0.match) }) {
+            // Sniff recovers the original hostname after a real-IP DNS
+            // answer so DOMAIN / protocol rules still match. Skip it when
+            // the policy has neither kind of condition.
             routePreamble.append([
                 "action": "sniff",
                 "timeout": "300ms",
             ])
         }
-        let routeRules = routePreamble + (try singBoxRules(effective.rules))
+        let routeRules = routePreamble + (try singBoxRules(
+            effective.rules,
+            realDNS: Self.dnsRealTag
+        ))
         let routeRuleSets = try singBoxRuleSets(
             declared: effective.ruleSets,
             rules: effective.rules
@@ -181,7 +303,7 @@ public struct CoreConfigurationCompiler: Sendable {
         var route: [String: Any] = [
             "auto_detect_interface": true,
             "default_domain_resolver": [
-                "server": "dns-bootstrap",
+                "server": Self.dnsRealTag,
                 "strategy": "prefer_ipv4",
             ],
             "rules": routeRules,
@@ -220,7 +342,17 @@ public struct CoreConfigurationCompiler: Sendable {
                     "default": selectedTag,
                     "interrupt_exist_connections": true,
                 ],
-                ["type": "direct", "tag": "direct"],
+                [
+                    "type": "direct",
+                    "tag": "direct",
+                    // DIRECT needs a real destination address. Keep it on the
+                    // real DNS plane, never on the proxy, so CDN and local
+                    // destinations follow the selected DNS preset.
+                    "domain_resolver": [
+                        "server": Self.dnsRealTag,
+                        "strategy": "prefer_ipv4",
+                    ],
+                ],
                 ["type": "block", "tag": "reject"],
                 [
                     // This group is never referenced by routing. It gives the
@@ -237,22 +369,13 @@ public struct CoreConfigurationCompiler: Sendable {
                 ],
             ],
             "route": route,
-            "dns": [
-                "servers": [
-                    [
-                        // Bootstrap must follow the active physical network's
-                        // resolver. A fixed public DNS can be unreachable
-                        // before the proxy endpoint itself has been resolved.
-                        "type": "local", "tag": "dns-bootstrap",
-                    ],
-                    singBoxDNS(
-                        manifest.dnsPreset,
-                        routingMode: manifest.routingMode
-                    ),
-                ],
-                "final": "dns-remote",
-                "strategy": "prefer_ipv4",
-            ],
+            "dns": try singBoxDNSObject(
+                preset: manifest.dnsPreset,
+                routingMode: manifest.routingMode,
+                proxyEndpointDomains: Array(Set(proxyEndpointDomains)).sorted(),
+                echRequirements: echDNSRequirements,
+                bootstrapAddresses: manifest.dnsBootstrapAddressMap
+            ),
         ]
     }
 
@@ -321,7 +444,10 @@ public struct CoreConfigurationCompiler: Sendable {
         }
     }
 
-    private func singBoxRules(_ rules: [ProviderRouteRule]) throws -> [[String: Any]] {
+    private func singBoxRules(
+        _ rules: [ProviderRouteRule],
+        realDNS: String
+    ) throws -> [[String: Any]] {
         var objects: [[String: Any]] = []
         objects.reserveCapacity(rules.count * 2)
         var index = 0
@@ -334,7 +460,7 @@ public struct CoreConfigurationCompiler: Sendable {
             if rule.requiresDestinationResolution {
                 objects.append([
                     "action": "resolve",
-                    "server": "dns-remote",
+                    "server": realDNS,
                     "strategy": "prefer_ipv4",
                 ])
             }
@@ -375,6 +501,19 @@ public struct CoreConfigurationCompiler: Sendable {
             rules.contains(where: containsProtocolMatch)
         case let .not(rule):
             containsProtocolMatch(rule)
+        default:
+            false
+        }
+    }
+
+    private func containsDomainMatch(_ match: RouteRuleMatch) -> Bool {
+        switch match {
+        case .domain, .domainSuffix, .domainKeyword, .domainRegex:
+            true
+        case let .logical(_, rules):
+            rules.contains(where: containsDomainMatch)
+        case let .not(rule):
+            containsDomainMatch(rule)
         default:
             false
         }
@@ -541,42 +680,183 @@ public struct CoreConfigurationCompiler: Sendable {
         "routeva-\(kind)-\(value.lowercased())"
     }
 
-    private func singBoxDNS(
-        _ preset: RuntimeManifest.DNSPreset,
-        routingMode: RuntimeManifest.RoutingMode
-    ) -> [String: Any] {
-        var server: [String: Any]
-        if routingMode == .direct, preset != .privacy {
-            // Direct mode is an explicit request to use the physical network.
-            // Keep its Automatic / Compatibility DNS semantics local instead
-            // of silently introducing a remote resolver.
-            server = [
-                "type": "local", "tag": "dns-remote",
-            ]
-        } else {
-            // A proxied session must not resolve user destinations through the
-            // physical network: doing so leaks queries and can return poisoned
-            // or unreachable answers before the proxy is used. The IP literal
-            // removes recursive bootstrap, while TLS SNI retains certificate
-            // verification. sing-box 1.12+ DNS dialers are direct by default,
-            // so every non-Direct mode must set the proxy detour explicitly.
-            server = [
-                "type": "https", "tag": "dns-remote", "server": "9.9.9.10",
+    private static let dnsBootstrapTag = "dns-bootstrap"
+    private static let dnsEndpointTag = "dns-endpoint"
+    private static let dnsRealTag = "dns-real"
+    private static let dnsSystemTag = "dns-system"
+
+    private func singBoxDNSObject(
+        preset: RuntimeManifest.DNSPreset,
+        routingMode: RuntimeManifest.RoutingMode,
+        proxyEndpointDomains: [String],
+        echRequirements: [ECHDNSRequirement],
+        bootstrapAddresses: [String: [String]]
+    ) throws -> [String: Any] {
+        // Keep proxy endpoint bootstrap, query-based ECH bootstrap, and user
+        // DNS as three independent planes. Endpoint bootstrap must work before
+        // the proxy exists; ECH requires HTTPS records over its provider DoH;
+        // Automatic follows the active system resolver. Privacy and
+        // Compatibility remain explicit choices with distinct transports.
+        // Endpoint and ECH bootstrap are kept independent because both must
+        // work before the selected proxy can carry any traffic.
+        var servers: [[String: Any]] = []
+        switch preset {
+        case .privacy:
+            var server: [String: Any] = [
+                "type": "https", "tag": Self.dnsRealTag,
+                "server": Self.privacyDNSAddress,
                 "server_port": 443, "path": "/dns-query",
-                // Quad9's no-threat-blocking service keeps this setting a DNS
-                // transport privacy choice; it does not silently add content
-                // filtering to Routeva's product behavior.
                 "tls": ["enabled": true, "server_name": "dns10.quad9.net"],
             ]
-            if routingMode != .direct { server["detour"] = "proxy" }
+            if routingMode != .direct { server["detour"] = SingBoxNodeSelector.groupTag }
+            servers.append(server)
+        case .compatibility:
+            servers.append([
+                "type": "udp", "tag": Self.dnsRealTag,
+                "server": Self.compatibilityDNSAddress, "server_port": 53,
+            ])
+        case .automatic:
+            servers.append([
+                "type": "local", "tag": Self.dnsRealTag,
+            ])
         }
-        return server
+        var dns: [String: Any] = [
+            "servers": servers,
+            "final": Self.dnsRealTag,
+            "strategy": "prefer_ipv4",
+            "reverse_mapping": true,
+        ]
+        var rules: [[String: Any]] = []
+        var resolverByDomain: [String: ECHDNSResolver] = [:]
+        var domainsByResolver: [ECHDNSResolver: Set<String>] = [:]
+        for requirement in echRequirements {
+            if let existing = resolverByDomain[requirement.queryDomain],
+               existing != requirement.resolver {
+                throw CoreConfigurationError.unsupportedProxyOption("ech.resolver_conflict")
+            }
+            resolverByDomain[requirement.queryDomain] = requirement.resolver
+            domainsByResolver[requirement.resolver, default: []].insert(requirement.queryDomain)
+        }
+        let orderedResolvers = domainsByResolver.keys.sorted {
+            echResolverSortKey($0) < echResolverSortKey($1)
+        }
+        for (index, resolver) in orderedResolvers.enumerated() {
+            let tag = orderedResolvers.count == 1 || resolver == .fallback
+                ? Self.dnsBootstrapTag
+                : "\(Self.dnsBootstrapTag)-\(index + 1)"
+            servers.insert(try echDNSServer(
+                resolver: resolver,
+                tag: tag,
+                bootstrapAddresses: bootstrapAddresses
+            ), at: index)
+            rules.append([
+                "domain": Array(domainsByResolver[resolver] ?? []).sorted(),
+                "query_type": ["HTTPS"],
+                "action": "route",
+                "server": tag,
+            ])
+        }
+        let predefinedEndpoints: [String: [String]] = Dictionary(
+            uniqueKeysWithValues: proxyEndpointDomains.compactMap { domain in
+                let addresses = self.bootstrapAddresses(
+                    for: domain,
+                    in: bootstrapAddresses
+                )
+                return addresses.isEmpty ? nil : (domain, addresses)
+            }
+        )
+        if !predefinedEndpoints.isEmpty {
+            servers.insert([
+                "type": "hosts",
+                "tag": Self.dnsEndpointTag,
+                "predefined": predefinedEndpoints,
+            ], at: 0)
+            rules.append([
+                "domain": predefinedEndpoints.keys.sorted(),
+                "action": "route",
+                "server": Self.dnsEndpointTag,
+            ])
+        }
+        let unresolvedEndpoints = proxyEndpointDomains.filter {
+            predefinedEndpoints[$0] == nil
+        }
+        if !unresolvedEndpoints.isEmpty {
+            servers.append([
+                "type": "local", "tag": Self.dnsSystemTag,
+            ])
+            rules.append([
+                "domain": unresolvedEndpoints,
+                "action": "route",
+                "server": Self.dnsSystemTag,
+            ])
+        }
+        dns["servers"] = servers
+        if !rules.isEmpty { dns["rules"] = rules }
+        return dns
+    }
+
+    private func echDNSServer(
+        resolver: ECHDNSResolver,
+        tag: String,
+        bootstrapAddresses: [String: [String]]
+    ) throws -> [String: Any] {
+        switch resolver {
+        case .fallback:
+            return [
+                "type": "https", "tag": tag,
+                "server": Self.compatibilityDNSAddress, "server_port": 443,
+                "path": "/dns-query",
+                "tls": ["enabled": true, "server_name": "dns.alidns.com"],
+            ]
+        case let .https(host, port, path):
+            return [
+                "type": "https", "tag": tag,
+                "server": try echDNSAddress(
+                    resolver: resolver,
+                    bootstrapAddresses: bootstrapAddresses
+                ),
+                "server_port": port,
+                "path": path,
+                "tls": ["enabled": true, "server_name": host],
+            ]
+        }
+    }
+
+    private func echDNSAddress(
+        resolver: ECHDNSResolver,
+        bootstrapAddresses: [String: [String]]
+    ) throws -> String {
+        switch resolver {
+        case .fallback:
+            return Self.compatibilityDNSAddress
+        case let .https(host, _, _):
+            if ipLiteral(host) != nil { return host }
+            if let address = DirectRouteAddressValidator.validated(
+                bootstrapAddresses[host] ?? []
+            ).first {
+                return address
+            }
+            if host == "dns.alidns.com" {
+                // Known IP-literal fallback for older manifests created before
+                // Routeva persisted preflight DNS bootstrap address mappings.
+                return Self.compatibilityDNSAddress
+            }
+            throw CoreConfigurationError.unsupportedProxyOption("ech.resolver_unresolved")
+        }
+    }
+
+    private func echResolverSortKey(_ resolver: ECHDNSResolver) -> String {
+        switch resolver {
+        case .fallback: "0"
+        case let .https(host, port, path): "1|\(host)|\(port)|\(path)"
+        }
     }
 
     private func singBoxOutbound(
         node: NodeRecord,
         credential: ProxyCredentialEnvelope,
-        tag: String
+        tag: String,
+        endpointResolver: String? = nil
     ) throws -> [String: Any] {
         let authentication = credential.authentication
         let options = normalized(credential.options)
@@ -586,6 +866,12 @@ public struct CoreConfigurationCompiler: Sendable {
             "server": node.endpointHost,
             "server_port": node.endpointPort,
         ]
+        if let endpointResolver {
+            outbound["domain_resolver"] = [
+                "server": endpointResolver,
+                "strategy": "prefer_ipv4",
+            ]
+        }
         switch node.protocolKind {
         case .shadowsocks:
             outbound["method"] = try required(authentication["method"])
@@ -598,13 +884,37 @@ public struct CoreConfigurationCompiler: Sendable {
         case .vless:
             outbound["uuid"] = try required(authentication["uuid"])
             if let flow = nonEmpty(options["flow"]) { outbound["flow"] = flow }
-        case .trojan, .hysteria2:
+            outbound["packet_encoding"] = firstNonEmpty(
+                options,
+                keys: ["packetencoding", "packet-encoding", "packet_encoding"]
+            )
+                ?? "xudp"
+        case .trojan:
             outbound["password"] = try required(authentication["password"])
+        case .hysteria2:
+            outbound["password"] = try required(authentication["password"])
+            try applySingBoxHysteria2Options(options: options, outbound: &outbound)
         }
 
-        if let tls = singBoxTLS(node: node, options: options) { outbound["tls"] = tls }
-        if let transport = singBoxTransport(node: node, options: options) { outbound["transport"] = transport }
+        if let tls = try singBoxTLS(node: node, options: options) {
+            outbound["tls"] = tls
+        }
+        if let transport = try singBoxTransport(node: node, options: options) {
+            outbound["transport"] = transport
+        }
         return outbound
+    }
+
+    private func bootstrapAddresses(
+        for host: String,
+        in addressMap: [String: [String]]
+    ) -> [String] {
+        let normalizedHost = host.lowercased()
+        let values = addressMap[host]
+            ?? addressMap[normalizedHost]
+            ?? addressMap.first(where: { $0.key.lowercased() == normalizedHost })?.value
+            ?? []
+        return DirectRouteAddressValidator.validated(values)
     }
 
     private func applySingBoxShadowsocksPlugin(
@@ -657,6 +967,49 @@ public struct CoreConfigurationCompiler: Sendable {
         }
     }
 
+    private func applySingBoxHysteria2Options(
+        options: [String: String],
+        outbound: inout [String: Any]
+    ) throws {
+        if let ports = firstNonEmpty(
+            options,
+            keys: ["ports", "mport", "server-ports", "server_ports"]
+        ) {
+            let values = stringList(ports)
+            if !values.isEmpty { outbound["server_ports"] = values }
+        }
+        if let interval = firstNonEmpty(
+            options,
+            keys: ["hop-interval", "hop_interval", "hopinterval"]
+        ) {
+            outbound["hop_interval"] = interval.allSatisfy(\.isNumber) ? "\(interval)s" : interval
+        }
+        if let up = firstInteger(
+            options,
+            keys: ["up", "upmbps", "up-mbps", "up_mbps", "up-speed", "up_speed"]
+        ), up > 0 {
+            outbound["up_mbps"] = up
+        }
+        if let down = firstInteger(
+            options,
+            keys: ["down", "downmbps", "down-mbps", "down_mbps", "down-speed", "down_speed"]
+        ), down > 0 {
+            outbound["down_mbps"] = down
+        }
+
+        let obfsPassword = firstNonEmpty(
+            options,
+            keys: ["obfs-password", "obfs_password", "obfs.password"]
+        )
+        let obfsType = firstNonEmpty(options, keys: ["obfs", "obfs.type"])
+        guard obfsPassword != nil || obfsType != nil else { return }
+        let type = obfsType?.lowercased() ?? "salamander"
+        guard type == "salamander", let obfsPassword else {
+            throw CoreConfigurationError.unsupportedProxyOption("hysteria2.obfs")
+        }
+        outbound["obfs"] = ["type": type, "password": obfsPassword]
+    }
+
     private func parsePluginArguments(_ rawValues: [String]) -> [String: String] {
         var result: [String: String] = [:]
         for rawValue in rawValues {
@@ -695,12 +1048,24 @@ public struct CoreConfigurationCompiler: Sendable {
         }
     }
 
-    private func singBoxTLS(node: NodeRecord, options: [String: String]) -> [String: Any]? {
+    private func singBoxTLS(
+        node: NodeRecord,
+        options: [String: String]
+    ) throws -> [String: Any]? {
         guard node.security != .none else { return nil }
         var tls: [String: Any] = ["enabled": true]
         if let serverName = firstNonEmpty(options, keys: ["sni", "servername", "server-name"]) {
             tls["server_name"] = serverName
         }
+        if firstBoolean(
+            options,
+            keys: ["skip-cert-verify", "skip_certificate_verification", "allowinsecure", "insecure"]
+        ) == true {
+            tls["insecure"] = true
+        }
+        let alpn = firstNonEmpty(options, keys: ["alpn", "tls.alpn"])
+            .map(stringList) ?? []
+        if !alpn.isEmpty { tls["alpn"] = alpn }
         if let fingerprint = nonEmpty(options["fp"] ?? options["client-fingerprint"]) {
             tls["utls"] = ["enabled": true, "fingerprint": fingerprint]
         }
@@ -714,13 +1079,165 @@ public struct CoreConfigurationCompiler: Sendable {
             }
             tls["reality"] = reality
         }
+        if let ech = try singBoxECH(options: options) {
+            tls["ech"] = ech
+        }
         return tls
     }
 
-    private func singBoxTransport(node: NodeRecord, options: [String: String]) -> [String: Any]? {
-        switch node.transport {
-        case .tcp, .quic:
+    /// Maps both Mihomo's ECH fields and the URI form used by some VLESS
+    /// providers. Mihomo's static `config` is base64, while sing-box requires
+    /// an `ECH CONFIGS` PEM block; query-only ECH must remain query-only.
+    private func singBoxECH(options: [String: String]) throws -> [String: Any]? {
+        let rawURI = nonEmpty(options["ech"])
+        let explicitEnabled = firstBoolean(options, keys: ["ech-opts.enable", "ech.enabled"])
+        let rawConfig = firstNonEmpty(options, keys: ["ech-opts.config", "ech.config"])
+        let queryServerName = echQueryServerName(options: options)
+        let hasECHDeclaration = rawURI != nil || rawConfig != nil || queryServerName != nil
+        guard explicitEnabled != false, explicitEnabled == true || hasECHDeclaration else { return nil }
+
+        var ech: [String: Any] = ["enabled": true]
+        if let rawConfig {
+            ech["config"] = [try echPEM(from: rawConfig)]
+        } else if let rawURI, rawURI.contains("BEGIN") {
+            ech["config"] = [try echPEM(from: rawURI)]
+        }
+        if let queryServerName { ech["query_server_name"] = queryServerName }
+        return ech
+    }
+
+    private func echQueryServerName(node: NodeRecord, options: [String: String]) -> String? {
+        if let value = echQueryServerName(options: options) { return value }
+        guard firstBoolean(options, keys: ["ech-opts.enable", "ech.enabled"]) == true else {
             return nil
+        }
+        return firstNonEmpty(options, keys: ["sni", "servername", "server-name"])
+            ?? (ipLiteral(node.endpointHost) == nil ? node.endpointHost : nil)
+    }
+
+    private func echDNSRequirement(
+        node: NodeRecord,
+        options: [String: String]
+    ) throws -> ECHDNSRequirement? {
+        guard let queryDomain = echQueryServerName(node: node, options: options) else {
+            return nil
+        }
+        guard let raw = nonEmpty(options["ech"]),
+              !raw.contains("BEGIN"),
+              let resolverURL = echResolverURL(from: raw)
+        else {
+            return ECHDNSRequirement(queryDomain: queryDomain, resolver: .fallback)
+        }
+        guard resolverURL.scheme?.lowercased() == "https",
+              let host = resolverURL.host?.lowercased(),
+              !host.isEmpty,
+              resolverURL.user == nil,
+              resolverURL.password == nil,
+              resolverURL.query == nil,
+              resolverURL.fragment == nil
+        else {
+            throw CoreConfigurationError.unsupportedProxyOption("ech.resolver")
+        }
+        let port = resolverURL.port ?? 443
+        guard (1...65_535).contains(port) else {
+            throw CoreConfigurationError.unsupportedProxyOption("ech.resolver")
+        }
+        let path = resolverURL.path.isEmpty ? "/dns-query" : resolverURL.path
+        return ECHDNSRequirement(
+            queryDomain: queryDomain,
+            resolver: .https(host: host, port: port, path: path)
+        )
+    }
+
+    private func echResolverURL(from raw: String) -> URLComponents? {
+        let patterns = ["+https://", " https://", "+http://", " http://"]
+        guard let range = patterns.compactMap({ pattern in
+            raw.range(of: pattern, options: [.caseInsensitive])
+        }).min(by: { $0.lowerBound < $1.lowerBound }) else { return nil }
+        let schemeStart = raw.index(range.lowerBound, offsetBy: 1)
+        return URLComponents(string: String(raw[schemeStart...]))
+    }
+
+    private func echQueryServerName(options: [String: String]) -> String? {
+        if let value = firstNonEmpty(
+            options,
+            keys: ["ech-opts.query-server-name", "ech.query-server-name", "ech.query_server_name"]
+        ) {
+            return value.lowercased()
+        }
+        guard let raw = nonEmpty(options["ech"]), !raw.contains("BEGIN") else { return nil }
+        let separators = ["+https://", " https://", "+http://", " http://"]
+        let boundary = separators.compactMap {
+            raw.range(of: $0, options: [.caseInsensitive])?.lowerBound
+        }.min()
+        let name = boundary.map { String(raw[..<$0]) } ?? raw
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed.lowercased()
+    }
+
+    private func echPEM(from raw: String) throws -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.contains("-----BEGIN ECH CONFIGS-----"),
+           trimmed.contains("-----END ECH CONFIGS-----") {
+            return trimmed
+        }
+        if trimmed.contains("-----BEGIN") {
+            throw CoreConfigurationError.unsupportedProxyOption("ech.config")
+        }
+        guard let data = strictBase64Data(trimmed), !data.isEmpty else {
+            throw CoreConfigurationError.unsupportedProxyOption("ech.config")
+        }
+        let body = data.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
+            .trimmingCharacters(in: .newlines)
+        return "-----BEGIN ECH CONFIGS-----\n\(body)\n-----END ECH CONFIGS-----"
+    }
+
+    private func strictBase64Data(_ raw: String) -> Data? {
+        var value = raw
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        guard value.unicodeScalars.allSatisfy({
+            CharacterSet.alphanumerics.contains($0)
+                || "+/=".unicodeScalars.contains($0)
+                || CharacterSet.whitespacesAndNewlines.contains($0)
+        }) else { return nil }
+        let remainder = value.filter { !$0.isWhitespace }.count % 4
+        if remainder != 0 { value.append(String(repeating: "=", count: 4 - remainder)) }
+        return Data(base64Encoded: value)
+    }
+
+    private func ipLiteral(_ value: String) -> IPAddress? {
+        IPv4Address(value) ?? IPv6Address(value)
+    }
+
+    private func singBoxTransport(
+        node: NodeRecord,
+        options: [String: String]
+    ) throws -> [String: Any]? {
+        switch node.transport {
+        case .tcp:
+            return nil
+        case .quic:
+            // Hysteria2 uses QUIC as its protocol transport and therefore has
+            // no nested V2Ray transport. VMess/VLESS `type=quic` does.
+            return node.protocolKind == .hysteria2 ? nil : ["type": "quic"]
+        case .http:
+            var value: [String: Any] = [
+                "type": "http",
+                "path": firstNonEmpty(
+                    options,
+                    keys: ["path", "h2-opts.path", "http-opts.path"]
+                ) ?? "/",
+            ]
+            let hosts = firstNonEmpty(
+                options,
+                keys: ["host", "h2-opts.host", "http-opts.host"]
+            ).map(stringList) ?? []
+            if !hosts.isEmpty { value["host"] = hosts }
+            if let method = firstNonEmpty(options, keys: ["method", "http-opts.method"]) {
+                value["method"] = method
+            }
+            return value
         case .webSocket:
             var value: [String: Any] = [
                 "type": "ws",
@@ -729,6 +1246,18 @@ public struct CoreConfigurationCompiler: Sendable {
             if let host = firstNonEmpty(options, keys: ["host", "ws-opts.headers.host"]) {
                 value["headers"] = ["Host": host]
             }
+            if let earlyData = firstInteger(
+                options,
+                keys: ["ed", "max-early-data", "ws-opts.max-early-data"]
+            ), earlyData >= 0 {
+                value["max_early_data"] = earlyData
+            }
+            if let header = firstNonEmpty(
+                options,
+                keys: ["eh", "early-data-header-name", "ws-opts.early-data-header-name"]
+            ) {
+                value["early_data_header_name"] = header
+            }
             return value
         case .grpc:
             return [
@@ -736,18 +1265,68 @@ public struct CoreConfigurationCompiler: Sendable {
                 "service_name": firstNonEmpty(options, keys: ["servicename", "grpc-opts.grpc-service-name"]) ?? "",
             ]
         case .httpUpgrade:
-            return [
+            var value: [String: Any] = [
                 "type": "httpupgrade",
-                "path": options["path"] ?? "/",
-                "host": options["host"] ?? "",
+                "path": firstNonEmpty(
+                    options,
+                    keys: ["path", "http-upgrade-opts.path", "httpupgrade-opts.path"]
+                ) ?? "/",
             ]
+            if let host = firstNonEmpty(
+                options,
+                keys: [
+                    "host", "http-upgrade-opts.host", "httpupgrade-opts.host",
+                    "http-upgrade-opts.headers.host", "httpupgrade-opts.headers.host",
+                ]
+            ) {
+                value["host"] = host
+            }
+            return value
         case .splitHTTP:
-            return nil
+            // The pinned sing-box 1.13 runtime intentionally does not expose
+            // XHTTP/splitHTTP. Silently compiling it as raw TCP produces a
+            // selectable node that can never speak the provider's transport.
+            throw CoreConfigurationError.unsupportedProxyOption("transport.xhttp")
         }
     }
 
     private func normalized(_ values: [String: String]) -> [String: String] {
         Dictionary(values.map { ($0.key.lowercased(), $0.value) }, uniquingKeysWith: { _, rhs in rhs })
+    }
+
+    private func firstBoolean(_ values: [String: String], keys: [String]) -> Bool? {
+        for key in keys {
+            switch values[key]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+            case "true", "yes", "1", "on": return true
+            case "false", "no", "0", "off": return false
+            default: continue
+            }
+        }
+        return nil
+    }
+
+    private func firstInteger(_ values: [String: String], keys: [String]) -> Int? {
+        for key in keys {
+            guard let value = nonEmpty(values[key]) else { continue }
+            if let integer = Int(value) { return integer }
+            if let number = Double(value) { return Int(number.rounded()) }
+        }
+        return nil
+    }
+
+    private func stringList(_ raw: String) -> [String] {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body: Substring
+        if trimmed.hasPrefix("["), trimmed.hasSuffix("]") {
+            body = trimmed.dropFirst().dropLast()
+        } else {
+            body = Substring(trimmed)
+        }
+        return body.split(separator: ",", omittingEmptySubsequences: true).compactMap { item in
+            let value = item.trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+            return value.isEmpty ? nil : value
+        }
     }
 
     private func required(_ value: String?) throws -> String {

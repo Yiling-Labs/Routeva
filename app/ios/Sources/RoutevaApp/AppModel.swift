@@ -60,6 +60,7 @@ final class RoutevaAppModel: ObservableObject {
     @Published var overrideReconnectPrompt = false
     @Published var connectionFailureMessage: String?
     @Published var nodeFailoverToast: String?
+    @Published var latencyTestUnavailableToast = false
     @Published var nodeLatencies: [UUID: NodeLatencyStatus] = [:]
     @Published var isTestingNodes = false
     /// Location list order after a completed latency round (node IDs). Empty = subscription order.
@@ -93,6 +94,10 @@ final class RoutevaAppModel: ObservableObject {
     private let nodeSelectionMutationGate = NodeSelectionMutationGate()
     private var connectionTask: Task<Void, Never>?
     private var disconnectionTask: Task<Void, Never>?
+    /// Latest *Set active* target. A newer tap only updates this; the in-flight
+    /// switch applies the last id after teardown.
+    private var pendingActiveSubscriptionID: UUID?
+    private var isSwitchingActiveSubscription = false
     private var nodeSelectionTask: Task<Void, Never>?
     private var nodeSelectionRequestID: UUID?
     private var nodeSelectionIntentID: UUID?
@@ -116,6 +121,8 @@ final class RoutevaAppModel: ObservableObject {
     private var overrideSyncService: CloudOverrideSyncService?
     private var silentLatencyTask: Task<Void, Never>?
     private var latencyRoundGeneration = 0
+    private var latencyRoundBaseline: [UUID: NodeLatencyStatus] = [:]
+    private var latencyRoundIsUserInitiated = false
     private var providerStatusObservationTask: Task<Void, Never>?
     private var providerConnectingRecoveryTask: Task<Void, Never>?
     private var providerConnectingRecoveryID: UUID?
@@ -325,7 +332,7 @@ final class RoutevaAppModel: ObservableObject {
         cancelNodeSelection()
         probeCounterSummary = nil
         cancelPostConnectProbe()
-        pauseSilentLatencyTest()
+        cancelLatencyRound()
         #if DEBUG && targetEnvironment(simulator)
         connectionState = .idle
         connectionFailureMessage = "VPN connection testing requires a signed build on a physical iPhone."
@@ -573,7 +580,7 @@ final class RoutevaAppModel: ObservableObject {
 
         switch snapshot {
         case let .connecting(core):
-            pauseSilentLatencyTest()
+            cancelLatencyRound()
             cancelNodeSelection()
             cancelPostConnectProbe()
             stopTrafficPolling()
@@ -882,23 +889,88 @@ final class RoutevaAppModel: ObservableObject {
 
     func setActiveSubscription(_ id: UUID) async {
         guard let database else { return }
-        let rollbackNodeID = verifiedNodeID
-        do {
-            try await database.setActiveSubscription(id)
-            await reloadSubscriptions()
-            guard case .connected = connectionState else { return }
-            if connectedCore == .singBox, let targetNodeID = desiredVisibleNodeID() {
-                scheduleNodeSelection(
-                    targetNodeID: targetNodeID,
-                    rollbackNodeID: rollbackNodeID,
-                    forceCatalogReload: true
-                )
-            } else {
-                applyOverrideChangesAndReconnect()
+        if activeSubscription?.id == id, !isSwitchingActiveSubscription { return }
+        pendingActiveSubscriptionID = id
+        guard !isSwitchingActiveSubscription else { return }
+        isSwitchingActiveSubscription = true
+        defer { isSwitchingActiveSubscription = false }
+
+        // A live session is bound to the current Active catalog. Switching
+        // Active stops that session first and does not reconnect — unlike
+        // node selection, which stays inside one subscription.
+        await stopSessionBeforeSwitchingActiveSubscription(
+            for: pendingActiveSubscriptionID ?? id
+        )
+        // `disconnect()` may have started a silent round against the old
+        // catalog. Drop it so `reloadSubscriptions` can test the new one.
+        cancelLatencyRound()
+
+        while let target = pendingActiveSubscriptionID {
+            if target == activeSubscription?.id {
+                pendingActiveSubscriptionID = nil
+                break
             }
-        } catch {
-            await reloadSubscriptions()
+            do {
+                try await database.setActiveSubscription(target)
+                await reloadSubscriptions()
+            } catch {
+                await reloadSubscriptions()
+                if pendingActiveSubscriptionID == target {
+                    pendingActiveSubscriptionID = nil
+                }
+                return
+            }
+            if pendingActiveSubscriptionID == target {
+                pendingActiveSubscriptionID = nil
+                break
+            }
         }
+    }
+
+    /// Stops Connecting / Connected before Active can change. Does not start a
+    /// new session — the user reconnects from Home with the new catalog.
+    private func stopSessionBeforeSwitchingActiveSubscription(for id: UUID) async {
+        cancelLatencyRound()
+        switch ActiveSubscriptionSwitch.evaluate(
+            isAlreadyActive: activeSubscription?.id == id,
+            isConnecting: isConnectingForLatency,
+            isConnected: isConnectedForLatency
+        ) {
+        case .ignore, .apply:
+            break
+        case .stopConnected:
+            disconnect()
+        case .abortConnecting:
+            if disconnectionTask == nil {
+                await abortConnectingSessionBeforeSwitchingActiveSubscription()
+            }
+        }
+        await disconnectionTask?.value
+    }
+
+    private func abortConnectingSessionBeforeSwitchingActiveSubscription() async {
+        let core = connectedCore ?? .singBox
+        let controller = providerController
+        connectionTask?.cancel()
+        // Own the disconnect transaction before the cancelled connect
+        // finishes, so a provider-status reconcile cannot restore Connected.
+        disconnectionTask = Task { [weak self] in
+            guard let self else { return }
+            defer { disconnectionTask = nil }
+            await connectionTask?.value
+            await controller.requestStop(core: core)
+            await connectionCoordinator.reconcile(.disconnected)
+        }
+        await disconnectionTask?.value
+        cancelProviderConnectingRecovery()
+        cancelNodeSelection()
+        cancelPostConnectProbe()
+        stopTrafficPolling()
+        connectedCore = nil
+        clearConnectedNodeState()
+        connectionState = .idle
+        sessionDownloadedBytes = 0
+        sessionUploadedBytes = 0
     }
 
     func setAutoUpdateEnabled(_ enabled: Bool) {
@@ -986,6 +1058,7 @@ final class RoutevaAppModel: ObservableObject {
         let intentID = UUID()
         nodeSelectionIntentID = intentID
         nodeSelectionTask?.cancel()
+        cancelLatencyRound()
         cancelPostConnectProbe()
         let visibleSelectedNodeID = availableNodes.indices.contains(selectedNodeIndex)
             ? availableNodes[selectedNodeIndex].id
@@ -1237,7 +1310,17 @@ final class RoutevaAppModel: ObservableObject {
     private func filteredTunnelProbeAddressSets(
         excluding directRouteAddresses: [String]
     ) -> [ProviderTunnelProbeAddressSet] {
-        connectedTunnelProbeAddressSets.compactMap { addressSet in
+        Self.filteredTunnelProbeAddressSets(
+            connectedTunnelProbeAddressSets,
+            excluding: directRouteAddresses
+        )
+    }
+
+    private static func filteredTunnelProbeAddressSets(
+        _ addressSets: [ProviderTunnelProbeAddressSet],
+        excluding directRouteAddresses: [String]
+    ) -> [ProviderTunnelProbeAddressSet] {
+        addressSets.compactMap { addressSet in
             let addresses = addressSet.ipv4Addresses.filter {
                 !directRouteAddresses.contains($0)
             }
@@ -1391,9 +1474,21 @@ final class RoutevaAppModel: ObservableObject {
         dnsHealthMonitor.reset()
     }
 
-    /// User-visible Location *Test* — same pipeline as silent latency.
+    /// User-visible Location *Test* — same measurement as silent latency.
     func testNodeLatencies() async {
         await runLatencyRound(userInitiated: true)
+    }
+
+    /// Location 离开 / 点选 / Connecting：取消本轮，保留已写出的 ms。
+    func cancelLocationLatencyTest() {
+        cancelLatencyRound()
+    }
+
+    var canStartLocationLatencyTest: Bool {
+        switch connectionState {
+        case .connecting: false
+        case .idle, .failed, .connected: !availableNodes.isEmpty
+        }
     }
 
     /// Schedule a silent full-table TCP latency round when idle and cache is cold.
@@ -1423,26 +1518,86 @@ final class RoutevaAppModel: ObservableObject {
         }
     }
 
+    private var isConnectingForLatency: Bool {
+        if case .connecting = connectionState { true } else { false }
+    }
+
+    private var isConnectedForLatency: Bool {
+        if case .connected = connectionState { true } else { false }
+    }
+
     private func pauseSilentLatencyTest() {
         silentLatencyTask?.cancel()
         silentLatencyTask = nil
+        // 用户 *Test* 进行中不要被 Connected 快照刷新杀掉。
+        guard !latencyRoundIsUserInitiated else { return }
         latencyRoundGeneration += 1
+        isTestingNodes = false
+    }
+
+    private func cancelLatencyRound() {
+        silentLatencyTask?.cancel()
+        silentLatencyTask = nil
+        latencyRoundGeneration += 1
+        isTestingNodes = false
+        latencyRoundIsUserInitiated = false
+        restoreIncompleteLatencyRound()
+    }
+
+    private func restoreIncompleteLatencyRound() {
+        guard !latencyRoundBaseline.isEmpty || isTestingNodes else { return }
+        var restored = latencyRoundBaseline
+        for (id, status) in nodeLatencies {
+            switch status {
+            case .measured, .unavailable:
+                restored[id] = status
+            case .testing:
+                break
+            }
+        }
+        nodeLatencies = restored
+        latencyRoundBaseline = [:]
+    }
+
+    private func presentLatencyTestUnavailable() {
+        latencyTestUnavailableToast = true
     }
 
     private func runLatencyRound(userInitiated: Bool) async {
         guard let database, let activeSubscription else { return }
         guard let records = try? await database.nodes(subscriptionID: activeSubscription.id),
               !records.isEmpty else { return }
-        // Connecting / Connected: never run (or continue) a full-table round.
-        if case .connecting = connectionState { return }
-        if case .connected = connectionState { return }
+
+        switch LatencyTestAdmission.evaluate(
+            userInitiated: userInitiated,
+            isConnecting: isConnectingForLatency,
+            isConnected: isConnectedForLatency
+        ) {
+        case .run:
+            break
+        case .ignoreSilent:
+            return
+        case .refuseConnecting:
+            cancelLatencyRound()
+            return
+        }
+
+        let useProviderEntryPath = userInitiated && isConnectedForLatency
+        if useProviderEntryPath, connectedCore != .singBox {
+            presentLatencyTestUnavailable()
+            return
+        }
 
         let generation = latencyRoundGeneration + 1
         latencyRoundGeneration = generation
+        latencyRoundBaseline = nodeLatencies
+        latencyRoundIsUserInitiated = userInitiated
         isTestingNodes = true
         defer {
             if latencyRoundGeneration == generation {
                 isTestingNodes = false
+                latencyRoundIsUserInitiated = false
+                latencyRoundBaseline = [:]
             }
         }
 
@@ -1460,48 +1615,134 @@ final class RoutevaAppModel: ObservableObject {
             nodeLatencies = Dictionary(uniqueKeysWithValues: records.map { ($0.id, .testing) })
         }
 
-        for start in stride(from: 0, to: records.count, by: 6) {
-            if Task.isCancelled || latencyRoundGeneration != generation { return }
-            if case .connecting = connectionState { return }
-            if case .connected = connectionState { return }
+        let batchSize = ProviderEntryLatencyCode.maximumBatchCount
+        for start in stride(from: 0, to: records.count, by: batchSize) {
+            if Task.isCancelled || latencyRoundGeneration != generation {
+                restoreIncompleteLatencyRound()
+                return
+            }
+            if case .connecting = connectionState {
+                cancelLatencyRound()
+                return
+            }
+            if !userInitiated, case .connected = connectionState {
+                restoreIncompleteLatencyRound()
+                return
+            }
 
-            let batch = Array(records[start..<min(start + 6, records.count)])
-            await withTaskGroup(of: (UUID, Int?).self) { group in
-                for record in batch {
-                    group.addTask {
-                        guard record.protocolKind != .hysteria2 else { return (record.id, nil) }
-                        return (
-                            record.id,
-                            await NodeLatencyProbe.measure(
-                                host: record.endpointHost,
-                                port: record.endpointPort,
-                                timeout: 2
-                            )
-                        )
-                    }
+            let batch = Array(records[start..<min(start + batchSize, records.count)])
+            let samples: [(UUID, NodeLatencyProbeResult)]
+            if useProviderEntryPath {
+                do {
+                    samples = try await measureConnectedEntryLatencies(batch)
+                } catch {
+                    nodeLatencies = latencyRoundBaseline
+                    presentLatencyTestUnavailable()
+                    return
                 }
-                for await (id, milliseconds) in group {
-                    guard latencyRoundGeneration == generation else { return }
-                    nodeLatencies[id] = milliseconds.map(NodeLatencyStatus.measured) ?? .unavailable
+            } else {
+                samples = await measureLocalEntryLatencies(batch)
+            }
+
+            if samples.contains(where: {
+                if case .pathUnavailable = $0.1 { return true }
+                return false
+            }) {
+                nodeLatencies = latencyRoundBaseline
+                presentLatencyTestUnavailable()
+                return
+            }
+
+            for (id, result) in samples {
+                guard latencyRoundGeneration == generation else {
+                    restoreIncompleteLatencyRound()
+                    return
+                }
+                switch result {
+                case let .measured(milliseconds):
+                    nodeLatencies[id] = .measured(milliseconds)
+                case .timeout:
+                    nodeLatencies[id] = .unavailable
+                case .pathUnavailable:
+                    break
                 }
             }
         }
 
-        guard latencyRoundGeneration == generation else { return }
-        guard isIdleForLatencyWork else { return }
+        guard latencyRoundGeneration == generation else {
+            restoreIncompleteLatencyRound()
+            return
+        }
+        if case .connecting = connectionState {
+            cancelLatencyRound()
+            return
+        }
 
-        // Round complete: Location order + Cover Flow pre-stop (Preferred wins).
-        applyLatencyRoundResults(nodes: availableNodes)
+        applyLatencyRoundResults(
+            nodes: availableNodes,
+            updateCoverFlowPrestop: !isConnectedForLatency
+        )
         defaults.set(Date(), forKey: Self.latencyRoundCompletedAtKey)
     }
 
-    private func applyLatencyRoundResults(nodes: [NodeSummary]) {
+    private func measureLocalEntryLatencies(
+        _ records: [NodeRecord]
+    ) async -> [(UUID, NodeLatencyProbeResult)] {
+        await withTaskGroup(of: (UUID, NodeLatencyProbeResult).self) { group in
+            for record in records {
+                group.addTask {
+                    guard record.protocolKind != .hysteria2 else {
+                        return (record.id, .timeout)
+                    }
+                    return (
+                        record.id,
+                        await NodeLatencyProbe.measure(
+                            host: record.endpointHost,
+                            port: record.endpointPort,
+                            timeout: 2
+                        )
+                    )
+                }
+            }
+            var samples: [(UUID, NodeLatencyProbeResult)] = []
+            samples.reserveCapacity(records.count)
+            for await sample in group {
+                samples.append(sample)
+            }
+            return samples
+        }
+    }
+
+    private func measureConnectedEntryLatencies(
+        _ records: [NodeRecord]
+    ) async throws -> [(UUID, NodeLatencyProbeResult)] {
+        let samples = try await providerController.measureEntryLatencies(
+            core: .singBox,
+            nodeIDs: records.map(\.id)
+        )
+        let byID = Dictionary(uniqueKeysWithValues: samples.map { ($0.nodeID, $0) })
+        return records.map { record in
+            guard let sample = byID[record.id] else {
+                return (record.id, .timeout)
+            }
+            if let milliseconds = sample.milliseconds {
+                return (record.id, .measured(Int(milliseconds)))
+            }
+            return (record.id, .timeout)
+        }
+    }
+
+    private func applyLatencyRoundResults(
+        nodes: [NodeSummary],
+        updateCoverFlowPrestop: Bool
+    ) {
         // Always refresh Location order. Cover Flow stays subscription order.
         locationOrderIDs = Self.sortedNodeIDsByLatency(nodes: nodes, latencies: nodeLatencies)
 
+        // Connected *Test* 不得改 Cover Flow 下标（ADR 0069）。
         // Cover Flow / Location pick owns focus until the catalog changes.
         // Pre-stop must not yank the user back to Preferred or lowest-ms.
-        guard !nodeSelectionOwnedByUser else { return }
+        guard updateCoverFlowPrestop, !nodeSelectionOwnedByUser else { return }
 
         let preferredID = activeSubscription?.preferredNodeID
         if let preferredID,
@@ -1699,9 +1940,24 @@ final class RoutevaAppModel: ObservableObject {
         // excluded routes by the Packet Tunnel provider, preventing the
         // selected or newly switched transport from re-entering Routeva's own
         // default tunnel route.
+        guard let secrets else { throw RoutevaAppDataError.persistenceUnavailable }
+        var echResolverHosts: [String] = []
+        for candidate in catalogNodes {
+            let credentialData = try await secrets.data(for: candidate.credentialReference)
+            let credential = try JSONDecoder().decode(
+                ProxyCredentialEnvelope.self,
+                from: credentialData
+            )
+            if let host = Self.echResolverHost(in: credential.options) {
+                echResolverHosts.append(host)
+            }
+        }
         let catalogEndpointHosts = catalogNodes.map(\.endpointHost)
         let resolvedEndpointAddresses = await DomainRouteResolver().resolveAddressSets(
             domains: catalogEndpointHosts
+        )
+        let resolvedECHAddresses = await DomainRouteResolver().resolveAddressSets(
+            domains: echResolverHosts
         )
         let selectedEndpointAddresses = DirectRouteAddressValidator.validated(
             [record.endpointHost] + (resolvedEndpointAddresses[record.endpointHost] ?? [])
@@ -1713,9 +1969,20 @@ final class RoutevaAppModel: ObservableObject {
             throw RoutevaAppDataError.nodeUnavailable
         }
         let directRouteAddresses = DirectRouteAddressValidator.validated(
-            catalogEndpointHosts
+            resolvedECHAddresses.values.flatMap { $0 }
+                + catalogEndpointHosts
                 + resolvedEndpointAddresses.values.flatMap { $0 }
         )
+        var bootstrapAddressMap: [String: [String]] = [:]
+        for (host, addresses) in resolvedEndpointAddresses {
+            bootstrapAddressMap[host.lowercased(), default: []].append(contentsOf: addresses)
+        }
+        for (host, addresses) in resolvedECHAddresses {
+            bootstrapAddressMap[host.lowercased(), default: []].append(contentsOf: addresses)
+        }
+        bootstrapAddressMap = bootstrapAddressMap.mapValues {
+            DirectRouteAddressValidator.validated($0)
+        }
         try Task.checkCancellation()
         let manifest = RuntimeManifest(
             // The release runtime is sing-box-only.
@@ -1732,6 +1999,7 @@ final class RoutevaAppModel: ObservableObject {
             routingMode: routingMode.runtimeValue,
             dnsPreset: dnsPreset.runtimeValue,
             directRouteAddresses: directRouteAddresses,
+            dnsBootstrapAddressMap: bootstrapAddressMap,
             providerRoutePolicy: providerRoutePolicy,
             domainOverrides: runtimeOverrides
         )
@@ -1743,6 +2011,28 @@ final class RoutevaAppModel: ObservableObject {
             isCurrent: true
         ))
         return manifest
+    }
+
+    private static func echResolverHost(in options: [String: String]) -> String? {
+        let normalized = Dictionary(
+            options.map { ($0.key.lowercased(), $0.value) },
+            uniquingKeysWith: { _, rhs in rhs }
+        )
+        guard let raw = normalized["ech"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty,
+              !raw.contains("BEGIN")
+        else { return nil }
+        let ranges = ["+https://", " https://"].compactMap { marker in
+            raw.range(of: marker, options: [.caseInsensitive])
+        }
+        guard let range = ranges.min(by: { $0.lowerBound < $1.lowerBound }) else { return nil }
+        let schemeStart = raw.index(range.lowerBound, offsetBy: 1)
+        guard let components = URLComponents(string: String(raw[schemeStart...])),
+              components.scheme?.lowercased() == "https",
+              let host = components.host?.lowercased(),
+              !host.isEmpty
+        else { return nil }
+        return host
     }
 
     private func establishConnection(trace: ConnectionDiagnosticTrace) async throws {
@@ -1771,8 +2061,9 @@ final class RoutevaAppModel: ObservableObject {
             selectedNodeIndex = candidate
             do {
                 try await establishSelectedNodeConnection(trace: trace)
-                if candidate != originalIndex {
-                    nodeFailoverToast = availableNodes[candidate].name
+                if selectedNodeIndex != originalIndex,
+                   availableNodes.indices.contains(selectedNodeIndex) {
+                    nodeFailoverToast = availableNodes[selectedNodeIndex].name
                 }
                 return
             } catch is CancellationError {
@@ -1811,7 +2102,32 @@ final class RoutevaAppModel: ObservableObject {
 
         let controller = providerController
         let excludedNodeAddresses = manifest.directRouteAddresses
+        let tunnelProbeAddressSets = await DomainRouteResolver()
+            .resolveIPv4AddressSets(
+                domains: ProviderTunnelProbeCatalog.ipv4ResolutionHosts
+            )
+        let filteredProbeAddressSets = Self.filteredTunnelProbeAddressSets(
+            tunnelProbeAddressSets,
+            excluding: excludedNodeAddresses
+        )
         let startupTiming = StartupTimingBox()
+        let verifiedSelection = StartupNodeSelectionBox()
+        let automaticFailoverNodeIDs = NodeFailoverPlanner().candidates(
+            routingMode: routingMode.runtimeValue,
+            isPreferredPinned: activeSubscription?.preferredNodeID != nil,
+            currentIndex: selectedNodeIndex,
+            available: availableNodes.enumerated().map { index, node in
+                let score: Int?
+                if case let .measured(milliseconds) = nodeLatencies[node.id] {
+                    score = milliseconds
+                } else {
+                    score = nil
+                }
+                return NodeFailoverCandidate(index: index, healthScore: score)
+            }
+        ).map { availableNodes[$0].id }
+        let runtimeNodeIDs = Set(manifest.profiles.map(\.id))
+        let probeNodeIDs = automaticFailoverNodeIDs.filter { runtimeNodeIDs.contains($0) }
         let result: ProviderConnectionResult
         do {
             result = try await connectionCoordinator.start(
@@ -1846,10 +2162,38 @@ final class RoutevaAppModel: ObservableObject {
                 }
             },
                 stopProvider: { core in await controller.requestStop(core: core) },
-                probe: { _ in
-                    // Tunnel readiness only. Through-proxy health is verified
-                    // immediately after Connected via startPostConnectProbe.
-                    await trace.record(.init(layer: .probe, status: .passed))
+                probe: { core in
+                    var lastError: (any Error)?
+                    for (index, nodeID) in probeNodeIDs.enumerated() {
+                        do {
+                            if index > 0 {
+                                let actualNodeID = try await controller.selectNode(
+                                    core: core,
+                                    nodeID: nodeID
+                                )
+                                guard actualNodeID == nodeID else {
+                                    throw RoutevaAppDataError.nodeUnavailable
+                                }
+                            }
+                            _ = try await controller.probeCore(
+                                core: core,
+                                tunnelProbeAddressSets: filteredProbeAddressSets
+                            )
+                            verifiedSelection.store(nodeID)
+                            await trace.record(.init(layer: .probe, status: .passed))
+                            return
+                        } catch {
+                            lastError = error
+                        }
+                    }
+                    let error = lastError ?? RoutevaAppDataError.nodeUnavailable
+                    await trace.record(.init(
+                        layer: .probe,
+                        status: .failed,
+                        errorCode: VPNProviderController
+                            .stableCoreProbeDiagnosticCode(for: error)
+                    ))
+                    throw error
                 }
             )
         } catch is CancellationError {
@@ -1875,10 +2219,10 @@ final class RoutevaAppModel: ObservableObject {
             }
             throw NonFailoverConnectionError.providerUnavailable
         } catch {
-            // Changing nodes cannot repair a provider configuration, system
-            // permission, preference, or startup-state failure. Surface it
-            // immediately instead of repeating the same 20-second startup.
-            throw NonFailoverConnectionError.providerUnavailable
+            // A provider that reached its through-proxy probe can fail because
+            // this exact node cannot relay traffic. Let Smart mode advance to
+            // the next subscription node; pinned modes still have one candidate.
+            throw error
         }
         try Task.checkCancellation()
         #if DEBUG
@@ -1886,10 +2230,16 @@ final class RoutevaAppModel: ObservableObject {
             defaults.set(duration, forKey: Self.debugProviderStartupDurationKey)
         }
         #endif
+        let connectedNodeID = verifiedSelection.nodeID ?? manifest.profile.id
+        if let connectedNodeIndex = availableNodes.firstIndex(where: {
+            $0.id == connectedNodeID
+        }) {
+            selectedNodeIndex = connectedNodeIndex
+        }
         connectedCore = result.core
-        verifiedNodeID = manifest.profile.id
+        verifiedNodeID = connectedNodeID
         runtimeCatalogNodeIDs = Set(manifest.profiles.map(\.id))
-        connectedTunnelProbeAddressSets = []
+        connectedTunnelProbeAddressSets = tunnelProbeAddressSets
         connectedDirectRouteAddresses = excludedNodeAddresses
         sessionDownloadedBytes = 0
         sessionUploadedBytes = 0
@@ -1965,22 +2315,16 @@ final class RoutevaAppModel: ObservableObject {
                         let dataPlane = try? await controller.queryDataPlane(core: core)
                         probeCounterSummary = (dataPlane?.probeCounterSummary ?? "snapshot=none")
                             + " " + SystemProxyDiagnostics.summary
-                        if let errorCode = dataPlane?
-                            .dnsResolutionFailureDiagnosticCode(since: baseline) {
-                            await tearDownUnhealthySession(
-                                core: core,
-                                postConnectTaskID: taskID,
-                                errorCode: errorCode
-                            )
-                        } else {
-                            #if DEBUG
-                            print(
-                                "Routeva VPN DNS preflight inconclusive; "
-                                    + "keeping session under live monitoring "
-                                    + "[\(probeCounterSummary ?? "snapshot=none")]"
-                            )
-                            #endif
-                        }
+                        #if DEBUG
+                        let errorCode = dataPlane?
+                            .dnsResolutionFailureDiagnosticCode(since: baseline)
+                            ?? "probe.dns_preflight_inconclusive"
+                        print(
+                            "Routeva VPN DNS preflight warning: \(errorCode); "
+                                + "keeping connected session "
+                                + "[\(probeCounterSummary ?? "snapshot=none")]"
+                        )
+                        #endif
                         return
                     }
                 } else {
@@ -2048,17 +2392,11 @@ final class RoutevaAppModel: ObservableObject {
                             + "[\(diagnosticSummary)]"
                     )
                     #endif
-                    // Public CDN probe failure may be endpoint-specific only
-                    // when DNS is healthy and the data plane proves full
-                    // bidirectional progress. Upstream DNS failure is never
-                    // masked by unrelated packet activity.
-                    if !trafficProvesTunnel {
-                        await tearDownUnhealthySession(
-                            core: core,
-                            postConnectTaskID: taskID,
-                            errorCode: errorCode
-                        )
-                    }
+                    // A health target or resolver can be temporarily blocked
+                    // while the selected node remains usable. Mature proxy
+                    // clients keep an established user session alive and make
+                    // health checks advisory; only provider/runtime failure or
+                    // an explicit user action should stop the system tunnel.
                 }
             } catch is CancellationError {
                 return
@@ -2075,45 +2413,6 @@ final class RoutevaAppModel: ObservableObject {
         return try? JSONDecoder().decode(RuntimeManifest.self, from: record.manifestData)
     }
 
-    /// Stop a session whose system tunnel is running but whose verified
-    /// Internet path is not healthy. A post-connect task detaches itself before
-    /// teardown; a live monitor cancels any independent probe still in flight.
-    private func tearDownUnhealthySession(
-        core: CoreIdentifier,
-        postConnectTaskID taskID: UUID? = nil,
-        errorCode: String
-    ) async {
-        guard connectedCore == core else { return }
-        if let taskID {
-            guard postConnectProbeTaskID == taskID else { return }
-        }
-        #if DEBUG
-        print("Routeva VPN unhealthy-session teardown: \(errorCode)")
-        #endif
-        if taskID != nil {
-            // Detach this task's IDs without cancelling ourselves mid-teardown.
-            postConnectProbeTask = nil
-            postConnectProbeTaskID = nil
-        } else {
-            cancelPostConnectProbe()
-        }
-        stopTrafficPolling()
-        let controller = providerController
-        await controller.requestStop(core: core)
-        await connectionCoordinator.reconcile(.disconnected)
-        connectedCore = nil
-        clearConnectedNodeState()
-        connectionState = .idle
-        sessionDownloadedBytes = 0
-        sessionUploadedBytes = 0
-        let message = Self.healthFailureUserMessage(for: errorCode)
-        #if DEBUG
-        connectionFailureMessage = "\(message) [\(errorCode)]"
-        #else
-        connectionFailureMessage = message
-        #endif
-    }
-
     private func cancelPostConnectProbe() {
         postConnectProbeTask?.cancel()
         postConnectProbeTask = nil
@@ -2122,18 +2421,6 @@ final class RoutevaAppModel: ObservableObject {
 
     private static let nodeUnreachableUserMessage =
         "This node isn’t responding. Try another node."
-
-    private static let dnsUnreachableUserMessage =
-        "DNS isn’t responding through this VPN. Try reconnecting or another node."
-
-    private static func healthFailureUserMessage(for errorCode: String) -> String {
-        if errorCode.hasPrefix("probe.core_dns_")
-            || errorCode.hasPrefix("probe.dns_")
-            || errorCode == "probe.tunnel_dns_resolution_failed" {
-            return dnsUnreachableUserMessage
-        }
-        return nodeUnreachableUserMessage
-    }
 
     private func presentDiagnostic(from trace: ConnectionDiagnosticTrace) async {
         let result = await recordDiagnostic(from: trace)
@@ -2145,6 +2432,12 @@ final class RoutevaAppModel: ObservableObject {
         let isNodeUnreachable = evidenceCode == "probe.node_unreachable"
             || evidenceCode == "probe.core_url_test_failed"
             || evidenceCode == "probe.core_url_test_unavailable"
+            || evidenceCode == "probe.tunnel_http_failed"
+            || evidenceCode == "probe.tunnel_http_invalid_response"
+            || evidenceCode == "probe.tunnel_http_body_mismatch"
+            || evidenceCode == "probe.tunnel_http_response_too_large"
+            || evidenceCode == "probe.tunnel_probe_address_unavailable"
+            || evidenceCode.hasPrefix("probe.core_proxy_")
         #if DEBUG
         if isNodeUnreachable {
             var message = "\(Self.nodeUnreachableUserMessage) [\(evidenceCode)]"
@@ -2196,8 +2489,8 @@ final class RoutevaAppModel: ObservableObject {
             port: record.endpointPort,
             timeout: 2.5
         )
-        if let latency {
-            nodeLatencies[record.id] = .measured(latency)
+        if case let .measured(milliseconds) = latency {
+            nodeLatencies[record.id] = .measured(milliseconds)
             await trace.record(.init(layer: .probe, status: .passed))
             return
         }
@@ -2323,26 +2616,25 @@ final class RoutevaAppModel: ObservableObject {
                 }
                 // Provider IPC is globally limited to one request per 200 ms.
                 // Sample the existing privacy-safe data-plane snapshot only
-                // every third traffic tick. Release builds use the same sample
-                // to debounce sustained DNS failure; DEBUG additionally prints
-                // the redacted counters.
+                // every third traffic tick. DNS health is observational: an
+                // established system tunnel is never stopped by this sampler.
                 pollingIteration += 1
                 if pollingIteration.isMultiple(of: 3) {
                     try? await Task.sleep(for: .milliseconds(250))
                     guard !Task.isCancelled else { break }
                     if let snapshot = try? await providerController.queryDataPlane(core: core) {
-                        if let errorCode = dnsHealthMonitor.observe(snapshot) {
-                            await tearDownUnhealthySession(
-                                core: core,
-                                errorCode: errorCode
-                            )
-                            break
-                        }
+                        let dnsWarningCode = dnsHealthMonitor.observe(snapshot)
                         #if DEBUG
                         let summary = snapshot.probeCounterSummary
                         if summary != lastDataPlaneSummary {
                             print("Routeva VPN live data-plane: [\(summary)]")
                             lastDataPlaneSummary = summary
+                        }
+                        if let dnsWarningCode {
+                            print(
+                                "Routeva VPN live DNS warning: \(dnsWarningCode); "
+                                    + "keeping connected session"
+                            )
                         }
                         #endif
                     }
@@ -2442,6 +2734,17 @@ private final class StartupTimingBox: @unchecked Sendable {
 
     func storeProviderDuration(_ value: TimeInterval) {
         lock.withLock { storedProviderDuration = value }
+    }
+}
+
+private final class StartupNodeSelectionBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedNodeID: UUID?
+
+    var nodeID: UUID? { lock.withLock { storedNodeID } }
+
+    func store(_ value: UUID) {
+        lock.withLock { storedNodeID = value }
     }
 }
 
@@ -2545,68 +2848,6 @@ enum NodeLatencyStatus: Equatable {
         case let .measured(value): "\(value) ms"
         case .unavailable: "Timeout"
         }
-    }
-}
-
-private enum NodeLatencyProbe {
-    static func measure(host: String, port: Int, timeout: TimeInterval) async -> Int? {
-        guard (1...65_535).contains(port),
-              let endpointPort = NWEndpoint.Port(rawValue: UInt16(port)) else { return nil }
-        return await withCheckedContinuation { continuation in
-            let connection = NWConnection(
-                host: NWEndpoint.Host(host),
-                port: endpointPort,
-                using: .tcp
-            )
-            let completion = NodeLatencyCompletion(
-                continuation: continuation,
-                connection: connection,
-                startedAt: Date()
-            )
-            connection.stateUpdateHandler = { state in
-                switch state {
-                case .ready:
-                    completion.finish(Int(Date().timeIntervalSince(completion.startedAt) * 1_000))
-                case .failed, .cancelled:
-                    completion.finish(nil)
-                default:
-                    break
-                }
-            }
-            connection.start(queue: DispatchQueue(label: "com.yilinglabs.routeva.node-latency"))
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
-                completion.finish(nil)
-            }
-        }
-    }
-}
-
-private final class NodeLatencyCompletion: @unchecked Sendable {
-    let startedAt: Date
-    private let lock = NSLock()
-    private var continuation: CheckedContinuation<Int?, Never>?
-    private let connection: NWConnection
-
-    init(
-        continuation: CheckedContinuation<Int?, Never>,
-        connection: NWConnection,
-        startedAt: Date
-    ) {
-        self.continuation = continuation
-        self.connection = connection
-        self.startedAt = startedAt
-    }
-
-    func finish(_ result: Int?) {
-        lock.lock()
-        guard let continuation else {
-            lock.unlock()
-            return
-        }
-        self.continuation = nil
-        lock.unlock()
-        connection.cancel()
-        continuation.resume(returning: result)
     }
 }
 

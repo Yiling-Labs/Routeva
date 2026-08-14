@@ -11,6 +11,8 @@ public struct NodeFailoverCandidate: Equatable, Sendable {
 }
 
 public struct NodeFailoverPlanner: Sendable {
+    public static let maximumAutomaticAttempts = 6
+
     public init() {}
 
     public func candidates(
@@ -18,7 +20,7 @@ public struct NodeFailoverPlanner: Sendable {
         isPreferredPinned: Bool,
         currentIndex: Int,
         available: [NodeFailoverCandidate],
-        maximumAttempts: Int = 3
+        maximumAttempts: Int = Self.maximumAutomaticAttempts
     ) -> [Int] {
         guard maximumAttempts > 0,
               available.contains(where: { $0.index == currentIndex }) else { return [] }

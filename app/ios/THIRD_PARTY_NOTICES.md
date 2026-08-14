@@ -31,7 +31,7 @@ core build.
 The sing-box source commit, Routeva patch paths and SHA-256 values, Go toolchain
 archive digest, and reference arm64 binary digest are recorded in
 `CoreVersions.json`. `Scripts/build-sing-box-core.sh` verifies and applies
-both Routeva patches before building. Anyone distributing a different binary
+all Routeva patches before building. Anyone distributing a different binary
 must regenerate the module manifest and notices for that exact source graph.
 
 Apple distribution terms, all transitive notice obligations, and App Store

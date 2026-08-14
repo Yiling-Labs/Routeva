@@ -86,7 +86,7 @@
 |---|---|
 | **Onboarding / Import** | Field Black；Welcome / Data & Privacy 展示词 **56 / 700**（无副文、无说明卡）；Import 大标题 28–30；主 CTA 薄荷绿实心；少步骤。**Parsing** = 叠在 Add 上的玻璃 status 模态。成功 = Home Idle 同壳 + 短 toast（2–3s） |
 | **Location / 节点列表** | Field Black；顶栏 Back + *Location* + *Test*；**扁平**订阅原序；**无** group chip；行：名 · Preferred check · 弱协议 · ms；权威 `08-location.html` |
-| **Subscriptions** | Field Black；**单列表**；名旁铅笔 Rename；到期标签；Update 失败 toast；权威 `04-subscriptions.html` |
+| **Subscriptions** | Field Black；**单列表**；名旁铅笔 Rename；到期标签；Active 行 Update（薄荷绿主按钮）；非 Active 行 **Set active** 为**同槽玻璃次按钮**（非标题旁弱字）；Update 失败 toast；权威 `04-subscriptions.html` |
 | **Settings** | Black 场；**Connection → App**；Auto-update · Subscriptions › · About ›；权威 `05-settings.html` |
 | **Post-MVP Help / Diagnostic / Repair** | 非 MVP 权威；存档 `_explore/2026-08-07-help-agent-post-mvp/` |
 

@@ -156,7 +156,14 @@ public struct SubscriptionParser: Sendable {
                 skipped += 1
                 continue
             }
-            let node = try parseURI(line, fallbackIndex: nodes.count)
+            let node: ParsedProxyNode
+            do {
+                node = try parseURI(line, fallbackIndex: nodes.count)
+            } catch {
+                // One broken banner/legacy row must not fail the whole list.
+                skipped += 1
+                continue
+            }
             // Providers often inject non-routable banner rows (traffic / expiry
             // text) as fake proxies. Keep them out of the selectable node list.
             if isProviderMetadataNode(displayName: node.displayName, host: node.endpointHost) {
@@ -528,6 +535,7 @@ public struct SubscriptionParser: Sendable {
 
     private func transportKind(_ value: String?) -> TransportKind {
         switch value?.lowercased() {
+        case "http", "h2": .http
         case "ws", "websocket": .webSocket
         case "grpc": .grpc
         case "httpupgrade", "http-upgrade": .httpUpgrade
@@ -601,7 +609,8 @@ private struct ClashYAMLExtractor {
             if indent <= headerIndent { break }
             if trimmed.contains("<<:") { throw SubscriptionParserError.unsafeYAMLFeature }
 
-            if trimmed.hasPrefix("- ") || trimmed == "-" {
+            if (trimmed.hasPrefix("- ") || trimmed == "-")
+                && (current == nil || parents.isEmpty || indent <= (parents.first?.indent ?? indent)) {
                 if let current { results.append(current) }
                 current = [:]
                 parents = []
@@ -618,6 +627,16 @@ private struct ClashYAMLExtractor {
             }
 
             guard current != nil else { continue }
+            if trimmed.hasPrefix("- "), let parent = parents.last, indent > parent.indent {
+                let item = try yamlScalar(
+                    String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)
+                )
+                let prefix = parents.map(\.key).joined(separator: ".")
+                let existing = current?[prefix].map { "\($0),\(item)" } ?? item
+                current?[prefix] = existing
+                if current?[parent.key] == nil { current?[parent.key] = existing }
+                continue
+            }
             while let last = parents.last, last.indent >= indent { parents.removeLast() }
             guard let separator = firstUnquotedColon(in: trimmed) else { continue }
             let key = String(trimmed[..<separator]).trimmingCharacters(in: .whitespaces)
@@ -778,7 +797,15 @@ private struct ClashYAMLExtractor {
         guard let separator = firstUnquotedColon(in: pair) else { return }
         let key = String(pair[..<separator]).trimmingCharacters(in: .whitespaces)
         let rawValue = String(pair[pair.index(after: separator)...]).trimmingCharacters(in: .whitespaces)
-        mapping[prefix.map { "\($0).\(key)" } ?? key] = try yamlScalar(rawValue)
+        let flattenedKey = prefix.map { "\($0).\(key)" } ?? key
+        if rawValue.hasPrefix("{"), rawValue.hasSuffix("}") {
+            let body = String(rawValue.dropFirst().dropLast())
+            for child in splitTopLevel(body, separator: ",") {
+                try assign(child, prefix: flattenedKey, to: &mapping)
+            }
+            return
+        }
+        mapping[flattenedKey] = try yamlScalar(rawValue)
     }
 
     private func yamlScalar(_ input: String) throws -> String {
@@ -919,6 +946,10 @@ private struct SurgeProfileExtractor {
                 defaultAction = action
                 foundRule = true
                 break
+            }
+
+            if ProviderRouteRuleSupport.unobservableOnAppleTUN.contains(kind) {
+                continue
             }
 
             guard fields.count >= 3, !fields[1].isEmpty, !fields[2].isEmpty else {

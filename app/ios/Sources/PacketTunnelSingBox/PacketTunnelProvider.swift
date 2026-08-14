@@ -11,6 +11,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
     private let runtime = SingBoxRuntime()
     private let runtimeState = ProviderRuntimeStateStore()
     private let startupDiagnostics = ProviderStartupDiagnosticStore()
+    private let nodeDatabase = try? RoutevaDatabase.openAppGroupDatabase()
     private var platform: SingBoxPlatformInterface?
 
     override func startTunnel(
@@ -136,6 +137,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
             .selectedNode,
             .reloadConfiguration,
             .finalizeConfigurationReload,
+            .entryLatency,
         ].contains(request.kind) else {
             completionHandler(runtimeState.response(to: messageData))
             return
@@ -197,7 +199,20 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                         requestID: request.requestID,
                         selectedNodeID: try runtime.currentSelectedNode()
                     )
-                } else if #available(iOS 18.0, *) {
+                } else if request.kind == .entryLatency {
+                    guard let self else {
+                        throw EntryLatencyProbeError.physicalPathUnavailable
+                    }
+                    guard let nodeIDs = request.entryLatencyNodeIDs, !nodeIDs.isEmpty else {
+                        throw EntryLatencyProbeError.physicalPathUnavailable
+                    }
+                    response = ProviderMessageResponse(
+                        requestID: request.requestID,
+                        entryLatencies: try await self.measureEntryLatencies(nodeIDs: nodeIDs)
+                    )
+                } else if #available(iOS 18.0, *),
+                          let addressSets = request.tunnelProbeAddressSets,
+                          !addressSets.isEmpty {
                     guard let self else {
                         throw SingBoxTunnelInterfaceProbeError.interfaceUnavailable
                     }
@@ -209,7 +224,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                     // best-effort telemetry without blocking Connected.
                     try await SingBoxTunnelInterfaceProbe.run(
                         provider: self,
-                        addressSets: request.tunnelProbeAddressSets ?? []
+                        addressSets: addressSets
                     )
                     Task.detached(priority: .utility) {
                         _ = try? runtime.probe()
@@ -242,6 +257,11 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                     requestID: request.requestID,
                     errorCode: error.stableCode
                 )
+            } catch let error as EntryLatencyProbeError {
+                response = ProviderMessageResponse(
+                    requestID: request.requestID,
+                    errorCode: error.stableCode
+                )
             } catch {
                 response = ProviderMessageResponse(
                     requestID: request.requestID,
@@ -261,6 +281,110 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                 ))
             }
         }
+    }
+
+    private func measureEntryLatencies(
+        nodeIDs: [UUID]
+    ) async throws -> [ProviderEntryLatencySample] {
+        guard let interface = await resolvePhysicalInterface() else {
+            throw EntryLatencyProbeError.physicalPathUnavailable
+        }
+        guard let database = nodeDatabase else {
+            throw EntryLatencyProbeError.physicalPathUnavailable
+        }
+        let limited = Array(nodeIDs.prefix(ProviderEntryLatencyCode.maximumBatchCount))
+        return try await withThrowingTaskGroup(
+            of: ProviderEntryLatencySample.self
+        ) { group in
+            for nodeID in limited {
+                group.addTask {
+                    guard let record = try? await database.node(id: nodeID) else {
+                        return ProviderEntryLatencySample(nodeID: nodeID, milliseconds: nil)
+                    }
+                    guard record.protocolKind != .hysteria2 else {
+                        return ProviderEntryLatencySample(nodeID: nodeID, milliseconds: nil)
+                    }
+                    let result = await NodeLatencyProbe.measure(
+                        host: record.endpointHost,
+                        port: record.endpointPort,
+                        timeout: 2,
+                        requiredInterface: interface
+                    )
+                    switch result {
+                    case let .measured(milliseconds):
+                        return ProviderEntryLatencySample(
+                            nodeID: nodeID,
+                            milliseconds: UInt32(clamping: milliseconds)
+                        )
+                    case .timeout:
+                        return ProviderEntryLatencySample(nodeID: nodeID, milliseconds: nil)
+                    case .pathUnavailable:
+                        throw EntryLatencyProbeError.physicalPathUnavailable
+                    }
+                }
+            }
+            var samples: [ProviderEntryLatencySample] = []
+            samples.reserveCapacity(limited.count)
+            for try await sample in group {
+                samples.append(sample)
+            }
+            return samples
+        }
+    }
+
+    private func resolvePhysicalInterface() async -> NWInterface? {
+        let excludedName: String?
+        if #available(iOS 18.0, *) {
+            excludedName = virtualInterface?.name
+        } else {
+            excludedName = nil
+        }
+        let monitor = NWPathMonitor()
+        return await withCheckedContinuation { continuation in
+            let box = PathOnce(continuation: continuation)
+            monitor.pathUpdateHandler = { path in
+                monitor.cancel()
+                box.finish(
+                    PhysicalNetworkInterface.preferred(
+                        from: path,
+                        excludingName: excludedName
+                    )
+                )
+            }
+            monitor.start(queue: DispatchQueue(label: "com.yilinglabs.routeva.entry-latency.path"))
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 2) {
+                monitor.cancel()
+                box.finish(nil)
+            }
+        }
+    }
+}
+
+private final class PathOnce: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<NWInterface?, Never>?
+
+    init(continuation: CheckedContinuation<NWInterface?, Never>) {
+        self.continuation = continuation
+    }
+
+    func finish(_ value: NWInterface?) {
+        lock.lock()
+        guard let continuation else {
+            lock.unlock()
+            return
+        }
+        self.continuation = nil
+        lock.unlock()
+        continuation.resume(returning: value)
+    }
+}
+
+private enum EntryLatencyProbeError: Error, Equatable, Sendable {
+    case physicalPathUnavailable
+
+    var stableCode: String {
+        ProviderEntryLatencyCode.physicalPathUnavailable
     }
 }
 

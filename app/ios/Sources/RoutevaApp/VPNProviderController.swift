@@ -394,6 +394,22 @@ actor VPNProviderController {
         return selectedNodeID
     }
 
+    /// Connected 入口路径 RTT。探测在扩展里绑物理网卡，不改隧道排除表。
+    func measureEntryLatencies(
+        core: CoreIdentifier,
+        nodeIDs: [UUID]
+    ) async throws -> [ProviderEntryLatencySample] {
+        let request = ProviderMessageRequest(
+            kind: .entryLatency,
+            entryLatencyNodeIDs: Array(nodeIDs.prefix(ProviderEntryLatencyCode.maximumBatchCount))
+        )
+        let response = try await sendProviderRequest(request, core: core)
+        guard let samples = response.entryLatencies else {
+            throw VPNProviderControllerError.providerResponseMissing
+        }
+        return samples
+    }
+
     /// Commits a verified hot reload or restores the Provider's exact previous
     /// sing-box JSON/catalog/network-route snapshot after verification fails.
     func finalizeConfigurationReload(
@@ -475,13 +491,13 @@ actor VPNProviderController {
                 "schema-version": RuntimeManifest.currentSchemaVersion,
                 "core": core.rawValue,
             ]
-            // Smart, Global, and Direct all require provider classification of
-            // the device's routable traffic. Apple's strong capture contract is
-            // includeAllNetworks; the core's physical-interface binding keeps
-            // the proxy transport outside the TUN. Keep route enforcement off:
-            // forcing it made WebKit flows fail NECP path evaluation on iOS 26
-            // before they reached PacketFlow.
-            tunnelProtocol.includeAllNetworks = true
+            // The Packet Tunnel's explicit default route captures user traffic.
+            // Keep Apple's stronger include-all mode disabled so the host-sized
+            // excluded routes for proxy endpoints and ECH bootstrap resolvers
+            // remain on the physical interface. This matches sing-box for
+            // Apple's default and avoids routing the proxy's own prerequisites
+            // back into Routeva's TUN.
+            tunnelProtocol.includeAllNetworks = false
             tunnelProtocol.excludeLocalNetworks = false
             tunnelProtocol.enforceRoutes = false
             if #available(iOS 16.4, *) {
@@ -529,7 +545,7 @@ actor VPNProviderController {
               tunnelProtocol.providerConfiguration?["schema-version"] as? Int
                   == RuntimeManifest.currentSchemaVersion,
               tunnelProtocol.providerConfiguration?["core"] as? String == core.rawValue,
-              tunnelProtocol.includeAllNetworks == true,
+              tunnelProtocol.includeAllNetworks == false,
               tunnelProtocol.excludeLocalNetworks == false,
               tunnelProtocol.enforceRoutes == false,
               manager.localizedDescription == "Routeva",

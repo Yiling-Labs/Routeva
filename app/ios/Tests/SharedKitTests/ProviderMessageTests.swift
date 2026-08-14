@@ -54,6 +54,13 @@ final class ProviderMessageTests: XCTestCase {
         XCTAssertEqual(
             CoreLogDiagnosticClassifier.stableCode(
                 level: 2,
+                message: "dns/https[dns-real]: exchange failed for private.example. IN A: unexpected eof"
+            ),
+            "probe.core_dns_remote_transport_failed"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
                 message: "dns/udp[dns-bootstrap]: lookup failed for private.example: network is unreachable"
             ),
             "probe.core_dns_bootstrap_unreachable"
@@ -100,6 +107,94 @@ final class ProviderMessageTests: XCTestCase {
                 message: "connection download handshake: unexpected EOF from private.example"
             ),
             "probe.core_connection_handshake_failed"
+        )
+    }
+
+    func testClassifiesRuntimeNodeAndECHFailuresAsProxyFailures() {
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: dial tcp: i/o timeout"
+            ),
+            "probe.core_proxy_timeout"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: fetch ECH config list: exchange failed for private-ech.example. IN HTTPS"
+            ),
+            "probe.core_proxy_ech_dns_failed"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: no ECH config found in DNS records"
+            ),
+            "probe.core_proxy_ech_record_missing"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: websocket: bad status"
+            ),
+            "probe.core_proxy_websocket_failed"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 4,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: unexpected HTTP response status: 403"
+            ),
+            "probe.core_proxy_websocket_failed"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: read tcp: use of closed network connection"
+            ),
+            "probe.core_proxy_cancelled"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: tls: encrypted client hello rejected"
+            ),
+            "probe.core_proxy_ech_rejected"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: ECH rejected without retry config: tls: server rejected ECH"
+            ),
+            "probe.core_proxy_ech_no_retry_config"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: ECH retry rejected: tls: server rejected ECH"
+            ),
+            "probe.core_proxy_ech_retry_rejected"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: ECH retry unsupported by TLS config: tls: server rejected ECH"
+            ),
+            "probe.core_proxy_ech_retry_unsupported"
+        )
+        XCTAssertEqual(
+            CoreLogDiagnosticClassifier.stableCode(
+                level: 2,
+                message: "open connection to private.example:443 using outbound/vless[routeva-node-00000000-0000-0000-0000-000000000000]: remote error: tls: handshake failure"
+            ),
+            "probe.core_proxy_tls_failed"
+        )
+        XCTAssertGreaterThan(
+            CoreLogDiagnosticClassifier.priority(of: "probe.core_proxy_ech_rejected"),
+            CoreLogDiagnosticClassifier.priority(of: "probe.core_dns_upstream_failed")
+        )
+        XCTAssertGreaterThan(
+            CoreLogDiagnosticClassifier.priority(of: "probe.core_proxy_websocket_failed"),
+            CoreLogDiagnosticClassifier.priority(of: "probe.core_dns_upstream_failed")
         )
     }
 
@@ -222,6 +317,53 @@ final class ProviderMessageTests: XCTestCase {
         )
         XCTAssertEqual(coreFallback.uploadedBytes, 4_096)
         XCTAssertEqual(coreFallback.downloadedBytes, 16_384)
+    }
+
+    func testEntryLatencyRequestRoundTripsNodeIDsWithoutEndpoints() throws {
+        let nodeIDs = [UUID(), UUID(), UUID()]
+        let request = ProviderMessageRequest(
+            kind: .entryLatency,
+            entryLatencyNodeIDs: nodeIDs
+        )
+        let encoded = try ProviderMessageCodec.encode(request)
+        XCTAssertLessThan(encoded.count, ProviderMessageRequest.maximumEncodedBytes)
+        XCTAssertEqual(try ProviderMessageCodec.decodeRequest(encoded), request)
+        XCTAssertFalse(String(decoding: encoded, as: UTF8.self).contains("endpoint"))
+    }
+
+    func testEntryLatencyResponseRoundTripsSamplesAndLegacyResponsesStayDecodable() throws {
+        let request = ProviderMessageRequest(kind: .entryLatency)
+        let samples = [
+            ProviderEntryLatencySample(nodeID: UUID(), milliseconds: 42),
+            ProviderEntryLatencySample(nodeID: UUID(), milliseconds: nil),
+        ]
+        let encoded = try ProviderMessageCodec.encode(ProviderMessageResponse(
+            requestID: request.requestID,
+            entryLatencies: samples
+        ))
+        let response = try ProviderMessageCodec.decodeResponse(encoded, matching: request)
+        XCTAssertEqual(response.entryLatencies, samples)
+
+        let legacy = try ProviderMessageCodec.encode(ProviderMessageResponse(
+            requestID: request.requestID,
+            status: .running
+        ))
+        let decodedLegacy = try ProviderMessageCodec.decodeResponse(legacy, matching: request)
+        XCTAssertNil(decodedLegacy.entryLatencies)
+    }
+
+    func testEntryLatencyUnavailableCodeIsRejectedByCodec() throws {
+        let request = ProviderMessageRequest(kind: .entryLatency)
+        let encoded = try ProviderMessageCodec.encode(ProviderMessageResponse(
+            requestID: request.requestID,
+            errorCode: ProviderEntryLatencyCode.physicalPathUnavailable
+        ))
+        XCTAssertThrowsError(try ProviderMessageCodec.decodeResponse(encoded, matching: request)) {
+            XCTAssertEqual(
+                $0 as? ProviderMessageCodecError,
+                .providerRejected(ProviderEntryLatencyCode.physicalPathUnavailable)
+            )
+        }
     }
 
     func testCoreProbeResponseRoundTripsOnlyLatency() throws {
