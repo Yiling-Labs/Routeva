@@ -1,7 +1,7 @@
 # Apple App Store
 
 > **当前阶段：** Brand Presence + 截图脊柱已锁。  
-> 截图成品：[screenshots/](./screenshots/)（**A · Jobs** · 6.5" 1284×2778 + 6.7" 1290×2796）。  
+> 截图成品：[screenshots/](./screenshots/)（**A · Jobs** · 8 locale · 6.5" + 6.7"）。  
 > 视觉源：[design/hi-fi/current/store-screenshots/](../../../design/hi-fi/current/store-screenshots/) · ADR **0071**。  
 > 对外叙事主职见官网 + [ADR 0052](../../../docs/adr/0052-marketing-site-brand-presence.md)。
 

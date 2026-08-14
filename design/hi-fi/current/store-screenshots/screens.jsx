@@ -1,6 +1,7 @@
 /* Routeva phone UI for store screenshot candidates.
    Visual tokens from craft-p0/visual-system.md. Demo data: no Taiwan nodes. */
 
+const t = window.t;
 const RVFont = '-apple-system, "SF Pro Display", "SF Pro Text", "PingFang SC", system-ui, sans-serif';
 
 const T = {
@@ -216,18 +217,18 @@ function Capsule({ mode }) {
         {connected && (
           <div className="rv-swipe-hint is-up">
             <span className="rv-chev-sm">⌃</span>
-            <span>SWIPE</span>
+            <span>{t('swipe')}</span>
           </div>
         )}
         {!connected && (
           <div className="rv-swipe-hint is-down">
-            <span>SWIPE</span>
+            <span>{t('swipe')}</span>
             <span className="rv-chev-sm">⌄</span>
           </div>
         )}
         <div className={'rv-thumb' + (atBottom ? ' is-down' : '') + (connected ? ' is-green' : '')}>
           <span className={'rv-led' + (connected ? ' is-on' : '')}></span>
-          <span className="rv-thumb-label">{connected ? 'STOP' : 'START'}</span>
+          <span className="rv-thumb-label">{connected ? t('stop') : t('start')}</span>
           <IconPower />
         </div>
       </div>
@@ -258,15 +259,15 @@ function HomeIdle() {
           <span className="rv-proto">· VLESS</span>
           <span className="rv-chev" aria-hidden="true">›</span>
         </div>
-        <div className="rv-status-word">Not Connected</div>
+        <div className="rv-status-word">{t('notConnected')}</div>
         <div className="rv-mode">
-          <span className="rv-mode-k">Mode</span>
-          <span>Smart</span>
+          <span className="rv-mode-k">{t('mode')}</span>
+          <span>{t('smart')}</span>
           <span className="rv-chev">›</span>
         </div>
       </div>
       <Capsule mode="idle" />
-      <div className="rv-hint">Swipe down to connect</div>
+      <div className="rv-hint">{t('swipeDown')}</div>
     </PhoneShell>
   );
 }
@@ -281,7 +282,7 @@ function HomeConnecting() {
           <span className="rv-nodename">{PREFERRED.name}</span>
           <span className="rv-proto">· VLESS</span>
         </div>
-        <div className="rv-status-word">Connecting…</div>
+        <div className="rv-status-word">{t('connecting')}</div>
       </div>
       <Capsule mode="connecting" />
     </PhoneShell>
@@ -298,7 +299,7 @@ function HomeConnected() {
           <span>↓ 420 MB</span>
           <span>↑ 86 MB</span>
         </div>
-        <div className="rv-status-word">Connected</div>
+        <div className="rv-status-word">{t('connected')}</div>
         <div className="rv-livebar">
           <span className="rv-live-loc">
             <img src={flagSrc('hk')} alt="" width="16" height="16" />
@@ -307,14 +308,14 @@ function HomeConnected() {
           </span>
           <span className="rv-live-split"></span>
           <span className="rv-live-mode">
-            <span className="rv-mode-k">Mode</span>
-            <span>Smart</span>
+            <span className="rv-mode-k">{t('mode')}</span>
+            <span>{t('smart')}</span>
             <span className="rv-chev">›</span>
           </span>
         </div>
       </div>
       <Capsule mode="connected" />
-      <div className="rv-hint">Swipe up to disconnect</div>
+      <div className="rv-hint">{t('swipeUp')}</div>
     </PhoneShell>
   );
 }
@@ -341,14 +342,14 @@ function AddSubscription() {
         <GlassOrb label="Close"><IconClose /></GlassOrb>
       </div>
       <div className="rv-add">
-        <h1>Add subscription</h1>
-        <p>Get a subscription link, QR, or file from your provider, then paste, scan, or import it here.</p>
-        <button type="button" className="rv-primary">Paste from Clipboard</button>
+        <h1>{t('addTitle')}</h1>
+        <p>{t('addLead')}</p>
+        <button type="button" className="rv-primary">{t('paste')}</button>
         <div className="rv-ghost-row">
-          <button type="button" className="rv-ghost"><IconQr /> Scan QR</button>
-          <button type="button" className="rv-ghost"><IconFile /> Import file</button>
+          <button type="button" className="rv-ghost"><IconQr /> {t('scanQr')}</button>
+          <button type="button" className="rv-ghost"><IconFile /> {t('importFile')}</button>
         </div>
-        <p className="rv-add-foot">We don’t sell or recommend providers.</p>
+        <p className="rv-add-foot">{t('addFooter')}</p>
       </div>
     </PhoneShell>
   );
@@ -360,8 +361,8 @@ function LocationList() {
     <PhoneShell field="black">
       <div className="rv-loc-nav">
         <GlassOrb label="Back"><IconBack /></GlassOrb>
-        <h1>Location</h1>
-        <button type="button" className="rv-test">Test</button>
+        <h1>{t('location')}</h1>
+        <button type="button" className="rv-test">{t('test')}</button>
       </div>
       <div className="rv-loc-list">
         {sorted.map((n, i) => {

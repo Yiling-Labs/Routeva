@@ -79,6 +79,14 @@ _Avoid_: 只译标题装多语言；为截图另造一套与 App catalog 不同�
 手机壳层 UI 取与二进制相同的 locale catalog。Listing 标题按 Spine 每语人工两行，不机翻品牌句。  
 _Avoid_: 截图另写一套 UI 口语；无人审机翻当 Listing 标题终稿
 
+**Store Screenshot Display Type**：
+Listing 标题按文种：en / es / pt-BR / de 用 Newsreader；zh-Hans / zh-Hant / ja / ko 用系统黑体。两行格、底线、字号与 en 相同。  
+_Avoid_: 用 Newsreader 假覆盖汉字；八语全改成 SF 丢掉 Jobs 衬线
+
+**Store Screenshot Listing Titles**：
+八语框外标题已按 Spine 人工锁两行（en 金句不改）。正文表在 `docs/sessions/2026-08-14-app-store-screenshots.md`。  
+_Avoid_: 用机翻覆盖已锁标题
+
 **GTM Phase（grill 2026-08-07 · A）：**  
 **当前阶段 = Brand Presence only**（官网主职 + Legal Pages · ADR **0052**）。**不**要求现在填满 App Store / Play listing 长文、关键词矩阵、像素截图或预告片。商店物料默认等 **iOS 真机可截**（或明确开 listing 里程碑）再开；禁止用过期 hi-fi 冒充商店截图上架。icon 等已有资产可保留。  
 _Avoid_: 编码前完整 GTM 套件并行；假截图冲审；Waitlist/下载假 CTA 冲淡 Brand Presence

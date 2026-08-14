@@ -85,6 +85,16 @@
       text-wrap: balance;
     }
     .shot-aj h2 .line { display: block; }
+    html[data-script="cjk"] .shot-aj h2 {
+      font-family: -apple-system, "SF Pro Display", "PingFang SC", "PingFang TC", "Hiragino Sans", "Apple SD Gothic Neo", sans-serif;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.18;
+      min-height: 2.36em;
+    }
+    html[lang="zh-Hant"] .shot-aj h2 { font-family: -apple-system, "PingFang TC", "Hiragino Sans CNS", sans-serif; }
+    html[lang="ja"] .shot-aj h2 { font-family: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif; }
+    html[lang="ko"] .shot-aj h2 { font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans CJK KR", sans-serif; }
     .shot-aj .aj-stage {
       position: relative;
       z-index: 2;

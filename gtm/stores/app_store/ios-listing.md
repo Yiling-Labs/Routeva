@@ -56,9 +56,10 @@
 | pt-BR | Routeva Cliente Proxy | 21 | Cole sua assinatura. Conecte. | 29 | 99 |
 | ja | Routeva プロキシクライアント | 18 | 購読を貼るだけ。ノードを選ぶ | 14 | 95 |
 | ko | Routeva 프록시 클라이언트 | 17 | 이미 있는 구독 링크로 바로 연결 | 18 | 91 |
-| de | Routeva Proxy-Client | 20 | Eigenes Abo. Einmal wischen. | 28 | 96 |
+| de | Routeva | 8 | Proxy für dein eigenes Abo. | 27 | 97 |
 
-备选（审核嫌英文名太品类）：Name 改 `Routeva`，Subtitle 改 `Proxy client for your plan`，关键词补 `proxy`。
+备选（审核嫌英文名太品类，或 Connect 报「名称已被使用」）：该语 Name 只填 `Routeva`，品类词挪进副标题。  
+**德语已按此处理：** `Routeva Proxy-Client` / `Routeva Network Proxy Client` 这类泛名会被判占用。不要投诉，改名即可。
 
 ---
 
@@ -561,14 +562,16 @@ Routeva에 오신 것을 환영합니다.
 
 ## de · Deutsch
 
-**Name** `Routeva Proxy-Client`
+Connect 会拦已被占用的商店名。不要填 `Routeva Proxy-Client` 或 `Routeva Network Proxy Client`。
 
-**Subtitle** `Eigenes Abo. Einmal wischen.`
+**Name** `Routeva`
+
+**Subtitle** `Proxy für dein eigenes Abo.`
 
 **Keywords**
 
 ```
-vpn,v2ray,vless,vmess,trojan,shadowsocks,hysteria2,knoten,latenz,tunnel,yaml,reality,xray,server
+vpn,v2ray,vless,vmess,trojan,shadowsocks,hysteria2,knoten,latenz,tunnel,yaml,reality,xray,wischen
 ```
 
 **Promotionstext**

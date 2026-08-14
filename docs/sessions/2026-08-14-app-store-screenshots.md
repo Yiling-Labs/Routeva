@@ -43,6 +43,23 @@
 | 03 | *Paste a link / to set up.* |
 | 04 | *Pick the / fastest one.* |
 
+## 八语 Listing 标题（已锁 · grill 2026-08-14）
+
+| locale | 01 | 02 | 03 | 04 |
+|---|---|---|---|---|
+| en | Connect without / the maze. | Swipe once / to go online. | Paste a link / to set up. | Pick the / fastest one. |
+| zh-Hans | 连接不必 / 绕迷宫。 | 滑一次 / 就能上线。 | 粘贴链接 / 即可设置。 | 选最快的 / 那一个。 |
+| zh-Hant | 連線不必 / 繞迷宮。 | 滑一次 / 就能上線。 | 貼上連結 / 即可設定。 | 選最快的 / 那一個。 |
+| es | Conecta sin / el laberinto. | Un desliz / y estás en línea. | Pega un enlace / y listo. | Elige el / más rápido. |
+| pt-BR | Conecte sem / o labirinto. | Um deslize / e está online. | Cole um link / e pronto. | Escolha o / mais rápido. |
+| ja | 迷路せず / つながる。 | 一度スワイプ / で接続。 | リンクを貼る / だけ。 | いちばん速い / ものを。 |
+| ko | 미로 없이 / 연결. | 한 번 쓸어 / 온라인. | 링크만 붙이면 / 설정 끝. | 가장 빠른 / 것. |
+| de | Ohne Labyrinth / verbinden. | Einmal wischen / und online. | Link einfügen. / Fertig. | Nimm den / Schnellsten. |
+
+## 八语导出
+
+2026-08-14 用户：`开工`。成品 `gtm/stores/app_store/screenshots/<locale>/`，每语 6.5" + 6.7" × 4 张 = 64。ADR **0072**。catalog 缺键处回落 en（与二进制一致）；`We don’t sell…` 保持 lock-en。
+
 ## 晋升
 
 2026-08-14 用户：`晋升 A·Jobs`。  

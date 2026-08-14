@@ -1,14 +1,25 @@
 const { AJ_FRAMES, FrameAJ } = window;
 
+function localeHref(locale) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('locale', locale);
+  return url.pathname + url.search;
+}
+
 function Shelf() {
   return (
     <div className="shelf">
       <header className="shelf-hero">
-        <p className="shelf-kicker">Routeva · App Store · A · Jobs</p>
+        <p className="shelf-kicker">Routeva · App Store · A · Jobs · {window.RVLocale}</p>
         <h1>One idea. Then stop talking.</h1>
         <p className="shelf-lede">
           Current set. Four frames. Shared baseline.
-          <a href="./index.html"> Open the canvas</a>
+          <a href={'./index.html?locale=' + window.RVLocale}> Open the canvas</a>
+        </p>
+        <p className="shelf-locales">
+          {window.RV_LOCALES.map((loc) => (
+            <a key={loc} href={localeHref(loc)} className={loc === window.RVLocale ? 'is-on' : ''}>{loc}</a>
+          ))}
         </p>
       </header>
       <section className="shelf-row" data-screen-label="A · Jobs">

@@ -7,7 +7,7 @@
 
 **为何加到 8：** 产品要求明显大于三语覆盖；在代理受众（简繁中）、美区/拉美（es · pt-BR）、高 iOS 东亚（ja · ko）与欧洲长词压测（de）之间取可维护上限。仍拒绝 15+ 与 RTL/ru 首波捆绑。
 
-**GTM 不同步 8 套：** P0 仅 **en** 全套精做；P1 **zh-Hans** 商店/运营；P2 按 ROI 加 es/ja 等 listing。完整多语言截图不与 App 8 locale 同日齐发。
+**GTM 不同步 8 套：** P0 仅 **en** 全套精做描述/关键词；P1 **zh-Hans** 商店/运营；P2 按 ROI 加 es/ja 等 listing。**截图像素套**改由 ADR **0072** 与 App 8 locale 对齐。
 
 **后置：** ar 等 RTL、ru、vi/id、fr/it 等另里程碑。
 
