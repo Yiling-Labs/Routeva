@@ -14,6 +14,7 @@ enum VPNProviderControllerError: LocalizedError {
     case providerConfigurationMissing(CoreIdentifier)
     case providerStartFailed(CoreIdentifier, diagnosticCode: String?)
     case providerResponseMissing
+    case providerResponseTimedOut
 
     var errorDescription: String? {
         switch self {
@@ -25,6 +26,8 @@ enum VPNProviderControllerError: LocalizedError {
             "The \(core.rawValue) VPN provider stopped before it finished starting."
         case .providerResponseMissing:
             "The VPN provider did not return a response."
+        case .providerResponseTimedOut:
+            "The VPN provider did not respond in time."
         }
     }
 }
@@ -50,6 +53,9 @@ actor VPNProviderController {
     static func stableCoreProbeDiagnosticCode(for error: Error) -> String {
         if case let ProviderMessageCodecError.providerRejected(code) = error {
             return code
+        }
+        if case VPNProviderControllerError.providerResponseTimedOut = error {
+            return "probe.tunnel_probe_ipc_timeout"
         }
         return "probe.tunnel_probe_ipc_failed"
     }
@@ -265,19 +271,7 @@ actor VPNProviderController {
         }
         let request = ProviderMessageRequest(kind: .traffic)
         let requestData = try ProviderMessageCodec.encode(request)
-        let responseData: Data = try await withCheckedThrowingContinuation { continuation in
-            do {
-                try session.sendProviderMessage(requestData) { response in
-                    guard let response else {
-                        continuation.resume(throwing: VPNProviderControllerError.providerResponseMissing)
-                        return
-                    }
-                    continuation.resume(returning: response)
-                }
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
+        let responseData = try await sendProviderMessage(requestData, session: session)
         let response = try ProviderMessageCodec.decodeResponse(responseData, matching: request)
         guard let traffic = response.traffic else {
             throw VPNProviderControllerError.providerResponseMissing
@@ -295,19 +289,7 @@ actor VPNProviderController {
         }
         let request = ProviderMessageRequest(kind: .dataPlane)
         let requestData = try ProviderMessageCodec.encode(request)
-        let responseData: Data = try await withCheckedThrowingContinuation { continuation in
-            do {
-                try session.sendProviderMessage(requestData) { response in
-                    guard let response else {
-                        continuation.resume(throwing: VPNProviderControllerError.providerResponseMissing)
-                        return
-                    }
-                    continuation.resume(returning: response)
-                }
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
+        let responseData = try await sendProviderMessage(requestData, session: session)
         let response = try ProviderMessageCodec.decodeResponse(responseData, matching: request)
         guard let dataPlane = response.dataPlane else {
             throw VPNProviderControllerError.providerResponseMissing
@@ -331,21 +313,7 @@ actor VPNProviderController {
             tunnelProbeAddressSets: tunnelProbeAddressSets
         )
         let requestData = try ProviderMessageCodec.encode(request)
-        let responseData: Data = try await withCheckedThrowingContinuation { continuation in
-            do {
-                try session.sendProviderMessage(requestData) { response in
-                    guard let response else {
-                        continuation.resume(
-                            throwing: VPNProviderControllerError.providerResponseMissing
-                        )
-                        return
-                    }
-                    continuation.resume(returning: response)
-                }
-            } catch {
-                continuation.resume(throwing: error)
-            }
-        }
+        let responseData = try await sendProviderMessage(requestData, session: session)
         let response = try ProviderMessageCodec.decodeResponse(responseData, matching: request)
         if response.tunnelProbeSucceeded == true {
             return response.coreProbe
@@ -441,22 +409,55 @@ actor VPNProviderController {
             throw VPNProviderControllerError.providerConfigurationMissing(core)
         }
         let requestData = try ProviderMessageCodec.encode(request)
-        let responseData: Data = try await withCheckedThrowingContinuation { continuation in
-            do {
-                try session.sendProviderMessage(requestData) { response in
-                    guard let response else {
-                        continuation.resume(
-                            throwing: VPNProviderControllerError.providerResponseMissing
-                        )
-                        return
+        let responseData = try await sendProviderMessage(requestData, session: session)
+        return try ProviderMessageCodec.decodeResponse(responseData, matching: request)
+    }
+
+    private static let providerMessageTimeout: Duration = .seconds(15)
+
+    private func sendProviderMessage(
+        _ requestData: Data,
+        session: NETunnelProviderSession
+    ) async throws -> Data {
+        try await withThrowingTaskGroup(of: Data.self) { group in
+            group.addTask {
+                let once = OnceThrowingContinuation<Data>()
+                return try await withTaskCancellationHandler {
+                    try await withCheckedThrowingContinuation { continuation in
+                        once.arm(continuation)
+                        do {
+                            try session.sendProviderMessage(requestData) { response in
+                                guard let response else {
+                                    once.resume(
+                                        throwing: VPNProviderControllerError.providerResponseMissing
+                                    )
+                                    return
+                                }
+                                once.resume(returning: response)
+                            }
+                        } catch {
+                            once.resume(throwing: error)
+                        }
                     }
-                    continuation.resume(returning: response)
+                } onCancel: {
+                    once.resume(throwing: CancellationError())
                 }
+            }
+            group.addTask {
+                try await Task.sleep(for: Self.providerMessageTimeout)
+                throw VPNProviderControllerError.providerResponseTimedOut
+            }
+            do {
+                guard let result = try await group.next() else {
+                    throw VPNProviderControllerError.providerResponseMissing
+                }
+                group.cancelAll()
+                return result
             } catch {
-                continuation.resume(throwing: error)
+                group.cancelAll()
+                throw error
             }
         }
-        return try ProviderMessageCodec.decodeResponse(responseData, matching: request)
     }
 
     private func configureManagers(
@@ -747,4 +748,58 @@ actor VPNProviderController {
 
 private enum ProviderStartOptionKey {
     static let manifestID = "routeva.manifest-id"
+}
+
+/// sendProviderMessage 回调、超时与 Task 取消可能同时到达；只 resume 一次。
+private final class OnceThrowingContinuation<T: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<T, Error>?
+    private var pendingError: Error?
+    private var didResume = false
+
+    func arm(_ continuation: CheckedContinuation<T, Error>) {
+        lock.lock()
+        if didResume {
+            lock.unlock()
+            return
+        }
+        if let pendingError {
+            didResume = true
+            lock.unlock()
+            continuation.resume(throwing: pendingError)
+            return
+        }
+        self.continuation = continuation
+        lock.unlock()
+    }
+
+    func resume(returning value: sending T) {
+        lock.lock()
+        guard !didResume else {
+            lock.unlock()
+            return
+        }
+        didResume = true
+        let continuation = self.continuation
+        self.continuation = nil
+        lock.unlock()
+        continuation?.resume(returning: value)
+    }
+
+    func resume(throwing error: Error) {
+        lock.lock()
+        guard !didResume else {
+            lock.unlock()
+            return
+        }
+        if let continuation {
+            didResume = true
+            self.continuation = nil
+            lock.unlock()
+            continuation.resume(throwing: error)
+            return
+        }
+        pendingError = error
+        lock.unlock()
+    }
 }

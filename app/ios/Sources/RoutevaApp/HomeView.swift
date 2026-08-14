@@ -288,7 +288,7 @@ private struct HomeConnectionContent: View {
                     isEnabled: true,
                     scale: layout.capsuleScale,
                     onConnect: model.requestConnection,
-                    onDisconnect: model.disconnect
+                    onDisconnect: model.stopSession
                 )
             }
             // The capsule needs visual breathing room above the Home indicator.
@@ -1392,8 +1392,8 @@ private struct ConnectCapsule: View {
     }
 
     private var progress: CGFloat {
-        if showsConnectingChrome { return 1 }
-        let base = isConnected ? travel : 0
+        if showsConnectingChrome && !isDragging { return 1 }
+        let base = (isConnected || showsConnectingChrome) ? travel : 0
         return max(0, min(1, (base + translation) / travel))
     }
 
@@ -1473,7 +1473,7 @@ private struct ConnectCapsule: View {
                     .allowsHitTesting(false)
                 }
 
-                if showsConnectedChrome {
+                if showsConnectedChrome || showsConnectingChrome {
                     VStack(spacing: 1) {
                         Image(systemName: "chevron.up")
                             .font(.system(size: 12, weight: .bold))
@@ -1481,7 +1481,11 @@ private struct ConnectCapsule: View {
                             .font(.system(size: 10, weight: .heavy))
                             .tracking(1.6)
                     }
-                    .foregroundStyle(Color(red: 180 / 255, green: 255 / 255, blue: 220 / 255).opacity(0.62))
+                    .foregroundStyle(
+                        showsConnectedChrome
+                            ? Color(red: 180 / 255, green: 255 / 255, blue: 220 / 255).opacity(0.62)
+                            : Color.white.opacity(0.55)
+                    )
                     .opacity(0.40)
                     .offset(y: trackTop + 11)
                     .allowsHitTesting(false)
@@ -1506,8 +1510,12 @@ private struct ConnectCapsule: View {
                     .accessibilityAddTraits(.isButton)
                     .accessibilityIdentifier("home.connect")
                     .accessibilityAction {
-                        guard isEnabled, !showsConnectingChrome else { return }
-                        isConnected ? onDisconnect() : beginConnecting(slideThumb: true)
+                        guard isEnabled else { return }
+                        if isConnected || showsConnectingChrome {
+                            onDisconnect()
+                        } else {
+                            beginConnecting(slideThumb: true)
+                        }
                     }
             }
             .coordinateSpace(name: "connect-stage")
@@ -1532,7 +1540,7 @@ private struct ConnectCapsule: View {
     }
 
     private var gestureMask: GestureMask {
-        isEnabled && !showsConnectingChrome ? .all : .none
+        isEnabled ? .all : .none
     }
 
     private var thumbChrome: some View {
@@ -1613,23 +1621,23 @@ private struct ConnectCapsule: View {
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .named("connect-stage"))
             .onChanged { value in
-                guard isEnabled, !showsConnectingChrome else { return }
+                guard isEnabled else { return }
                 let dy = value.translation.height
                 withoutAnimation {
                     isDragging = true
-                    translation = isConnected
+                    translation = (isConnected || showsConnectingChrome)
                         ? min(0, max(-travel, dy))
                         : max(0, min(travel, dy))
                 }
             }
             .onEnded { value in
-                guard isEnabled, !showsConnectingChrome else { return }
+                guard isEnabled else { return }
                 let dy = value.translation.height
                 let isTap = abs(dy) < 4 && abs(value.translation.width) < 4
                 withoutAnimation { isDragging = false }
 
                 if isTap {
-                    if isConnected {
+                    if isConnected || showsConnectingChrome {
                         onDisconnect()
                     } else {
                         beginConnecting(slideThumb: true)
@@ -1637,9 +1645,10 @@ private struct ConnectCapsule: View {
                     return
                 }
 
-                let shouldAct = isConnected ? progress < 0.35 : progress > 0.65
+                let shouldStop = isConnected || showsConnectingChrome
+                let shouldAct = shouldStop ? progress < 0.35 : progress > 0.65
                 if shouldAct {
-                    if isConnected {
+                    if shouldStop {
                         onDisconnect()
                         withoutAnimation { translation = 0 }
                     } else {
@@ -1701,6 +1710,22 @@ private struct ConnectCapsule: View {
         settleIgnition(from: lit)
         startBusyPulse()
         onConnect()
+        switch state {
+        case .connecting, .connected:
+            return
+        case .idle, .failed:
+            // requestConnection 可能因 teardown 未结束而直接返回，不能把胶囊留在 Connecting。
+            isPresentingConnection = false
+            stopBusyPulse()
+            translation = 0
+            if reduceMotion {
+                ignitionProgress = 0
+            } else {
+                withAnimation(.easeOut(duration: 0.4)) {
+                    ignitionProgress = 0
+                }
+            }
+        }
     }
 
     private func settleIgnition(from lit: CGFloat) {

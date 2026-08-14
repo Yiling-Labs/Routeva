@@ -59,6 +59,7 @@ enum PacketTunnelRuntimeError: LocalizedError, Equatable {
     case coreServiceDNSFailed
     case coreServiceTunnelFailed
     case coreServiceStartFailed
+    case coreServiceStartTimedOut
     case coreFailure(String)
 
     var errorDescription: String? {
@@ -97,6 +98,8 @@ enum PacketTunnelRuntimeError: LocalizedError, Equatable {
             "The core could not initialize the tunnel."
         case .coreServiceStartFailed:
             "The core service could not start."
+        case .coreServiceStartTimedOut:
+            "The core service did not finish starting in time."
         case let .coreFailure(message):
             message
         }
@@ -140,6 +143,8 @@ extension PacketTunnelRuntimeError {
             "provider.core_service_tunnel_failed"
         case .coreServiceStartFailed:
             "provider.core_service_start_failed"
+        case .coreServiceStartTimedOut:
+            "provider.core_service_start_timeout"
         case .coreFailure:
             "provider.core_failure"
         }

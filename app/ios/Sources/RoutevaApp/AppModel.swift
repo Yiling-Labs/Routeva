@@ -76,6 +76,8 @@ final class RoutevaAppModel: ObservableObject {
     /// Weak cache TTL for silent full-table latency (implementation constant S).
     private static let latencyCacheTTL: TimeInterval = 6 * 60 * 60
     private static let orphanedProviderConnectingTimeout: Duration = .seconds(20)
+    /// 整轮 Connecting 的上限：含预检、startTunnel、probe。超时回 Idle + toast。
+    private static let connectionAttemptTimeout: Duration = .seconds(45)
     #if DEBUG
     private static let debugStartupDurationKey = "routeva.debug.last-startup-duration"
     private static let debugProviderStartupDurationKey =
@@ -133,6 +135,9 @@ final class RoutevaAppModel: ObservableObject {
     /// Once the user picks a Cover Flow card or Location Preferred, silent
     /// latency pre-stop / reload must not steal that focus.
     private var nodeSelectionOwnedByUser = false
+    /// App 已结束本轮 Connecting（取消 / 失败 / 超时）后，禁止 leftover
+    /// `.connecting` 快照把 Home 重新锁死。
+    private var suppressProviderConnectingPresentation = false
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -327,6 +332,7 @@ final class RoutevaAppModel: ObservableObject {
         }
         guard connectionTask == nil, disconnectionTask == nil else { return }
         cancelProviderConnectingRecovery()
+        suppressProviderConnectingPresentation = false
         connectionFailureMessage = nil
         nodeFailoverToast = nil
         cancelNodeSelection()
@@ -345,19 +351,37 @@ final class RoutevaAppModel: ObservableObject {
             defer { finishConnectionTransaction() }
             let trace = ConnectionDiagnosticTrace()
             do {
-                try await establishConnection(trace: trace)
+                try await raceConnectionAttempt(trace: trace)
                 #if DEBUG
                 let duration = Date().timeIntervalSince(startupStartedAt)
                 defaults.set(duration, forKey: Self.debugStartupDurationKey)
                 print(String(format: "Routeva VPN startup timing: total=%.3fs", duration))
                 #endif
             } catch is CancellationError {
-                connectionState = .idle
+                if case .connecting = connectionState {
+                    connectionState = .idle
+                }
+                scheduleSilentLatencyTestIfNeeded()
+            } catch ConnectionAttemptOutcomeError.timedOut {
+                await handleConnectionAttemptTimeout(trace: trace)
                 scheduleSilentLatencyTestIfNeeded()
             } catch {
+                suppressProviderConnectingPresentation = true
                 await presentDiagnostic(from: trace)
                 scheduleSilentLatencyTestIfNeeded()
             }
+        }
+    }
+
+    /// Connecting 或 Connected：同一电源键都是停会话。Connecting 立即回 Idle。
+    func stopSession() {
+        switch connectionState {
+        case .connecting:
+            cancelConnecting()
+        case .connected:
+            disconnect()
+        case .idle, .failed:
+            break
         }
     }
 
@@ -397,6 +421,11 @@ final class RoutevaAppModel: ObservableObject {
             ))
             #endif
         }
+    }
+
+    func cancelConnecting() {
+        guard case .connecting = connectionState else { return }
+        abortConnectingSession()
     }
 
     func setHomeVisible(_ visible: Bool) {
@@ -585,15 +614,23 @@ final class RoutevaAppModel: ObservableObject {
             cancelPostConnectProbe()
             stopTrafficPolling()
             clearConnectedNodeState()
-            connectedCore = core
-            connectionState = .connecting
             scheduleProviderConnectingRecovery(for: core)
+            switch ProviderConnectingPresentation.evaluate(
+                appReleasedConnecting: suppressProviderConnectingPresentation
+            ) {
+            case .suppressAndReap:
+                return
+            case .presentOrphaned:
+                connectedCore = core
+                connectionState = .connecting
+            }
 
         case .disconnecting:
             cancelProviderConnectingRecovery()
             clearProviderConnectionPresentationIfNeeded()
 
         case .disconnected:
+            suppressProviderConnectingPresentation = false
             cancelProviderConnectingRecovery()
             clearProviderConnectionPresentationIfNeeded()
             scheduleSilentLatencyTestIfNeeded()
@@ -647,10 +684,11 @@ final class RoutevaAppModel: ObservableObject {
             guard providerConnectingRecoveryID == recoveryID,
                   connectionTask == nil,
                   disconnectionTask == nil,
-                  repairTask == nil,
-                  connectedCore == core,
-                  case .connecting = connectionState
+                  repairTask == nil
             else { return }
+            if !suppressProviderConnectingPresentation {
+                guard connectedCore == core, case .connecting = connectionState else { return }
+            }
 
             let snapshot: ProviderConnectionSnapshot
             do {
@@ -685,6 +723,7 @@ final class RoutevaAppModel: ObservableObject {
                   disconnectionTask == nil,
                   repairTask == nil
             else { return }
+            suppressProviderConnectingPresentation = true
             await connectionCoordinator.reconcile(.disconnected)
             hasResolvedProviderStatus = true
             clearProviderConnectionPresentationIfNeeded()
@@ -767,6 +806,7 @@ final class RoutevaAppModel: ObservableObject {
         guard connectionTask == nil, disconnectionTask == nil else { return }
         let coreToStop = connectedCore
         cancelProviderConnectingRecovery()
+        suppressProviderConnectingPresentation = false
         cancelNodeSelection()
         cancelPostConnectProbe()
         stopTrafficPolling()
@@ -786,15 +826,20 @@ final class RoutevaAppModel: ObservableObject {
             clearConnectedNodeState()
             let trace = ConnectionDiagnosticTrace()
             do {
-                try await establishConnection(trace: trace)
+                try await raceConnectionAttempt(trace: trace)
                 #if DEBUG
                 let duration = Date().timeIntervalSince(startupStartedAt)
                 defaults.set(duration, forKey: Self.debugStartupDurationKey)
                 print(String(format: "Routeva VPN startup timing: total=%.3fs", duration))
                 #endif
             } catch is CancellationError {
-                connectionState = .idle
+                if case .connecting = connectionState {
+                    connectionState = .idle
+                }
+            } catch ConnectionAttemptOutcomeError.timedOut {
+                await handleConnectionAttemptTimeout(trace: trace)
             } catch {
+                suppressProviderConnectingPresentation = true
                 await presentDiagnostic(from: trace)
             }
         }
@@ -941,27 +986,16 @@ final class RoutevaAppModel: ObservableObject {
         case .stopConnected:
             disconnect()
         case .abortConnecting:
-            if disconnectionTask == nil {
-                await abortConnectingSessionBeforeSwitchingActiveSubscription()
-            }
+            abortConnectingSession()
         }
         await disconnectionTask?.value
     }
 
-    private func abortConnectingSessionBeforeSwitchingActiveSubscription() async {
+    /// 立刻把 Home 拉回 Idle，再在后台停 provider。Connecting 电源键与切 Active 共用。
+    private func abortConnectingSession() {
+        suppressProviderConnectingPresentation = true
         let core = connectedCore ?? .singBox
-        let controller = providerController
         connectionTask?.cancel()
-        // Own the disconnect transaction before the cancelled connect
-        // finishes, so a provider-status reconcile cannot restore Connected.
-        disconnectionTask = Task { [weak self] in
-            guard let self else { return }
-            defer { disconnectionTask = nil }
-            await connectionTask?.value
-            await controller.requestStop(core: core)
-            await connectionCoordinator.reconcile(.disconnected)
-        }
-        await disconnectionTask?.value
         cancelProviderConnectingRecovery()
         cancelNodeSelection()
         cancelPostConnectProbe()
@@ -971,6 +1005,21 @@ final class RoutevaAppModel: ObservableObject {
         connectionState = .idle
         sessionDownloadedBytes = 0
         sessionUploadedBytes = 0
+        guard disconnectionTask == nil else { return }
+        let controller = providerController
+        disconnectionTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                disconnectionTask = nil
+                Task { [weak self] in
+                    await self?.reconcileProviderConnectionStatus()
+                }
+                scheduleSilentLatencyTestIfNeeded()
+            }
+            await connectionTask?.value
+            await controller.requestStop(core: core)
+            await connectionCoordinator.reconcile(.disconnected)
+        }
     }
 
     func setAutoUpdateEnabled(_ enabled: Bool) {
@@ -2035,6 +2084,33 @@ final class RoutevaAppModel: ObservableObject {
         return host
     }
 
+    private func raceConnectionAttempt(trace: ConnectionDiagnosticTrace) async throws {
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                try await self.establishConnection(trace: trace)
+            }
+            group.addTask {
+                try await Task.sleep(for: Self.connectionAttemptTimeout)
+                throw ConnectionAttemptOutcomeError.timedOut
+            }
+            try await group.next()
+            group.cancelAll()
+        }
+    }
+
+    private func handleConnectionAttemptTimeout(trace: ConnectionDiagnosticTrace) async {
+        suppressProviderConnectingPresentation = true
+        let core = connectedCore ?? .singBox
+        await providerController.requestStop(core: core)
+        await connectionCoordinator.reconcile(.disconnected)
+        await trace.record(.init(
+            layer: .tunnel,
+            status: .failed,
+            errorCode: "provider.connection_attempt_timeout"
+        ))
+        await presentDiagnostic(from: trace)
+    }
+
     private func establishConnection(trace: ConnectionDiagnosticTrace) async throws {
         probeCounterSummary = nil
         // NetworkExtension is authoritative. A coordinator retained from an
@@ -2423,6 +2499,7 @@ final class RoutevaAppModel: ObservableObject {
         "This node isn’t responding. Try another node."
 
     private func presentDiagnostic(from trace: ConnectionDiagnosticTrace) async {
+        suppressProviderConnectingPresentation = true
         let result = await recordDiagnostic(from: trace)
         connectionState = .idle
         clearConnectedNodeState()
@@ -2821,7 +2898,7 @@ enum DNSPreset: String, CaseIterable, Identifiable {
 
     var detail: String {
         switch self {
-        case .automatic: "System / tunnel default"
+        case .automatic: "Resolve by how traffic is routed"
         case .privacy: "Encrypted DNS when possible"
         case .compatibility: "Prefer widely reachable resolvers"
         }
@@ -2907,6 +2984,10 @@ private actor ConnectionDiagnosticTrace {
 
 private enum NonFailoverConnectionError: Error {
     case providerUnavailable
+}
+
+private enum ConnectionAttemptOutcomeError: Error {
+    case timedOut
 }
 
 /// Serializes only Provider mutations, not UI intent or verification. A later

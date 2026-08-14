@@ -7,6 +7,10 @@ import Security
 import SharedKit
 
 final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
+    /// 与 App `waitForStatus(..., .connected)` 对齐。超时必须回调 completionHandler，
+    /// 否则系统会一直停在 Connecting，stopTunnel 也送不进去。
+    private static let startupWatchdogSeconds: TimeInterval = 20
+
     private let configurationLoader: any RuntimeConfigurationLoading = KeychainRuntimeConfigurationLoader()
     private let runtime = SingBoxRuntime()
     private let runtimeState = ProviderRuntimeStateStore()
@@ -31,6 +35,27 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
             return
         }
         startupDiagnostics.record(core: .singBox, stage: .receivedRequest)
+        let completion = OnceTunnelCompletion(completionHandler)
+        // Libbox start 可能同步堵在握手上；用队列看门狗，不依赖协作线程池。
+        let watchdog = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            let error = PacketTunnelRuntimeError.coreServiceStartTimedOut
+            let stage = self.startupDiagnostics.snapshot()?.stage ?? .startingCore
+            self.startupDiagnostics.record(
+                core: .singBox,
+                stage: stage,
+                stableErrorCode: error.stableDiagnosticCode
+            )
+            self.runtime.stop()
+            self.platform?.stopPacketBridge()
+            self.platform = nil
+            self.runtimeState.setStatus(.failed)
+            completion.finish(error)
+        }
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(
+            deadline: .now() + Self.startupWatchdogSeconds,
+            execute: watchdog
+        )
         Task { [configurationLoader, runtime, runtimeState, startupDiagnostics, weak self, manifestID] in
             do {
                 guard let self else { throw PacketTunnelRuntimeError.tunnelFileDescriptorUnavailable }
@@ -77,10 +102,19 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                         startupDiagnostics.record(core: .singBox, stage: stage)
                     }
                 )
-                runtimeState.setStatus(.running)
-                startupDiagnostics.record(core: .singBox, stage: .running)
-                completionHandler(nil)
+                watchdog.cancel()
+                if completion.finish(nil) {
+                    runtimeState.setStatus(.running)
+                    startupDiagnostics.record(core: .singBox, stage: .running)
+                } else {
+                    // 看门狗已向系统报失败；不能把还在跑的 core 留在已失败的会话里。
+                    runtime.stop()
+                    self.platform?.stopPacketBridge()
+                    self.platform = nil
+                    runtimeState.setStatus(.failed)
+                }
             } catch {
+                watchdog.cancel()
                 runtime.stop()
                 self?.platform?.stopPacketBridge()
                 self?.platform = nil
@@ -91,7 +125,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                     stage: stage,
                     stableErrorCode: stableProviderStartupErrorCode(error)
                 )
-                completionHandler(error)
+                completion.finish(error)
             }
         }
     }
@@ -678,5 +712,26 @@ private final class ProviderMessageCompletion: @unchecked Sendable {
 
     func call(_ data: Data?) {
         handler(data)
+    }
+}
+
+/// startTunnel 的看门狗与正常完成可能同时到达；系统要求 completionHandler 只调一次。
+private final class OnceTunnelCompletion: @unchecked Sendable {
+    private let lock = NSLock()
+    private var handler: (@Sendable (Error?) -> Void)?
+
+    init(_ handler: @escaping @Sendable (Error?) -> Void) {
+        self.handler = handler
+    }
+
+    /// Returns `true` when this call owns the system completion handler.
+    @discardableResult
+    func finish(_ error: Error?) -> Bool {
+        lock.lock()
+        let handler = self.handler
+        self.handler = nil
+        lock.unlock()
+        handler?(error)
+        return handler != nil
     }
 }
