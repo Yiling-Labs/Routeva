@@ -307,7 +307,7 @@ final class CoreConfigurationCompilerTests: XCTestCase {
 
         let route = try XCTUnwrap(object["route"] as? [String: Any])
         let resolver = try XCTUnwrap(route["default_domain_resolver"] as? [String: Any])
-        XCTAssertEqual(resolver["server"] as? String, "dns-real")
+        XCTAssertEqual(resolver["server"] as? String, "dns-proxy")
         let routeRules = try XCTUnwrap(route["rules"] as? [[String: Any]])
         XCTAssertEqual(routeRules.first?["port"] as? Int, 53)
         XCTAssertEqual(routeRules.first?["action"] as? String, "hijack-dns")
@@ -318,11 +318,13 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertEqual(real["type"] as? String, "local")
         XCTAssertNil(real["server"])
         XCTAssertNil(real["detour"])
+        let proxyDNS = try XCTUnwrap(servers.first(where: { $0["tag"] as? String == "dns-proxy" }))
+        XCTAssertEqual(proxyDNS["type"] as? String, "https")
+        XCTAssertEqual(proxyDNS["server"] as? String, "9.9.9.10")
+        XCTAssertEqual(proxyDNS["detour"] as? String, "proxy")
         XCTAssertNil(servers.first(where: { $0["type"] as? String == "fakeip" }))
-        XCTAssertEqual(dns["final"] as? String, "dns-real")
+        XCTAssertEqual(dns["final"] as? String, "dns-proxy")
         XCTAssertEqual(dns["reverse_mapping"] as? Bool, true)
-        XCTAssertFalse(compiled.json.contains("9.9.9.10"))
-        XCTAssertFalse(compiled.json.contains("\"detour\":\"proxy\""))
 
         let outbounds = try XCTUnwrap(object["outbounds"] as? [[String: Any]])
         let coreProbe = try XCTUnwrap(outbounds.first(where: {
@@ -492,7 +494,7 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertTrue(direct.manifest.directRouteAddresses.contains("9.9.9.10"))
     }
 
-    func testAutomaticDNSUsesSystemResolverInAllModes() throws {
+    func testAutomaticDNSSplitsProxyNamesThroughTheNode() throws {
         let fixture = makeFixture(protocolKind: .trojan, transport: .tcp, security: .tls)
         let credential = ProxyCredentialEnvelope(
             authentication: ["password": "synthetic-password"],
@@ -518,14 +520,26 @@ final class CoreConfigurationCompilerTests: XCTestCase {
             manifest: directManifest, node: fixture.node, credential: credential, for: .singBox
         )
 
-        XCTAssertTrue(global.json.contains("\"tag\":\"dns-real\""))
-        XCTAssertTrue(global.json.contains("\"type\":\"local\""))
+        let globalDNS = try XCTUnwrap(
+            (JSONSerialization.jsonObject(with: Data(global.json.utf8)) as? [String: Any])?["dns"]
+                as? [String: Any]
+        )
+        let globalServers = try XCTUnwrap(globalDNS["servers"] as? [[String: Any]])
+        XCTAssertEqual(globalDNS["final"] as? String, "dns-proxy")
+        XCTAssertEqual(
+            globalServers.first(where: { $0["tag"] as? String == "dns-real" })?["type"] as? String,
+            "local"
+        )
+        let proxyDNS = try XCTUnwrap(globalServers.first(where: { $0["tag"] as? String == "dns-proxy" }))
+        XCTAssertEqual(proxyDNS["type"] as? String, "https")
+        XCTAssertEqual(proxyDNS["server"] as? String, "9.9.9.10")
+        XCTAssertEqual(proxyDNS["detour"] as? String, "proxy")
         XCTAssertFalse(global.json.contains("223.5.5.5"))
         XCTAssertFalse(global.json.contains("\"type\":\"fakeip\""))
-        XCTAssertFalse(global.json.contains("9.9.9.10"))
-        XCTAssertFalse(global.json.contains("\"detour\":\"proxy\""))
         XCTAssertFalse(global.manifest.directRouteAddresses.contains("9.9.9.10"))
+
         XCTAssertTrue(direct.json.contains("\"type\":\"local\""))
+        XCTAssertFalse(direct.json.contains("\"tag\":\"dns-proxy\""))
         XCTAssertFalse(direct.json.contains("223.5.5.5"))
         XCTAssertFalse(direct.json.contains("\"type\":\"fakeip\""))
         XCTAssertFalse(direct.json.contains("9.9.9.10"))
@@ -763,6 +777,88 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertTrue(singBox.json.contains("\"outbound\":\"reject\""))
         XCTAssertTrue(singBox.json.contains("\"action\":\"route\""))
 
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(singBox.json.utf8)) as? [String: Any]
+        )
+        let dns = try XCTUnwrap(object["dns"] as? [String: Any])
+        XCTAssertEqual(dns["final"] as? String, "dns-proxy")
+        let dnsRules = try XCTUnwrap(dns["rules"] as? [[String: Any]])
+        XCTAssertEqual(
+            dnsRules.first(where: {
+                ($0["domain"] as? [String]) == ["forced.example"]
+            })?["server"] as? String,
+            "dns-real"
+        )
+        XCTAssertEqual(
+            dnsRules.first(where: {
+                ($0["domain_suffix"] as? [String]) == ["direct.example"]
+            })?["server"] as? String,
+            "dns-real"
+        )
+        XCTAssertNil(dnsRules.first(where: {
+            ($0["domain_suffix"] as? [String]) == ["proxy.example"]
+        }))
+        XCTAssertEqual(
+            dnsRules.first(where: {
+                ($0["domain_keyword"] as? [String]) == ["blocked"]
+            })?["server"] as? String,
+            "dns-real"
+        )
+    }
+
+    func testAutomaticSmartResolvesUnlistedNamesThroughTheNode() throws {
+        let fixture = makeFixture(protocolKind: .trojan, transport: .tcp, security: .tls)
+        let manifest = RuntimeManifest(
+            corePolicy: .automatic,
+            profile: fixture.manifest.profile,
+            routingMode: .automatic,
+            dnsPreset: .automatic,
+            providerRoutePolicy: ProviderRoutePolicy(
+                rules: [
+                    .init(match: .domainSuffix("baidu.com"), action: .direct),
+                    .init(match: .domainKeyword("google"), action: .proxyCurrentNode),
+                    .init(match: .domainKeyword("."), action: .proxyCurrentNode),
+                    .init(
+                        match: .geoIP("CN"),
+                        action: .direct,
+                        requiresDestinationResolution: true
+                    ),
+                ],
+                defaultAction: .proxyCurrentNode
+            )
+        )
+        let compiled = try compiler.compile(
+            manifest: manifest,
+            node: fixture.node,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["password": "synthetic-password"],
+                options: ["sni": "node.example.invalid"]
+            ),
+            for: .singBox
+        )
+        let dns = try XCTUnwrap(
+            (JSONSerialization.jsonObject(with: Data(compiled.json.utf8)) as? [String: Any])?["dns"]
+                as? [String: Any]
+        )
+        XCTAssertEqual(dns["final"] as? String, "dns-proxy")
+        let servers = try XCTUnwrap(dns["servers"] as? [[String: Any]])
+        XCTAssertEqual(
+            servers.first(where: { $0["tag"] as? String == "dns-proxy" })?["detour"] as? String,
+            "proxy"
+        )
+        let dnsRules = try XCTUnwrap(dns["rules"] as? [[String: Any]])
+        XCTAssertEqual(
+            dnsRules.first(where: {
+                ($0["domain_suffix"] as? [String]) == ["baidu.com"]
+            })?["server"] as? String,
+            "dns-real"
+        )
+        XCTAssertNil(dnsRules.first(where: {
+            ($0["domain_keyword"] as? [String])?.contains("google") == true
+        }))
+        XCTAssertNil(dnsRules.first(where: {
+            ($0["domain_keyword"] as? [String]) == ["."]
+        }))
     }
 
     func testBinarySmartCompilesTypedRulesWithoutChangingProviderFinal() throws {
@@ -829,6 +925,28 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertTrue(singBox.json.contains("\"type\":\"logical\""))
         XCTAssertTrue(singBox.json.contains("ruleset.example"))
         XCTAssertTrue(singBox.json.contains("\"final\":\"direct\""))
+
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(singBox.json.utf8)) as? [String: Any]
+        )
+        let dns = try XCTUnwrap(object["dns"] as? [String: Any])
+        XCTAssertEqual(dns["final"] as? String, "dns-proxy")
+        XCTAssertEqual(
+            (dns["servers"] as? [[String: Any]])?.first(where: {
+                $0["tag"] as? String == "dns-proxy"
+            })?["detour"] as? String,
+            "proxy"
+        )
+        let dnsRules = dns["rules"] as? [[String: Any]] ?? []
+        XCTAssertEqual(
+            dnsRules.first(where: {
+                ($0["domain_suffix"] as? [String]) == ["supported.example"]
+            })?["server"] as? String,
+            "dns-real"
+        )
+        XCTAssertNil(dnsRules.first(where: {
+            ($0["domain_suffix"] as? [String]) == ["logical.example"]
+        }))
     }
 
     func testBinarySmartRejectsContinueAsFinalInsteadOfChoosingAnEgress() throws {
@@ -946,6 +1064,19 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertTrue(singBox.json.contains("\"final\":\"direct\""))
         XCTAssertFalse(singBox.json.contains("\"detour\":\"direct\""))
         XCTAssertFalse(singBox.json.contains("provider.example"))
+
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(singBox.json.utf8)) as? [String: Any]
+        )
+        let dns = try XCTUnwrap(object["dns"] as? [String: Any])
+        XCTAssertEqual(dns["final"] as? String, "dns-real")
+        let dnsRules = try XCTUnwrap(dns["rules"] as? [[String: Any]])
+        XCTAssertEqual(
+            dnsRules.first(where: {
+                ($0["domain"] as? [String]) == ["forced.example"]
+            })?["server"] as? String,
+            "dns-proxy"
+        )
     }
 
     private func makeFixture(

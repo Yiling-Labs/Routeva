@@ -679,9 +679,10 @@ strings:
     surface: settings
 
   - key: settings.dns.automatic.sub
-    en: System / tunnel default
+    en: Resolve by how traffic is routed
     tier: shell
     surface: settings
+    notes: "Automatic splits DNS: DIRECT names stay on the system resolver; proxied names resolve through the current node."
 
   - key: settings.dns.privacy.title
     en: Privacy

@@ -292,9 +292,18 @@ public struct CoreConfigurationCompiler: Sendable {
                 "timeout": "300ms",
             ])
         }
+        let dns = try singBoxDNSObject(
+            preset: manifest.dnsPreset,
+            routingMode: manifest.routingMode,
+            effective: effective,
+            proxyEndpointDomains: Array(Set(proxyEndpointDomains)).sorted(),
+            echRequirements: echDNSRequirements,
+            bootstrapAddresses: manifest.dnsBootstrapAddressMap
+        )
+        let dnsFinal = (dns["final"] as? String) ?? Self.dnsRealTag
         let routeRules = routePreamble + (try singBoxRules(
             effective.rules,
-            realDNS: Self.dnsRealTag
+            realDNS: dnsFinal
         ))
         let routeRuleSets = try singBoxRuleSets(
             declared: effective.ruleSets,
@@ -303,7 +312,7 @@ public struct CoreConfigurationCompiler: Sendable {
         var route: [String: Any] = [
             "auto_detect_interface": true,
             "default_domain_resolver": [
-                "server": Self.dnsRealTag,
+                "server": dnsFinal,
                 "strategy": "prefer_ipv4",
             ],
             "rules": routeRules,
@@ -369,13 +378,7 @@ public struct CoreConfigurationCompiler: Sendable {
                 ],
             ],
             "route": route,
-            "dns": try singBoxDNSObject(
-                preset: manifest.dnsPreset,
-                routingMode: manifest.routingMode,
-                proxyEndpointDomains: Array(Set(proxyEndpointDomains)).sorted(),
-                echRequirements: echDNSRequirements,
-                bootstrapAddresses: manifest.dnsBootstrapAddressMap
-            ),
+            "dns": dns,
         ]
     }
 
@@ -682,34 +685,39 @@ public struct CoreConfigurationCompiler: Sendable {
 
     private static let dnsBootstrapTag = "dns-bootstrap"
     private static let dnsEndpointTag = "dns-endpoint"
+    private static let dnsProxyTag = "dns-proxy"
     private static let dnsRealTag = "dns-real"
     private static let dnsSystemTag = "dns-system"
 
     private func singBoxDNSObject(
         preset: RuntimeManifest.DNSPreset,
         routingMode: RuntimeManifest.RoutingMode,
+        effective: (
+            rules: [ProviderRouteRule],
+            defaultAction: RouteAction,
+            ruleSets: [ProviderRuleSet]
+        ),
         proxyEndpointDomains: [String],
         echRequirements: [ECHDNSRequirement],
         bootstrapAddresses: [String: [String]]
     ) throws -> [String: Any] {
         // Keep proxy endpoint bootstrap, query-based ECH bootstrap, and user
-        // DNS as three independent planes. Endpoint bootstrap must work before
-        // the proxy exists; ECH requires HTTPS records over its provider DoH;
-        // Automatic follows the active system resolver. Privacy and
-        // Compatibility remain explicit choices with distinct transports.
-        // Endpoint and ECH bootstrap are kept independent because both must
-        // work before the selected proxy can carry any traffic.
+        // DNS as independent planes. Endpoint bootstrap must work before the
+        // proxy exists; ECH requires HTTPS records over its provider DoH.
+        // Automatic splits user DNS: names that will take DIRECT stay on the
+        // system resolver so domestic CDNs keep local answers; names that will
+        // take the current node (or the unmatched default) go through the
+        // node, matching Clash redir-host + remote resolve. Privacy and
+        // Compatibility remain explicit single-plane choices.
         var servers: [[String: Any]] = []
+        var final = Self.dnsRealTag
+        var splitRules: [[String: Any]] = []
         switch preset {
         case .privacy:
-            var server: [String: Any] = [
-                "type": "https", "tag": Self.dnsRealTag,
-                "server": Self.privacyDNSAddress,
-                "server_port": 443, "path": "/dns-query",
-                "tls": ["enabled": true, "server_name": "dns10.quad9.net"],
-            ]
-            if routingMode != .direct { server["detour"] = SingBoxNodeSelector.groupTag }
-            servers.append(server)
+            servers.append(privacyHTTPSServer(
+                tag: Self.dnsRealTag,
+                detour: routingMode != .direct
+            ))
         case .compatibility:
             servers.append([
                 "type": "udp", "tag": Self.dnsRealTag,
@@ -719,10 +727,19 @@ public struct CoreConfigurationCompiler: Sendable {
             servers.append([
                 "type": "local", "tag": Self.dnsRealTag,
             ])
+            let split = automaticDNSSplit(effective, routingMode: routingMode)
+            if split.needsProxyServer {
+                servers.append(privacyHTTPSServer(
+                    tag: Self.dnsProxyTag,
+                    detour: true
+                ))
+                splitRules = split.rules
+                final = split.final
+            }
         }
         var dns: [String: Any] = [
             "servers": servers,
-            "final": Self.dnsRealTag,
+            "final": final,
             "strategy": "prefer_ipv4",
             "reverse_mapping": true,
         ]
@@ -790,9 +807,160 @@ public struct CoreConfigurationCompiler: Sendable {
                 "server": Self.dnsSystemTag,
             ])
         }
+        rules.append(contentsOf: splitRules)
         dns["servers"] = servers
         if !rules.isEmpty { dns["rules"] = rules }
         return dns
+    }
+
+    private func privacyHTTPSServer(tag: String, detour: Bool) -> [String: Any] {
+        var server: [String: Any] = [
+            "type": "https", "tag": tag,
+            "server": Self.privacyDNSAddress,
+            "server_port": 443, "path": "/dns-query",
+            "tls": ["enabled": true, "server_name": "dns10.quad9.net"],
+        ]
+        if detour { server["detour"] = SingBoxNodeSelector.groupTag }
+        return server
+    }
+
+    /// Automatic user DNS: any name that may leave through the current node
+    /// resolves through that node. Only explicit DIRECT / REJECT domain
+    /// exceptions stay on the system resolver.
+    ///
+    /// Smart provider lists often include thousands of proxy DOMAIN rules and
+    /// catch-alls such as `DOMAIN-KEYWORD,.`. Mirroring those into DNS can
+    /// invalidate the resolver and silently fall back to local answers — the
+    /// Global-works / Smart-fails pattern. Unlisted names therefore use
+    /// `dns-proxy` as `final`; we only emit the opposite-plane exceptions.
+    private func automaticDNSSplit(
+        _ effective: (
+            rules: [ProviderRouteRule],
+            defaultAction: RouteAction,
+            ruleSets: [ProviderRuleSet]
+        ),
+        routingMode: RuntimeManifest.RoutingMode
+    ) -> (rules: [[String: Any]], needsProxyServer: Bool, final: String) {
+        let final = routingMode == .direct ? Self.dnsRealTag : Self.dnsProxyTag
+        var needsProxyServer = final == Self.dnsProxyTag
+        var rules: [[String: Any]] = []
+        var index = 0
+        while index < effective.rules.count {
+            let rule = effective.rules[index]
+            if rule.action == .continueMatching {
+                index += 1
+                continue
+            }
+            let server = dnsServerTag(for: rule.action)
+            if server == final {
+                index = skipMatchingDomainBatch(in: effective.rules, from: index)
+                continue
+            }
+            if let descriptor = domainBatchDescriptor(rule.match) {
+                var values: [String] = []
+                var cursor = index
+                while cursor < effective.rules.count,
+                      values.count < Self.maximumValuesPerRouteRule,
+                      effective.rules[cursor].action == rule.action,
+                      let candidate = domainBatchDescriptor(effective.rules[cursor].match),
+                      candidate.kind == descriptor.kind {
+                    if isSafeDNSDomainValue(candidate.value, kind: candidate.kind) {
+                        values.append(candidate.value)
+                    }
+                    cursor += 1
+                }
+                if !values.isEmpty {
+                    if server == Self.dnsProxyTag { needsProxyServer = true }
+                    rules.append([
+                        singBoxDomainKey(descriptor.kind): values,
+                        "action": "route",
+                        "server": server,
+                    ])
+                }
+                index = cursor
+                continue
+            }
+            if let match = dnsMatchObject(rule.match, ruleSets: effective.ruleSets) {
+                if server == Self.dnsProxyTag { needsProxyServer = true }
+                var object = match
+                object["action"] = "route"
+                object["server"] = server
+                rules.append(object)
+            }
+            index += 1
+        }
+        return (rules, needsProxyServer, final)
+    }
+
+    private func skipMatchingDomainBatch(
+        in rules: [ProviderRouteRule],
+        from index: Int
+    ) -> Int {
+        let rule = rules[index]
+        guard let descriptor = domainBatchDescriptor(rule.match) else {
+            return index + 1
+        }
+        var cursor = index + 1
+        while cursor < rules.count,
+              rules[cursor].action == rule.action,
+              let candidate = domainBatchDescriptor(rules[cursor].match),
+              candidate.kind == descriptor.kind {
+            cursor += 1
+        }
+        return cursor
+    }
+
+    private func isSafeDNSDomainValue(_ value: String, kind: DomainBatchKind) -> Bool {
+        switch kind {
+        case .keyword:
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.utf8.count >= 2 else { return false }
+            return isSafeDomainRouteValue(trimmed, isKeyword: true)
+        case .regex:
+            return !value.isEmpty && value.utf8.count <= 253
+        case .exact, .suffix:
+            return isSafeDomainRouteValue(value, isKeyword: false)
+        }
+    }
+
+    private func dnsServerTag(for action: RouteAction) -> String {
+        switch action {
+        case .proxyCurrentNode: Self.dnsProxyTag
+        case .direct, .reject, .continueMatching: Self.dnsRealTag
+        }
+    }
+
+    private func dnsMatchObject(
+        _ match: RouteRuleMatch,
+        ruleSets: [ProviderRuleSet]
+    ) -> [String: Any]? {
+        switch match {
+        case let .domain(value):
+            return ["domain": [value]]
+        case let .domainSuffix(value):
+            return ["domain_suffix": [value]]
+        case let .domainKeyword(value):
+            return ["domain_keyword": [value]]
+        case let .domainRegex(value):
+            return ["domain_regex": [value]]
+        case let .geoSite(value):
+            return ["rule_set": [geoRuleSetTag(kind: "geosite", value: value)]]
+        case let .ruleSet(tag):
+            guard ruleSets.contains(where: { $0.tag == tag && $0.behavior == .domain }) else {
+                return nil
+            }
+            return ["rule_set": [tag]]
+        case let .logical(mode, rules):
+            let children = rules.compactMap { dnsMatchObject($0, ruleSets: ruleSets) }
+            guard children.count == rules.count, !children.isEmpty else { return nil }
+            return [
+                "type": "logical",
+                "mode": mode.rawValue,
+                "rules": children,
+            ]
+        default:
+            return nil
+        }
     }
 
     private func echDNSServer(

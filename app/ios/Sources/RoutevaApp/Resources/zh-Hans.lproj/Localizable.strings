@@ -79,7 +79,7 @@
 "Automatic" = "自动";
 "Privacy" = "隐私";
 "Compatibility" = "兼容";
-"System / tunnel default" = "系统 / 隧道默认设置";
+"Resolve by how traffic is routed" = "按分流方式解析";
 "Encrypted DNS when possible" = "尽可能使用加密 DNS";
 "Prefer widely reachable resolvers" = "优先使用广泛可达的解析器";
 "Couldn’t switch node. Kept previous connection." = "无法切换节点，已保留原连接。";
