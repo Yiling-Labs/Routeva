@@ -335,13 +335,11 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                     guard let record = try? await database.node(id: nodeID) else {
                         return ProviderEntryLatencySample(nodeID: nodeID, milliseconds: nil)
                     }
-                    guard record.protocolKind != .hysteria2 else {
-                        return ProviderEntryLatencySample(nodeID: nodeID, milliseconds: nil)
-                    }
                     let result = await NodeLatencyProbe.measure(
                         host: record.endpointHost,
                         port: record.endpointPort,
                         timeout: 2,
+                        transport: record.transport,
                         requiredInterface: interface
                     )
                     switch result {

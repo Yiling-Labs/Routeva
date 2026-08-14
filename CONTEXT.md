@@ -457,6 +457,6 @@ _Avoid_: 把 Failover 叫成 Repair；把 Preferred 做成禁 Failover 的硬 Pi
 **P0 Interop Surface（瘦身）**：
 首发以「美国区常见机场订阅能导入并稳定连接」为宽度目标，不以协议数量为卖点。  
 **须真连 + 自动化测试：** 格式 — Clash/Mihomo YAML、V2Ray Base64 订阅、常见单节点 URI（ss / vmess / vless / trojan / hysteria2）；协议 — VLESS（含 Reality）、VMess、Trojan、Shadowsocks、Hysteria2。  
-**可解析或实验、不进主卖点：** sing-box JSON（若内核顺带）、TUIC、WireGuard、HTTP/SOCKS5 等补充出口。  
+**可解析或实验、不进主卖点：** 已接入 AnyTLS、TUIC、HTTP/HTTPS Proxy、SOCKS5；sing-box JSON（若内核顺带）、WireGuard 等补充出口待后续接入。
 **首发明确不做：** 完整 Quantumult X / Surge / Stash 高级语法、远程脚本、SSH/ShadowTLS/MASQUE/私有协议等。不支持时须给出具体失败原因，且不得覆盖用户已有配置。  
 _Avoid_: 支持最多协议；把实验协议算进 P0 完成度

@@ -514,6 +514,38 @@ final class ProviderMessageTests: XCTestCase {
         }
     }
 
+    func testIPCRecoveryRetriesOnlyTransientFailuresWithinBounds() {
+        let policy = ProviderIPCRecoveryPolicy(
+            maximumReadinessAttempts: 4,
+            maximumCoreProbeAttempts: 2
+        )
+
+        XCTAssertTrue(policy.shouldRetryReadiness(
+            after: .sessionUnavailable,
+            completedAttempts: 1
+        ))
+        XCTAssertTrue(policy.shouldRetryReadiness(
+            after: .rateLimited,
+            completedAttempts: 3
+        ))
+        XCTAssertFalse(policy.shouldRetryReadiness(
+            after: .responseTimedOut,
+            completedAttempts: 4
+        ))
+        XCTAssertTrue(policy.shouldRetryCoreProbe(
+            after: .responseMissing,
+            completedAttempts: 1
+        ))
+        XCTAssertFalse(policy.shouldRetryCoreProbe(
+            after: .responseTimedOut,
+            completedAttempts: 2
+        ))
+        XCTAssertFalse(policy.shouldRetryCoreProbe(
+            after: .other,
+            completedAttempts: 1
+        ))
+    }
+
     func testDataPlaneResponseRoundTripsOnlyCounters() throws {
         let request = ProviderMessageRequest(kind: .dataPlane)
         let snapshot = ProviderDataPlaneSnapshot(

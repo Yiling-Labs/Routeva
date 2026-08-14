@@ -361,6 +361,7 @@ private struct ParsingOverlay: View {
 struct SubscriptionsView: View {
     @EnvironmentObject private var model: RoutevaAppModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var renameTarget: SubscriptionSummary?
     @State private var renameText = ""
     @State private var deleteTarget: SubscriptionSummary?
@@ -390,11 +391,12 @@ struct SubscriptionsView: View {
                                     renameText = subscription.displayName
                                 }
                             )
+                            .equatable()
                         }
                     }
                     .animation(
-                        .routevaEase,
-                        value: model.subscriptions.filter(\.isActive).map(\.id)
+                        reduceMotion ? nil : .routevaEase.speed(1.6),
+                        value: model.subscriptions.map(\.id)
                     )
                     .padding(.top, 4)
                     .padding(.bottom, 12)
@@ -460,7 +462,7 @@ struct SubscriptionsView: View {
     }
 }
 
-private struct SubscriptionCard: View {
+private struct SubscriptionCard: View, @MainActor Equatable {
     let subscription: SubscriptionSummary
     let isUpdating: Bool
     let isDeleting: Bool
@@ -468,6 +470,12 @@ private struct SubscriptionCard: View {
     let update: () -> Void
     let delete: () -> Void
     let rename: () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.subscription == rhs.subscription
+            && lhs.isUpdating == rhs.isUpdating
+            && lhs.isDeleting == rhs.isDeleting
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -491,7 +499,7 @@ private struct SubscriptionCard: View {
                         .accessibilityLabel("Rename subscription")
                         .offset(x: 2, y: -6)
                     }
-                    Text("\(subscription.nodes.count) nodes")
+                    Text("\(subscription.nodeCount) nodes")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(RoutevaTheme.secondary)
                     if let expiresAt = subscription.expiresAt {

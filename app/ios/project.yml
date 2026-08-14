@@ -113,6 +113,7 @@ targets:
       - target: CoreConfigKit
       - target: PacketTunnelBridgeKit
       - framework: Vendor/Libbox.xcframework
+        embed: false
       - sdk: UIKit.framework
       - sdk: libresolv.tbd
     entitlements:
@@ -243,6 +244,7 @@ targets:
       - target: DataKit
       - target: CoreConfigKit
       - framework: Vendor/Libbox.xcframework
+        embed: false
       - sdk: UIKit.framework
       - sdk: libresolv.tbd
     settings:

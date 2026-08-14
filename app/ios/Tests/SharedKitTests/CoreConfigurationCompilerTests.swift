@@ -194,6 +194,81 @@ final class CoreConfigurationCompilerTests: XCTestCase {
         XCTAssertEqual(outbounds.first?["type"] as? String, "hysteria2")
     }
 
+    func testCompilesFirstBatchNativeSingBoxOutbounds() throws {
+        let cases: [(ProxyProtocol, TransportKind, SecurityKind, Bool, ProxyCredentialEnvelope)] = [
+            (
+                .anyTLS, .tcp, .tls, true,
+                ProxyCredentialEnvelope(
+                    authentication: ["password": "anytls-pass"],
+                    options: [
+                        "sni": "edge.example.invalid",
+                        "idle-session-timeout": "45",
+                        "min-idle-session": "2",
+                    ]
+                )
+            ),
+            (
+                .socks5, .tcp, .none, true,
+                ProxyCredentialEnvelope(
+                    authentication: ["username": "socks-user", "password": "socks-pass"]
+                )
+            ),
+            (
+                .http, .tcp, .tls, false,
+                ProxyCredentialEnvelope(
+                    authentication: ["username": "http-user", "password": "http-pass"],
+                    options: ["sni": "edge.example.invalid", "path": "/connect"]
+                )
+            ),
+            (
+                .tuic, .quic, .tls, true,
+                ProxyCredentialEnvelope(
+                    authentication: [
+                        "uuid": "11111111-2222-3333-4444-555555555555",
+                        "password": "tuic-pass",
+                    ],
+                    options: [
+                        "sni": "edge.example.invalid",
+                        "congestion-controller": "bbr",
+                        "udp-relay-mode": "native",
+                        "heartbeat": "10",
+                    ]
+                )
+            ),
+        ]
+
+        var outbounds: [[String: Any]] = []
+        for (protocolKind, transport, security, requiresUDP, credential) in cases {
+            let fixture = makeFixture(
+                protocolKind: protocolKind,
+                transport: transport,
+                security: security,
+                requiresUDP: requiresUDP
+            )
+            let compiled = try compiler.compile(
+                manifest: fixture.manifest,
+                node: fixture.node,
+                credential: credential,
+                for: .singBox
+            )
+            let object = try XCTUnwrap(
+                JSONSerialization.jsonObject(with: Data(compiled.json.utf8)) as? [String: Any]
+            )
+            outbounds.append(try XCTUnwrap((object["outbounds"] as? [[String: Any]])?.first))
+        }
+
+        XCTAssertEqual(outbounds.map { $0["type"] as? String }, ["anytls", "socks", "http", "tuic"])
+        XCTAssertEqual(outbounds[0]["idle_session_timeout"] as? String, "45s")
+        XCTAssertEqual(outbounds[0]["min_idle_session"] as? Int, 2)
+        XCTAssertEqual(outbounds[1]["version"] as? String, "5")
+        XCTAssertEqual(outbounds[1]["username"] as? String, "socks-user")
+        XCTAssertEqual(outbounds[2]["path"] as? String, "/connect")
+        XCTAssertNotNil(outbounds[2]["tls"] as? [String: Any])
+        XCTAssertEqual(outbounds[3]["congestion_control"] as? String, "bbr")
+        XCTAssertEqual(outbounds[3]["heartbeat"] as? String, "10s")
+        XCTAssertNil(outbounds[3]["transport"])
+    }
+
     func testCompilesCommonTLSWebSocketHTTPAndHysteria2Options() throws {
         let webSocket = makeFixture(protocolKind: .vless, transport: .webSocket, security: .tls)
         let compiledWebSocket = try compiler.compile(
@@ -1082,7 +1157,8 @@ final class CoreConfigurationCompilerTests: XCTestCase {
     private func makeFixture(
         protocolKind: ProxyProtocol,
         transport: TransportKind,
-        security: SecurityKind
+        security: SecurityKind,
+        requiresUDP: Bool = true
     ) -> (manifest: RuntimeManifest, node: NodeRecord) {
         let nodeID = UUID()
         let credentialReference = "synthetic-credential-\(nodeID.uuidString)"
@@ -1094,7 +1170,7 @@ final class CoreConfigurationCompilerTests: XCTestCase {
             protocolKind: protocolKind,
             transport: transport,
             security: security,
-            requiresUDP: true,
+            requiresUDP: requiresUDP,
             endpointHost: "node.example.invalid",
             endpointPort: 443,
             credentialReference: credentialReference
@@ -1106,7 +1182,7 @@ final class CoreConfigurationCompilerTests: XCTestCase {
                 protocolKind: protocolKind,
                 transport: transport,
                 security: security,
-                requiresUDP: true,
+                requiresUDP: requiresUDP,
                 credential: SecretReference(keychainIdentifier: credentialReference)
             )
         )

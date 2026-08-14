@@ -2,6 +2,22 @@ import Foundation
 import GRDB
 import SharedKit
 
+public struct SubscriptionCatalogSnapshot: Sendable, Equatable {
+    public let subscriptions: [SubscriptionRecord]
+    public let nodeCounts: [UUID: Int]
+    public let activeNodes: [NodeRecord]
+
+    public init(
+        subscriptions: [SubscriptionRecord],
+        nodeCounts: [UUID: Int],
+        activeNodes: [NodeRecord]
+    ) {
+        self.subscriptions = subscriptions
+        self.nodeCounts = nodeCounts
+        self.activeNodes = activeNodes
+    }
+}
+
 public actor RoutevaDatabase {
     public static let appGroupIdentifier = "group.com.yilinglabs.routeva"
     public static let databaseFilename = "Routeva.sqlite"
@@ -63,6 +79,47 @@ public actor RoutevaDatabase {
             try SubscriptionRecord
                 .order(Column("isActive").desc, Column("updatedAt").desc)
                 .fetchAll(db)
+        }
+    }
+
+    /// Loads the data needed by the subscription list in one consistent read.
+    /// Inactive subscriptions expose only their node count; only the active
+    /// subscription needs full node records for the home and location screens.
+    public func subscriptionCatalogSnapshot() throws -> SubscriptionCatalogSnapshot {
+        try pool.read { db in
+            let subscriptions = try SubscriptionRecord
+                .order(Column("isActive").desc, Column("updatedAt").desc)
+                .fetchAll(db)
+            let countRows = try Row.fetchAll(
+                db,
+                sql: """
+                SELECT subscriptionID, COUNT(*) AS nodeCount
+                FROM nodes
+                GROUP BY subscriptionID
+                """
+            )
+            var nodeCounts: [UUID: Int] = [:]
+            nodeCounts.reserveCapacity(countRows.count)
+            for row in countRows {
+                let subscriptionID: UUID = row["subscriptionID"]
+                let nodeCount: Int = row["nodeCount"]
+                nodeCounts[subscriptionID] = nodeCount
+            }
+
+            let activeNodes: [NodeRecord]
+            if let activeID = subscriptions.first(where: \.isActive)?.id {
+                activeNodes = try NodeRecord
+                    .filter(Column("subscriptionID") == activeID)
+                    .order(Column("sortIndex"))
+                    .fetchAll(db)
+            } else {
+                activeNodes = []
+            }
+            return SubscriptionCatalogSnapshot(
+                subscriptions: subscriptions,
+                nodeCounts: nodeCounts,
+                activeNodes: activeNodes
+            )
         }
     }
 

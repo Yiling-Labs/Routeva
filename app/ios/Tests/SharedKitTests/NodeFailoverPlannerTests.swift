@@ -16,7 +16,7 @@ final class NodeFailoverPlannerTests: XCTestCase {
                 .init(index: 3, healthScore: 40),
             ]
         )
-        XCTAssertEqual(result, [2, 3, 0, 1])
+        XCTAssertEqual(result, [2, 3, 0])
     }
 
     func testSmartCapsAutomaticAttemptsForLargeCatalogs() {
@@ -28,7 +28,7 @@ final class NodeFailoverPlannerTests: XCTestCase {
                 currentIndex: 8,
                 available: nodes
             ),
-            [8, 0, 1, 2, 3, 4]
+            [8, 0, 1]
         )
     }
 

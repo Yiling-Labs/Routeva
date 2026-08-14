@@ -261,6 +261,88 @@ final class SingBoxConfigurationValidationTests: XCTestCase {
         XCTAssertNil(validationError)
     }
 
+    func testCompiledFirstBatchOutboundsPassLinkedLibboxValidation() throws {
+        let cases: [(ProxyProtocol, TransportKind, SecurityKind, Bool, ProxyCredentialEnvelope)] = [
+            (
+                .anyTLS, .tcp, .tls, true,
+                ProxyCredentialEnvelope(
+                    authentication: ["password": "anytls-pass"],
+                    options: ["sni": "anytls.example.invalid", "min-idle-session": "2"]
+                )
+            ),
+            (
+                .socks5, .tcp, .none, true,
+                ProxyCredentialEnvelope(
+                    authentication: ["username": "socks-user", "password": "socks-pass"]
+                )
+            ),
+            (
+                .http, .tcp, .tls, false,
+                ProxyCredentialEnvelope(
+                    authentication: ["username": "http-user", "password": "http-pass"],
+                    options: ["sni": "http.example.invalid"]
+                )
+            ),
+            (
+                .tuic, .quic, .tls, true,
+                ProxyCredentialEnvelope(
+                    authentication: [
+                        "uuid": "11111111-2222-3333-4444-555555555555",
+                        "password": "tuic-pass",
+                    ],
+                    options: [
+                        "sni": "tuic.example.invalid",
+                        "congestion-controller": "bbr",
+                        "udp-relay-mode": "native",
+                    ]
+                )
+            ),
+        ]
+
+        for (protocolKind, transport, security, requiresUDP, credential) in cases {
+            let nodeID = UUID()
+            let credentialReference = "synthetic-credential-\(nodeID.uuidString)"
+            let node = NodeRecord(
+                id: nodeID,
+                subscriptionID: UUID(),
+                sortIndex: 0,
+                displayName: "TEST-\(protocolKind.rawValue.uppercased())",
+                protocolKind: protocolKind,
+                transport: transport,
+                security: security,
+                requiresUDP: requiresUDP,
+                endpointHost: "\(protocolKind.rawValue).example.invalid",
+                endpointPort: 443,
+                credentialReference: credentialReference
+            )
+            let manifest = RuntimeManifest(
+                corePolicy: .singBox,
+                profile: RuntimeProfile(
+                    id: nodeID,
+                    protocolKind: protocolKind,
+                    transport: transport,
+                    security: security,
+                    requiresUDP: requiresUDP,
+                    credential: SecretReference(keychainIdentifier: credentialReference)
+                ),
+                dnsPreset: .compatibility
+            )
+            let compiled = try CoreConfigurationCompiler().compile(
+                manifest: manifest,
+                node: node,
+                credential: credential,
+                for: .singBox
+            )
+
+            var validationError: NSError?
+            XCTAssertTrue(
+                LibboxCheckConfig(compiled.json, &validationError),
+                "\(protocolKind.rawValue): \(validationError?.localizedDescription ?? "unknown validation error")"
+            )
+            XCTAssertNil(validationError)
+        }
+    }
+
     func testCompiledQueryECHAndCommonTransportsPassLinkedLibboxValidation() throws {
         for (transport, options) in [
             (

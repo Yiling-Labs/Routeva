@@ -186,6 +186,10 @@ private struct HomeChrome: View {
 
     var body: some View {
         HStack(spacing: 10) {
+            GlassOrb(systemName: "gearshape", accessibilityLabel: "Settings") {
+                model.presentedSurface = .settings
+            }
+
             if model.activeSubscription != nil {
                 GlassOrb(
                     systemName: "rectangle.stack",
@@ -197,12 +201,37 @@ private struct HomeChrome: View {
 
             Spacer()
 
-            GlassOrb(systemName: "gearshape", accessibilityLabel: "Settings") {
-                model.presentedSurface = .settings
+            if model.activeSubscription != nil {
+                HomeNodeListButton {
+                    model.presentedSurface = .locations
+                }
             }
         }
         .frame(height: 48)
         .padding(.horizontal, 22)
+    }
+}
+
+private struct HomeNodeListButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                Image(systemName: "list.bullet")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("Node list")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(RoutevaTheme.icon)
+            .padding(.horizontal, 14)
+            .frame(height: 40)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(RoutevaPressStyle())
+        .routevaGlass(cornerRadius: 20)
+        .accessibilityLabel(Text(LocalizedStringKey("Node list")))
+        .accessibilityIdentifier("home.nodeList")
     }
 }
 

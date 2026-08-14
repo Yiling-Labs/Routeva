@@ -11,7 +11,9 @@ public struct NodeFailoverCandidate: Equatable, Sendable {
 }
 
 public struct NodeFailoverPlanner: Sendable {
-    public static let maximumAutomaticAttempts = 6
+    /// One explicit connection request may automatically inspect at most three
+    /// nodes. A later user request starts a fresh bounded transaction.
+    public static let maximumAutomaticAttempts = 3
 
     public init() {}
 

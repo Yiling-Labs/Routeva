@@ -12,6 +12,7 @@ enum ProviderBundleIdentifier {
 enum VPNProviderControllerError: LocalizedError {
     case switchTimedOut
     case providerConfigurationMissing(CoreIdentifier)
+    case providerSessionUnavailable(CoreIdentifier, status: Int)
     case providerStartFailed(CoreIdentifier, diagnosticCode: String?)
     case providerResponseMissing
     case providerResponseTimedOut
@@ -22,6 +23,8 @@ enum VPNProviderControllerError: LocalizedError {
             "The active VPN provider did not stop before the core switch timed out."
         case let .providerConfigurationMissing(core):
             "The VPN configuration for \(core.rawValue) is unavailable."
+        case let .providerSessionUnavailable(core, status):
+            "The \(core.rawValue) VPN provider session is unavailable (status \(status))."
         case let .providerStartFailed(core, _):
             "The \(core.rawValue) VPN provider stopped before it finished starting."
         case .providerResponseMissing:
@@ -38,10 +41,14 @@ enum VPNProviderControllerError: LocalizedError {
 actor VPNProviderController {
     private let selector = CoreSelector()
     private let startupDiagnostics = ProviderStartupDiagnosticStore()
+    private let ipcRecoveryPolicy = ProviderIPCRecoveryPolicy()
     /// The manager that completed the latest start in this App process.
     /// Keeping it avoids a preferences round-trip before an explicit user
     /// stop can even be submitted to NetworkExtension.
     private var activeManager: (core: CoreIdentifier, manager: NETunnelProviderManager)?
+    /// Reserve Provider messages far enough apart to stay outside the
+    /// extension's 200 ms request limiter, including concurrent polling tasks.
+    private var nextProviderMessageAt = ContinuousClock.now
 
     static func stableDiagnosticCode(for error: Error) -> String {
         guard case let VPNProviderControllerError.providerStartFailed(_, code) = error else {
@@ -54,8 +61,31 @@ actor VPNProviderController {
         if case let ProviderMessageCodecError.providerRejected(code) = error {
             return code
         }
+        if case VPNProviderControllerError.providerConfigurationMissing = error {
+            return "probe.tunnel_probe_session_missing"
+        }
+        if case VPNProviderControllerError.providerSessionUnavailable = error {
+            return "probe.tunnel_probe_session_unavailable"
+        }
+        if case VPNProviderControllerError.providerResponseMissing = error {
+            return "probe.tunnel_probe_response_missing"
+        }
         if case VPNProviderControllerError.providerResponseTimedOut = error {
             return "probe.tunnel_probe_ipc_timeout"
+        }
+        if let codecError = error as? ProviderMessageCodecError {
+            switch codecError {
+            case .messageTooLarge:
+                return "probe.tunnel_probe_message_too_large"
+            case .unsupportedSchema:
+                return "probe.tunnel_probe_schema_unsupported"
+            case .malformedMessage:
+                return "probe.tunnel_probe_response_malformed"
+            case .mismatchedResponse:
+                return "probe.tunnel_probe_response_mismatched"
+            case .providerRejected:
+                break
+            }
         }
         return "probe.tunnel_probe_ipc_failed"
     }
@@ -163,7 +193,12 @@ actor VPNProviderController {
 
     func start(core: CoreIdentifier, manifestID: UUID) async throws {
         try await removeLegacyRoutevaManagers()
-        let existingManagers = try await loadManagersFromPreferences()
+        if let activeManager {
+            try await stopForFreshSession(activeManager.manager)
+        }
+        activeManager = nil
+
+        var existingManagers = try await loadManagersFromPreferences()
         if let existingManager = existingManagers[core] {
             // Every attempt has a new manifest ID. Never reuse a same-core
             // session that merely still reports Connected: it may be an old
@@ -174,6 +209,12 @@ actor VPNProviderController {
 
         // Stop any stale Routeva session before starting a fresh manifest.
         try await stopOtherManagers(existingManagers, except: core)
+        // A manager loaded before stop can remain bound to the old Provider
+        // bridge even after its local connection object says Disconnected.
+        // Require two refreshed inactive observations, then start only from a
+        // manager loaded after that teardown barrier.
+        try await waitForStableDisconnection(core: core)
+        existingManagers = try await loadManagersFromPreferences()
         var managers = managersMatchDesiredConfiguration(
             existingManagers,
             activating: core
@@ -230,6 +271,7 @@ actor VPNProviderController {
             startupRequestedAt: startupRequestedAt
         )
         activeManager = (core, manager)
+        try await waitForProviderReadiness(core: core)
     }
 
     func stop(core: CoreIdentifier) async {
@@ -262,17 +304,8 @@ actor VPNProviderController {
     }
 
     func queryTraffic(core: CoreIdentifier) async throws -> ProviderTrafficSnapshot {
-        let managers = try await NETunnelProviderManager.loadAllFromPreferences()
-        guard let manager = managers.first(where: {
-            ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier
-                == ProviderBundleIdentifier.value(for: core)
-        }), let session = manager.connection as? NETunnelProviderSession else {
-            throw VPNProviderControllerError.providerConfigurationMissing(core)
-        }
         let request = ProviderMessageRequest(kind: .traffic)
-        let requestData = try ProviderMessageCodec.encode(request)
-        let responseData = try await sendProviderMessage(requestData, session: session)
-        let response = try ProviderMessageCodec.decodeResponse(responseData, matching: request)
+        let response = try await sendProviderRequest(request, core: core)
         guard let traffic = response.traffic else {
             throw VPNProviderControllerError.providerResponseMissing
         }
@@ -280,17 +313,8 @@ actor VPNProviderController {
     }
 
     func queryDataPlane(core: CoreIdentifier) async throws -> ProviderDataPlaneSnapshot {
-        let managers = try await NETunnelProviderManager.loadAllFromPreferences()
-        guard let manager = managers.first(where: {
-            ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier
-                == ProviderBundleIdentifier.value(for: core)
-        }), let session = manager.connection as? NETunnelProviderSession else {
-            throw VPNProviderControllerError.providerConfigurationMissing(core)
-        }
         let request = ProviderMessageRequest(kind: .dataPlane)
-        let requestData = try ProviderMessageCodec.encode(request)
-        let responseData = try await sendProviderMessage(requestData, session: session)
-        let response = try ProviderMessageCodec.decodeResponse(responseData, matching: request)
+        let response = try await sendProviderRequest(request, core: core)
         guard let dataPlane = response.dataPlane else {
             throw VPNProviderControllerError.providerResponseMissing
         }
@@ -301,20 +325,46 @@ actor VPNProviderController {
         core: CoreIdentifier,
         tunnelProbeAddressSets: [ProviderTunnelProbeAddressSet] = []
     ) async throws -> ProviderCoreProbeSnapshot? {
-        let managers = try await NETunnelProviderManager.loadAllFromPreferences()
-        guard let manager = managers.first(where: {
-            ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier
-                == ProviderBundleIdentifier.value(for: core)
-        }), let session = manager.connection as? NETunnelProviderSession else {
-            throw VPNProviderControllerError.providerConfigurationMissing(core)
+        var completedAttempts = 0
+        while true {
+            completedAttempts += 1
+            do {
+                return try await performCoreProbe(
+                    core: core,
+                    tunnelProbeAddressSets: tunnelProbeAddressSets
+                )
+            } catch {
+                let failure = Self.ipcFailureKind(for: error)
+                guard ipcRecoveryPolicy.shouldRetryCoreProbe(
+                    after: failure,
+                    completedAttempts: completedAttempts
+                ) else {
+                    throw error
+                }
+
+                // The first callback may have been lost while NetworkExtension
+                // replaced its App Message bridge. Drop the cached manager,
+                // prove the currently published session is running, then issue
+                // one fresh idempotent probe request.
+                let originalError = error
+                do {
+                    try await recoverProviderIPC(core: core)
+                } catch {
+                    throw originalError
+                }
+            }
         }
+    }
+
+    private func performCoreProbe(
+        core: CoreIdentifier,
+        tunnelProbeAddressSets: [ProviderTunnelProbeAddressSet]
+    ) async throws -> ProviderCoreProbeSnapshot? {
         let request = ProviderMessageRequest(
             kind: .coreProbe,
             tunnelProbeAddressSets: tunnelProbeAddressSets
         )
-        let requestData = try ProviderMessageCodec.encode(request)
-        let responseData = try await sendProviderMessage(requestData, session: session)
-        let response = try ProviderMessageCodec.decodeResponse(responseData, matching: request)
+        let response = try await sendProviderRequest(request, core: core)
         if response.tunnelProbeSucceeded == true {
             return response.coreProbe
         }
@@ -399,25 +449,183 @@ actor VPNProviderController {
 
     private func sendProviderRequest(
         _ request: ProviderMessageRequest,
-        core: CoreIdentifier
+        core: CoreIdentifier,
+        timeout: Duration = .seconds(15)
     ) async throws -> ProviderMessageResponse {
+        var session: NETunnelProviderSession?
+        do {
+            try await waitForProviderMessageSlot()
+            let resolvedSession = try await providerSession(for: core)
+            session = resolvedSession
+            let requestData = try ProviderMessageCodec.encode(request)
+            let responseData = try await sendProviderMessage(
+                requestData,
+                session: resolvedSession,
+                timeout: timeout
+            )
+            return try ProviderMessageCodec.decodeResponse(responseData, matching: request)
+        } catch {
+            Self.logProviderIPCFailure(
+                error,
+                operation: request.kind.rawValue,
+                sessionStatus: session?.status
+            )
+            throw error
+        }
+    }
+
+    private func waitForProviderReadiness(core: CoreIdentifier) async throws {
+        var completedAttempts = 0
+        var lastError: (any Error)?
+        while completedAttempts < ipcRecoveryPolicy.maximumReadinessAttempts {
+            completedAttempts += 1
+            do {
+                let response = try await sendProviderRequest(
+                    ProviderMessageRequest(kind: .status),
+                    core: core,
+                    timeout: Self.providerReadinessMessageTimeout
+                )
+                switch response.status {
+                case .running:
+                    return
+                case .preparing, .starting:
+                    lastError = VPNProviderControllerError.providerStartFailed(
+                        core,
+                        diagnosticCode: "provider.runtime_not_ready"
+                    )
+                case let status?:
+                    throw VPNProviderControllerError.providerStartFailed(
+                        core,
+                        diagnosticCode: "provider.runtime_\(status.rawValue)"
+                    )
+                case nil:
+                    throw VPNProviderControllerError.providerResponseMissing
+                }
+            } catch {
+                lastError = error
+                guard ipcRecoveryPolicy.shouldRetryReadiness(
+                    after: Self.ipcFailureKind(for: error),
+                    completedAttempts: completedAttempts
+                ) else {
+                    throw error
+                }
+            }
+
+            guard completedAttempts < ipcRecoveryPolicy.maximumReadinessAttempts else {
+                break
+            }
+            try await Task.sleep(for: Self.providerReadinessRetryDelay)
+        }
+        throw lastError ?? VPNProviderControllerError.providerStartFailed(
+            core,
+            diagnosticCode: "provider.runtime_not_ready"
+        )
+    }
+
+    private func recoverProviderIPC(core: CoreIdentifier) async throws {
+        activeManager = nil
+        try await Task.sleep(for: Self.providerReadinessRetryDelay)
+        try await waitForProviderReadiness(core: core)
+    }
+
+    private static func ipcFailureKind(for error: Error) -> ProviderIPCFailureKind {
+        switch error {
+        case VPNProviderControllerError.providerResponseTimedOut:
+            .responseTimedOut
+        case VPNProviderControllerError.providerResponseMissing:
+            .responseMissing
+        case VPNProviderControllerError.providerSessionUnavailable,
+             VPNProviderControllerError.providerConfigurationMissing:
+            .sessionUnavailable
+        case let ProviderMessageCodecError.providerRejected(code)
+            where code == "provider.rate_limited":
+            .rateLimited
+        default:
+            .other
+        }
+    }
+
+    private func waitForProviderMessageSlot() async throws {
+        let now = ContinuousClock.now
+        let scheduledAt = max(now, nextProviderMessageAt)
+        nextProviderMessageAt = scheduledAt + Self.providerMessageSpacing
+        let delay = now.duration(to: scheduledAt)
+        if delay > .zero {
+            try await Task.sleep(for: delay)
+        }
+    }
+
+    /// Uses the exact manager that completed the latest start whenever it is
+    /// still active. Reloaded preference objects can briefly point at the old
+    /// provider bridge while NetworkExtension tears one session down and binds
+    /// the next, which makes an otherwise healthy post-start probe lose IPC.
+    private func providerSession(for core: CoreIdentifier) async throws -> NETunnelProviderSession {
+        if let activeManager, activeManager.core == core,
+           Self.canSendProviderMessage(status: activeManager.manager.connection.status),
+           let session = activeManager.manager.connection as? NETunnelProviderSession {
+            return session
+        }
+
         let managers = try await NETunnelProviderManager.loadAllFromPreferences()
-        guard let manager = managers.first(where: {
+        let matchingManagers = managers.filter {
             ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier
                 == ProviderBundleIdentifier.value(for: core)
-        }), let session = manager.connection as? NETunnelProviderSession else {
+        }
+        guard !matchingManagers.isEmpty else {
             throw VPNProviderControllerError.providerConfigurationMissing(core)
         }
-        let requestData = try ProviderMessageCodec.encode(request)
-        let responseData = try await sendProviderMessage(requestData, session: session)
-        return try ProviderMessageCodec.decodeResponse(responseData, matching: request)
+
+        let manager = matchingManagers.first(where: {
+            Self.canSendProviderMessage(status: $0.connection.status)
+        }) ?? matchingManagers[0]
+        guard Self.canSendProviderMessage(status: manager.connection.status),
+              let session = manager.connection as? NETunnelProviderSession else {
+            throw VPNProviderControllerError.providerSessionUnavailable(
+                core,
+                status: manager.connection.status.rawValue
+            )
+        }
+        activeManager = (core, manager)
+        return session
+    }
+
+    private static func canSendProviderMessage(status: NEVPNStatus) -> Bool {
+        switch status {
+        case .connected, .reasserting:
+            true
+        default:
+            false
+        }
+    }
+
+    private static func logProviderIPCFailure(
+        _ error: Error,
+        operation: String,
+        sessionStatus: NEVPNStatus?
+    ) {
+        #if DEBUG
+        let systemError = error as NSError
+        // Do not print descriptions, userInfo, request bytes, node IDs, or
+        // endpoints. Error type/domain/code and NE status are sufficient to
+        // distinguish stale sessions, missing replies, codec errors, and timeouts.
+        print(
+            "Routeva provider IPC diagnostic: operation=\(operation) "
+                + "status=\(sessionStatus?.rawValue ?? -1) "
+                + "type=\(String(reflecting: type(of: error))) "
+                + "domain=\(systemError.domain) code=\(systemError.code)"
+        )
+        #endif
     }
 
     private static let providerMessageTimeout: Duration = .seconds(15)
+    private static let providerReadinessMessageTimeout: Duration = .seconds(2)
+    private static let providerReadinessRetryDelay: Duration = .milliseconds(300)
+    private static let providerMessageSpacing: Duration = .milliseconds(225)
 
     private func sendProviderMessage(
         _ requestData: Data,
-        session: NETunnelProviderSession
+        session: NETunnelProviderSession,
+        timeout: Duration
     ) async throws -> Data {
         try await withThrowingTaskGroup(of: Data.self) { group in
             group.addTask {
@@ -444,7 +652,7 @@ actor VPNProviderController {
                 }
             }
             group.addTask {
-                try await Task.sleep(for: Self.providerMessageTimeout)
+                try await Task.sleep(for: timeout)
                 throw VPNProviderControllerError.providerResponseTimedOut
             }
             do {
@@ -666,6 +874,33 @@ actor VPNProviderController {
         }
     }
 
+    private func waitForStableDisconnection(core: CoreIdentifier) async throws {
+        let deadline = ContinuousClock.now + Self.providerTeardownTimeout
+        var firstInactiveObservation: ContinuousClock.Instant?
+        while true {
+            try Task.checkCancellation()
+            let managers = try await loadManagersFromPreferences()
+            let status = managers[core]?.connection.status ?? .invalid
+            let now = ContinuousClock.now
+            switch status {
+            case .invalid, .disconnected:
+                if let firstInactiveObservation,
+                   now - firstInactiveObservation >= Self.providerTeardownQuietInterval {
+                    return
+                }
+                if firstInactiveObservation == nil {
+                    firstInactiveObservation = now
+                }
+            default:
+                firstInactiveObservation = nil
+            }
+            guard now < deadline else {
+                throw VPNProviderControllerError.switchTimedOut
+            }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+    }
+
     private func waitForStatus(
         _ manager: NETunnelProviderManager,
         desired: NEVPNStatus,
@@ -692,7 +927,6 @@ actor VPNProviderController {
                     // The provider writes this immediately before completing
                     // `startTunnel`. NEVPNConnection can still briefly expose
                     // a stale `.disconnected` value at that boundary.
-                    if diagnostic.confirmsRunning { return }
                     if diagnostic.stableErrorCode != nil {
                         throw providerStartFailure(
                             for: core,
@@ -715,6 +949,9 @@ actor VPNProviderController {
             try await Task.sleep(for: .milliseconds(100))
         }
     }
+
+    private static let providerTeardownQuietInterval: Duration = .milliseconds(300)
+    private static let providerTeardownTimeout: Duration = .seconds(3)
 
     private func freshStartupDiagnostic(
         for core: CoreIdentifier,

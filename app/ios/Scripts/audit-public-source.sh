@@ -49,8 +49,8 @@ if rg -n --hidden --pcre2 '(github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{2
   exit 1
 fi
 
-credential_matches="$(rg -n --hidden --pcre2 '(ss|vmess|vless|trojan|hysteria2|hy2)://[^[:space:]"<]+@|https://[^[:space:]"<]+(token|subscribe|subscription|api)[=/][^[:space:]"<]{8,}' "${active_paths[@]}" || true)"
-non_fixture_matches="$(print -r -- "$credential_matches" | rg -v '\.invalid([/:?#]|$)' || true)"
+credential_matches="$(rg -n --hidden --pcre2 '(ss|vmess|vless|trojan|hysteria2|hy2|anytls|socks|socks5|tuic|https?)://[^[:space:]"<]+@|https://[^[:space:]"<]+(token|subscribe|subscription|api)[=/][^[:space:]"<]{8,}' "${active_paths[@]}" || true)"
+non_fixture_matches="$(print -r -- "$credential_matches" | rg -v '\.invalid([/:?#]|$)|@(192\.0\.2|198\.51\.100|203\.0\.113)\.' || true)"
 if [[ -n "$non_fixture_matches" ]]; then
   print -u2 "Non-fixture credential-bearing URL found:"
   print -u2 -r -- "$non_fixture_matches"

@@ -7,7 +7,7 @@ if [[ $# -ne 1 || ! -e "$1" ]]; then
 fi
 
 SCAN_ROOT="$1"
-PATTERN='(ss|vmess|vless|trojan|hysteria2|hy2)://[^[:space:]"<]+@|https://[^[:space:]"<]+(token|subscribe|subscription|api)[=/][^[:space:]"<]{8,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY'
+PATTERN='(ss|vmess|vless|trojan|hysteria2|hy2|anytls|socks|socks5|tuic|https?)://[^[:space:]"<]+@|https://[^[:space:]"<]+(token|subscribe|subscription|api)[=/][^[:space:]"<]{8,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY'
 
 typeset -a flagged
 while IFS= read -r -d '' candidate; do

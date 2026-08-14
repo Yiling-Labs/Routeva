@@ -8,7 +8,7 @@ struct LocationView: View {
         RoutevaField {
             VStack(spacing: 0) {
                 RoutevaNavigationHeader(
-                    title: "Location",
+                    title: "Node list",
                     backSystemName: "chevron.left",
                     backLabel: "Back",
                     backAction: dismiss.callAsFunction

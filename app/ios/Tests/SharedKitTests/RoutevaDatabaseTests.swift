@@ -60,6 +60,20 @@ final class RoutevaDatabaseTests: XCTestCase {
         XCTAssertEqual(subscriptions.filter(\.isActive).map(\.displayName), ["Second"])
     }
 
+    func testSubscriptionCatalogSnapshotCountsAllNodesAndLoadsOnlyActiveNodes() async throws {
+        let first = makeCandidate(name: "First")
+        var second = makeCandidate(name: "Second")
+        second.nodes.append(makeNode(subscriptionID: second.subscription.id, sortIndex: 1))
+        try await database.replaceSubscriptionAtomically(first, makeActive: true)
+        try await database.replaceSubscriptionAtomically(second, makeActive: false)
+
+        let snapshot = try await database.subscriptionCatalogSnapshot()
+
+        XCTAssertEqual(snapshot.nodeCounts[first.subscription.id], 1)
+        XCTAssertEqual(snapshot.nodeCounts[second.subscription.id], 2)
+        XCTAssertEqual(snapshot.activeNodes.map(\.subscriptionID), [first.subscription.id])
+    }
+
     func testDeletingActiveSubscriptionCascadesNodesAndPromotesRemainingSubscription() async throws {
         let first = makeCandidate(name: "First")
         let second = makeCandidate(name: "Second")
@@ -213,11 +227,11 @@ final class RoutevaDatabaseTests: XCTestCase {
         )
     }
 
-    private func makeNode(subscriptionID: UUID) -> NodeRecord {
+    private func makeNode(subscriptionID: UUID, sortIndex: Int = 0) -> NodeRecord {
         NodeRecord(
             id: UUID(),
             subscriptionID: subscriptionID,
-            sortIndex: 0,
+            sortIndex: sortIndex,
             displayName: "TEST-01",
             countryCode: "ZZ",
             countryName: "Synthetic",

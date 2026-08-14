@@ -53,4 +53,44 @@ final class ProtocolSupportTests: XCTestCase {
         XCTAssertTrue(status.compatibleCores.isEmpty)
         XCTAssertEqual(status.reasonCode, "unsupported.core-capability")
     }
+
+    func testFirstBatchProtocolsUseExactTransportSecurityAndUDPConstraints() {
+        let classifier = ProtocolSupportClassifier()
+        XCTAssertEqual(
+            classifier.classify(
+                protocolKind: .anyTLS,
+                transport: .tcp,
+                security: .tls,
+                requiresUDP: true
+            ).level,
+            .experimental
+        )
+        XCTAssertEqual(
+            classifier.classify(
+                protocolKind: .http,
+                transport: .tcp,
+                security: .tls,
+                requiresUDP: true
+            ).level,
+            .unsupported
+        )
+        XCTAssertEqual(
+            classifier.classify(
+                protocolKind: .tuic,
+                transport: .tcp,
+                security: .tls,
+                requiresUDP: true
+            ).level,
+            .unsupported
+        )
+        XCTAssertEqual(
+            classifier.classify(
+                protocolKind: .socks5,
+                transport: .tcp,
+                security: .none,
+                requiresUDP: true
+            ).level,
+            .experimental
+        )
+    }
 }

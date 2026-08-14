@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import Security
 
 public enum NodeLatencyProbeResult: Equatable, Sendable {
     case measured(Int)
@@ -8,12 +9,13 @@ public enum NodeLatencyProbeResult: Equatable, Sendable {
     case pathUnavailable
 }
 
-/// 到节点入口的 TCP RTT。可选绑到指定物理网卡，避免经当前隧道绕路。
+/// 到节点入口的 TCP / QUIC 握手 RTT。可选绑到指定物理网卡，避免经当前隧道绕路。
 public enum NodeLatencyProbe {
     public static func measure(
         host: String,
         port: Int,
         timeout: TimeInterval,
+        transport: TransportKind = .tcp,
         requiredInterface: NWInterface? = nil
     ) async -> NodeLatencyProbeResult {
         guard (1...65_535).contains(port),
@@ -21,7 +23,7 @@ public enum NodeLatencyProbe {
             return .timeout
         }
         return await withCheckedContinuation { continuation in
-            let parameters = NWParameters.tcp
+            let parameters = parameters(for: transport)
             if let requiredInterface {
                 parameters.requiredInterface = requiredInterface
             }
@@ -60,6 +62,22 @@ public enum NodeLatencyProbe {
                 completion.finish(.timeout)
             }
         }
+    }
+
+    private static func parameters(for transport: TransportKind) -> NWParameters {
+        guard transport == .quic else { return .tcp }
+
+        // Native QUIC proxies (TUIC / Hysteria2) do not listen for TCP on
+        // their endpoint port. A TLS-authenticated URL test belongs to the
+        // sing-box core; this entry probe only times the QUIC handshake and
+        // therefore deliberately does not use its certificate result.
+        let options = NWProtocolQUIC.Options(alpn: ["h3"])
+        sec_protocol_options_set_verify_block(
+            options.securityProtocolOptions,
+            { _, _, complete in complete(true) },
+            DispatchQueue.global(qos: .utility)
+        )
+        return NWParameters(quic: options)
     }
 }
 

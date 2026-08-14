@@ -27,21 +27,14 @@ public actor ProviderConnectionCoordinator {
 
     private let selector: CoreSelector
     private let maximumAttempts: Int
-    private let failureWindow: TimeInterval
-    private let now: @Sendable () -> Date
-    private var attemptDates: [Date] = []
     public private(set) var state: TunnelLifecycleState = .idle
 
     public init(
         selector: CoreSelector = CoreSelector(),
-        maximumAttempts: Int = 3,
-        failureWindow: TimeInterval = 15 * 60,
-        now: @escaping @Sendable () -> Date = Date.init
+        maximumAttempts: Int = 3
     ) {
         self.selector = selector
         self.maximumAttempts = maximumAttempts
-        self.failureWindow = failureWindow
-        self.now = now
     }
 
     /// Aligns the in-process coordinator with NetworkExtension's system-owned
@@ -54,7 +47,6 @@ public actor ProviderConnectionCoordinator {
         case let .connecting(core):
             state = .starting(core)
         case let .connected(core, _), let .reasserting(core, _):
-            attemptDates.removeAll()
             state = .connected(core, sessionID: UUID())
         case let .disconnecting(core):
             state = .stopping(core)
@@ -76,8 +68,10 @@ public actor ProviderConnectionCoordinator {
         var attempted: [CoreIdentifier] = []
 
         while attempted.count < CoreIdentifier.allCases.count {
-            pruneAttemptBudget()
-            guard attemptDates.count < maximumAttempts else {
+            // Bound only the automatic fallback work owned by this explicit
+            // connection transaction. A previous user request, node, or mode
+            // must never lock a later request out before provider work begins.
+            guard attempted.count < maximumAttempts else {
                 await transition(.failed(code: "provider.failure_budget_exhausted"), observe: observe)
                 throw ProviderConnectionError.failureBudgetExhausted
             }
@@ -96,19 +90,12 @@ public actor ProviderConnectionCoordinator {
 
             let core = decision.selected
             attempted.append(core)
-            attemptDates.append(now())
             do {
                 await transition(.starting(core), observe: observe)
                 try await startProvider(core, manifest.manifestID)
                 await transition(.probing(core), observe: observe)
                 try await probe(core)
                 let sessionID = UUID()
-                // The budget limits repeated *failed* provider starts, not
-                // ordinary reconnects after a successful node or mode change.
-                // Keeping successful attempts here caused the next request to
-                // be rejected after three healthy reconnects within the
-                // window, before any provider work or diagnostic trace began.
-                attemptDates.removeAll()
                 await transition(.connected(core, sessionID: sessionID), observe: observe)
                 return ProviderConnectionResult(core: core, sessionID: sessionID, attemptedCores: attempted)
             } catch {
@@ -138,11 +125,6 @@ public actor ProviderConnectionCoordinator {
     private func transition(_ next: TunnelLifecycleState, observe: StateObserver) async {
         state = next
         await observe(next)
-    }
-
-    private func pruneAttemptBudget() {
-        let cutoff = now().addingTimeInterval(-failureWindow)
-        attemptDates.removeAll(where: { $0 < cutoff })
     }
 
     private func isFailure(_ value: TunnelLifecycleState) -> Bool {

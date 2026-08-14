@@ -122,6 +122,10 @@ public struct SubscriptionParser: Sendable {
             return try parseClashYAML(text, suggestedName: suggestedName)
         }
 
+        if text.hasPrefix("{") {
+            return try parseJSONSubscription(text, suggestedName: suggestedName)
+        }
+
         if text.contains("\n") && text.contains("://") {
             return try parseURIList(text, suggestedName: suggestedName)
         }
@@ -141,7 +145,84 @@ public struct SubscriptionParser: Sendable {
         return try parseURIList(decodedText, suggestedName: suggestedName)
     }
 
-    private let supportedSchemes = ["ss", "vmess", "vless", "trojan", "hysteria2", "hy2"]
+    private func parseJSONSubscription(
+        _ input: String,
+        suggestedName: String?
+    ) throws -> ParsedSubscription {
+        guard let data = input.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { throw SubscriptionParserError.invalidJSON }
+
+        guard object["servers"] != nil || object["version"] != nil else {
+            // Complete sing-box/Xray JSON configurations include wider DNS,
+            // routing, selector, and outbound-reference semantics. Do not
+            // silently flatten one into a partial subscription.
+            throw SubscriptionParserError.unsupportedFormat
+        }
+        return try parseSIP008(object, suggestedName: suggestedName)
+    }
+
+    private func parseSIP008(
+        _ object: [String: Any],
+        suggestedName: String?
+    ) throws -> ParsedSubscription {
+        guard integer(object["version"]) == 1,
+              let servers = object["servers"] as? [[String: Any]]
+        else { throw SubscriptionParserError.invalidJSON }
+
+        var nodes: [ParsedProxyNode] = []
+        var skipped = 0
+        for server in servers {
+            guard let host = string(server["server"]), !host.isEmpty,
+                  let port = integer(server["server_port"]), (1...65_535).contains(port),
+                  let method = string(server["method"]), !method.isEmpty,
+                  let password = string(server["password"]), !password.isEmpty
+            else {
+                skipped += 1
+                continue
+            }
+
+            var options: [String: String] = [:]
+            if let plugin = string(server["plugin"]), !plugin.isEmpty {
+                options["plugin"] = plugin
+            }
+            if let pluginOptions = string(server["plugin_opts"]), !pluginOptions.isEmpty {
+                options["plugin-opts"] = pluginOptions
+            }
+            let node = ParsedProxyNode(
+                displayName: displayName(
+                    string(server["remarks"]),
+                    fallbackIndex: nodes.count
+                ),
+                protocolKind: .shadowsocks,
+                transport: .tcp,
+                security: .none,
+                requiresUDP: true,
+                endpointHost: host,
+                endpointPort: port,
+                credential: ProxyCredentialEnvelope(
+                    authentication: ["method": method, "password": password],
+                    options: options
+                )
+            )
+            if isProviderMetadataNode(displayName: node.displayName, host: node.endpointHost) {
+                skipped += 1
+                continue
+            }
+            nodes.append(node)
+        }
+        guard !nodes.isEmpty else { throw SubscriptionParserError.noSupportedNodes }
+        return ParsedSubscription(
+            suggestedName: normalizedSubscriptionName(suggestedName),
+            nodes: nodes,
+            skippedNodeCount: skipped
+        )
+    }
+
+    private let supportedSchemes = [
+        "ss", "vmess", "vless", "trojan", "hysteria2", "hy2",
+        "anytls", "socks", "socks5", "http", "https", "tuic",
+    ]
 
     private func parseURIList(_ input: String, suggestedName: String?) throws -> ParsedSubscription {
         let lines = input
@@ -189,8 +270,112 @@ public struct SubscriptionParser: Sendable {
         case "vless": return try parseStandardURL(input, protocolKind: .vless, fallbackIndex: fallbackIndex)
         case "trojan": return try parseStandardURL(input, protocolKind: .trojan, fallbackIndex: fallbackIndex)
         case "hysteria2", "hy2": return try parseStandardURL(input, protocolKind: .hysteria2, fallbackIndex: fallbackIndex)
+        case "anytls": return try parseAnyTLS(input, fallbackIndex: fallbackIndex)
+        case "socks", "socks5": return try parseSOCKS(input, fallbackIndex: fallbackIndex)
+        case "http", "https": return try parseHTTPProxy(input, fallbackIndex: fallbackIndex)
+        case "tuic": return try parseTUIC(input, fallbackIndex: fallbackIndex)
         default: throw SubscriptionParserError.unsupportedFormat
         }
+    }
+
+    private func proxyURLComponents(
+        _ input: String,
+        defaultPort: Int? = nil
+    ) throws -> (components: URLComponents, host: String, port: Int) {
+        guard let components = URLComponents(string: input),
+              let host = components.host,
+              !host.isEmpty,
+              let port = components.port ?? defaultPort,
+              (1...65_535).contains(port)
+        else { throw SubscriptionParserError.malformedURI }
+        return (components, host, port)
+    }
+
+    private func parseAnyTLS(_ input: String, fallbackIndex: Int) throws -> ParsedProxyNode {
+        let (components, host, port) = try proxyURLComponents(input)
+        guard let password = components.user ?? components.password, !password.isEmpty else {
+            throw SubscriptionParserError.missingRequiredField
+        }
+        let options = queryDictionary(components.queryItems ?? [])
+        return ParsedProxyNode(
+            displayName: displayName(components.fragment, fallbackIndex: fallbackIndex),
+            protocolKind: .anyTLS,
+            transport: .tcp,
+            security: .tls,
+            requiresUDP: boolean(options["udp"]) ?? true,
+            endpointHost: host,
+            endpointPort: port,
+            credential: ProxyCredentialEnvelope(
+                authentication: ["password": password],
+                options: options
+            )
+        )
+    }
+
+    private func parseSOCKS(_ input: String, fallbackIndex: Int) throws -> ParsedProxyNode {
+        let (components, host, port) = try proxyURLComponents(input)
+        let options = queryDictionary(components.queryItems ?? [])
+        var authentication: [String: String] = [:]
+        if let username = components.user, !username.isEmpty { authentication["username"] = username }
+        if let password = components.password, !password.isEmpty { authentication["password"] = password }
+        return ParsedProxyNode(
+            displayName: displayName(components.fragment, fallbackIndex: fallbackIndex),
+            protocolKind: .socks5,
+            transport: .tcp,
+            security: .none,
+            requiresUDP: boolean(options["udp"]) ?? true,
+            endpointHost: host,
+            endpointPort: port,
+            credential: ProxyCredentialEnvelope(authentication: authentication, options: options)
+        )
+    }
+
+    private func parseHTTPProxy(_ input: String, fallbackIndex: Int) throws -> ParsedProxyNode {
+        guard let scheme = URLComponents(string: input)?.scheme?.lowercased() else {
+            throw SubscriptionParserError.malformedURI
+        }
+        let (components, host, port) = try proxyURLComponents(
+            input,
+            defaultPort: scheme == "https" ? 443 : 80
+        )
+        var authentication: [String: String] = [:]
+        if let username = components.user, !username.isEmpty { authentication["username"] = username }
+        if let password = components.password, !password.isEmpty { authentication["password"] = password }
+        return ParsedProxyNode(
+            displayName: displayName(components.fragment, fallbackIndex: fallbackIndex),
+            protocolKind: .http,
+            transport: .tcp,
+            security: scheme == "https" ? .tls : .none,
+            requiresUDP: false,
+            endpointHost: host,
+            endpointPort: port,
+            credential: ProxyCredentialEnvelope(
+                authentication: authentication,
+                options: queryDictionary(components.queryItems ?? [])
+            )
+        )
+    }
+
+    private func parseTUIC(_ input: String, fallbackIndex: Int) throws -> ParsedProxyNode {
+        let (components, host, port) = try proxyURLComponents(input)
+        guard let uuid = components.user, !uuid.isEmpty else {
+            throw SubscriptionParserError.missingRequiredField
+        }
+        var authentication = ["uuid": uuid]
+        if let password = components.password, !password.isEmpty { authentication["password"] = password }
+        return ParsedProxyNode(
+            displayName: displayName(components.fragment, fallbackIndex: fallbackIndex),
+            protocolKind: .tuic,
+            transport: .quic,
+            security: .tls,
+            requiresUDP: true,
+            endpointHost: host,
+            endpointPort: port,
+            credential: ProxyCredentialEnvelope(
+                authentication: authentication,
+                options: queryDictionary(components.queryItems ?? [])
+            )
+        )
     }
 
     private func parseStandardURL(
@@ -340,29 +525,41 @@ public struct SubscriptionParser: Sendable {
                 authentication["password"] = mapping["password"]
             case .vmess, .vless:
                 authentication["uuid"] = mapping["uuid"]
-            case .trojan, .hysteria2:
+            case .trojan, .hysteria2, .anyTLS:
                 authentication["password"] = mapping["password"]
+            case .socks5, .http:
+                if let username = mapping["username"], !username.isEmpty { authentication["username"] = username }
+                if let password = mapping["password"], !password.isEmpty { authentication["password"] = password }
+            case .tuic:
+                authentication["uuid"] = mapping["uuid"]
+                if let password = mapping["password"], !password.isEmpty { authentication["password"] = password }
             }
-            guard authentication.values.allSatisfy({ !$0.isEmpty }),
-                  (protocolKind != .shadowsocks || authentication.count == 2),
-                  (protocolKind == .shadowsocks || authentication.count == 1)
-            else { throw SubscriptionParserError.missingRequiredField }
+            guard validAuthentication(authentication, for: protocolKind) else {
+                throw SubscriptionParserError.missingRequiredField
+            }
 
             var options = mapping
-            for key in ["name", "type", "server", "port", "cipher", "password", "uuid"] {
+            for key in ["name", "type", "server", "port", "cipher", "username", "password", "uuid"] {
                 options.removeValue(forKey: key)
             }
             let security: SecurityKind = {
                 if mapping.keys.contains(where: { $0.hasPrefix("reality-opts") }) { return .reality }
-                if boolean(mapping["tls"]) == true || protocolKind == .hysteria2 { return .tls }
+                if type == "https"
+                    || boolean(mapping["tls"]) == true
+                    || [ProxyProtocol.hysteria2, .anyTLS, .tuic].contains(protocolKind)
+                { return .tls }
                 return .none
             }()
             let node = ParsedProxyNode(
                 displayName: displayName(mapping["name"], fallbackIndex: nodes.count),
                 protocolKind: protocolKind,
-                transport: protocolKind == .hysteria2 ? .quic : transportKind(mapping["network"]),
+                transport: [.hysteria2, .tuic].contains(protocolKind)
+                    ? .quic : transportKind(mapping["network"]),
                 security: security,
-                requiresUDP: boolean(mapping["udp"]) ?? true,
+                requiresUDP: protocolKind == .http
+                    ? false
+                    : ([.hysteria2, .tuic].contains(protocolKind)
+                        ? true : (boolean(mapping["udp"]) ?? true)),
                 endpointHost: host,
                 endpointPort: port,
                 credential: ProxyCredentialEnvelope(authentication: authentication, options: options)
@@ -407,13 +604,18 @@ public struct SubscriptionParser: Sendable {
                 authentication["password"] = mapping["password"]
             case .vmess, .vless:
                 authentication["uuid"] = mapping["username"] ?? mapping["uuid"]
-            case .trojan, .hysteria2:
+            case .trojan, .hysteria2, .anyTLS:
                 authentication["password"] = mapping["password"]
+            case .socks5, .http:
+                if let username = mapping["username"], !username.isEmpty { authentication["username"] = username }
+                if let password = mapping["password"], !password.isEmpty { authentication["password"] = password }
+            case .tuic:
+                authentication["uuid"] = mapping["uuid"] ?? mapping["username"]
+                if let password = mapping["password"], !password.isEmpty { authentication["password"] = password }
             }
-            guard authentication.values.allSatisfy({ !$0.isEmpty }),
-                  (protocolKind != .shadowsocks || authentication.count == 2),
-                  (protocolKind == .shadowsocks || authentication.count == 1)
-            else { throw SubscriptionParserError.missingRequiredField }
+            guard validAuthentication(authentication, for: protocolKind) else {
+                throw SubscriptionParserError.missingRequiredField
+            }
 
             var options = mapping
             for key in ["name", "type", "server", "port", "encrypt-method", "cipher", "password", "username", "uuid"] {
@@ -424,12 +626,14 @@ public struct SubscriptionParser: Sendable {
                 options["host"] = host
             }
 
-            let transport: TransportKind = protocolKind == .hysteria2
+            let transport: TransportKind = [.hysteria2, .tuic].contains(protocolKind)
                 ? .quic
                 : (boolean(mapping["ws"]) == true ? .webSocket : transportKind(mapping["network"]))
             let security: SecurityKind = {
                 if mapping["security"]?.lowercased() == "reality" { return .reality }
-                if protocolKind == .trojan || protocolKind == .hysteria2 || boolean(mapping["tls"]) == true {
+                if type == "https"
+                    || [.trojan, .hysteria2, .anyTLS, .tuic].contains(protocolKind)
+                    || boolean(mapping["tls"]) == true {
                     return .tls
                 }
                 return .none
@@ -439,7 +643,10 @@ public struct SubscriptionParser: Sendable {
                 protocolKind: protocolKind,
                 transport: transport,
                 security: security,
-                requiresUDP: boolean(mapping["udp-relay"]) ?? (protocolKind != .shadowsocks),
+                requiresUDP: protocolKind == .http
+                    ? false
+                    : ([.hysteria2, .tuic].contains(protocolKind)
+                        ? true : (boolean(mapping["udp-relay"]) ?? (protocolKind != .shadowsocks))),
                 endpointHost: host,
                 endpointPort: port,
                 credential: ProxyCredentialEnvelope(authentication: authentication, options: options)
@@ -529,7 +736,28 @@ public struct SubscriptionParser: Sendable {
         case "vless": .vless
         case "trojan": .trojan
         case "hysteria2", "hy2": .hysteria2
+        case "anytls": .anyTLS
+        case "socks", "socks5": .socks5
+        case "http", "https": .http
+        case "tuic": .tuic
         default: nil
+        }
+    }
+
+    private func validAuthentication(
+        _ authentication: [String: String],
+        for protocolKind: ProxyProtocol
+    ) -> Bool {
+        guard authentication.values.allSatisfy({ !$0.isEmpty }) else { return false }
+        switch protocolKind {
+        case .shadowsocks:
+            return authentication["method"] != nil && authentication["password"] != nil
+        case .vmess, .vless, .tuic:
+            return authentication["uuid"] != nil
+        case .trojan, .hysteria2, .anyTLS:
+            return authentication["password"] != nil
+        case .socks5, .http:
+            return true
         }
     }
 

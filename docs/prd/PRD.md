@@ -106,7 +106,7 @@
 | 格式 | Clash/Mihomo YAML；V2Ray Base64 订阅；URI：ss / vmess / vless / trojan / hysteria2 |
 | 协议 | VLESS(+Reality)、VMess、Trojan、Shadowsocks、Hysteria2 |
 
-**实验/补充（不进主卖点）：** sing-box JSON（若顺带）、TUIC、WireGuard、HTTP/SOCKS5。  
+**实验/补充（不进主卖点）：** 已接入 AnyTLS、TUIC、HTTP/HTTPS Proxy、SOCKS5；sing-box JSON（若顺带）、WireGuard 待后续接入。
 **首发不做：** 完整 QX/Surge/Stash 高级语法；远程脚本；暂缓协议列表。
 
 ### 4.3 连接与 Node Selection

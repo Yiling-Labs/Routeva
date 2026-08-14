@@ -98,6 +98,10 @@ public enum ProxyProtocol: String, Codable, CaseIterable, Sendable {
     case vless
     case trojan
     case hysteria2
+    case anyTLS = "anytls"
+    case socks5
+    case http
+    case tuic
 }
 
 public enum TransportKind: String, Codable, CaseIterable, Sendable {
@@ -149,10 +153,24 @@ public struct CoreCapabilities: Equatable, Sendable {
         security: SecurityKind,
         requiresUDP: Bool
     ) -> Bool {
-        protocols.contains(protocolKind)
+        guard protocols.contains(protocolKind)
             && transports.contains(transport)
             && self.security.contains(security)
             && (!requiresUDP || supportsUDP)
+        else { return false }
+
+        switch protocolKind {
+        case .anyTLS:
+            return transport == .tcp && security == .tls
+        case .socks5:
+            return transport == .tcp && security == .none
+        case .http:
+            return transport == .tcp && security != .reality && !requiresUDP
+        case .tuic, .hysteria2:
+            return transport == .quic && security == .tls && requiresUDP
+        case .shadowsocks, .vmess, .vless, .trojan:
+            return true
+        }
     }
 }
 
@@ -161,7 +179,10 @@ public extension CoreIdentifier {
         switch self {
         case .singBox:
             CoreCapabilities(
-                protocols: [.shadowsocks, .vmess, .vless, .trojan, .hysteria2],
+                protocols: [
+                    .shadowsocks, .vmess, .vless, .trojan, .hysteria2,
+                    .anyTLS, .socks5, .http, .tuic,
+                ],
                 transports: [.tcp, .http, .webSocket, .grpc, .httpUpgrade, .quic],
                 security: [.none, .tls, .reality],
                 supportsUDP: true

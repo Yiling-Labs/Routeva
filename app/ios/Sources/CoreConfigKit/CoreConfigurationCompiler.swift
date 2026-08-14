@@ -235,13 +235,18 @@ public struct CoreConfigurationCompiler: Sendable {
         manifest: RuntimeManifest,
         object: [String: Any]
     ) throws -> CompiledCoreConfiguration {
+        let json = try encodedJSONObject(object)
+        return CompiledCoreConfiguration(manifest: manifest, json: json)
+    }
+
+    private func encodedJSONObject(_ object: [String: Any]) throws -> String {
         guard JSONSerialization.isValidJSONObject(object),
               let json = String(
                 data: try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]),
                 encoding: .utf8
               )
         else { throw CoreConfigurationError.invalidJSON }
-        return CompiledCoreConfiguration(manifest: manifest, json: json)
+        return json
     }
 
     private func singBoxConfiguration(
@@ -1062,6 +1067,41 @@ public struct CoreConfigurationCompiler: Sendable {
         case .hysteria2:
             outbound["password"] = try required(authentication["password"])
             try applySingBoxHysteria2Options(options: options, outbound: &outbound)
+        case .anyTLS:
+            guard node.security == .tls else {
+                throw CoreConfigurationError.unsupportedProxyOption("anytls.tls_required")
+            }
+            outbound["password"] = try required(authentication["password"])
+            applySingBoxAnyTLSOptions(options: options, outbound: &outbound)
+        case .socks5:
+            outbound["version"] = firstNonEmpty(options, keys: ["version"]) ?? "5"
+            if let username = nonEmpty(authentication["username"]) { outbound["username"] = username }
+            if let password = nonEmpty(authentication["password"]) { outbound["password"] = password }
+            applySingBoxNetworkOptions(node: node, options: options, outbound: &outbound)
+            if firstBoolean(options, keys: ["udp-over-tcp", "udp_over_tcp", "uot"]) == true {
+                outbound["udp_over_tcp"] = true
+            }
+        case .http:
+            guard !node.requiresUDP else {
+                throw CoreConfigurationError.unsupportedProxyOption("http.udp")
+            }
+            if let username = nonEmpty(authentication["username"]) { outbound["username"] = username }
+            if let password = nonEmpty(authentication["password"]) { outbound["password"] = password }
+            if let path = firstNonEmpty(options, keys: ["path"]) { outbound["path"] = path }
+            let headers = options.reduce(into: [String: String]()) { result, pair in
+                let prefixes = ["headers.", "http-opts.headers."]
+                guard let prefix = prefixes.first(where: { pair.key.hasPrefix($0) }) else { return }
+                let key = String(pair.key.dropFirst(prefix.count))
+                if !key.isEmpty, !pair.value.isEmpty { result[key] = pair.value }
+            }
+            if !headers.isEmpty { outbound["headers"] = headers }
+        case .tuic:
+            guard node.security == .tls, node.transport == .quic else {
+                throw CoreConfigurationError.unsupportedProxyOption("tuic.tls_quic_required")
+            }
+            outbound["uuid"] = try required(authentication["uuid"])
+            if let password = nonEmpty(authentication["password"]) { outbound["password"] = password }
+            try applySingBoxTUICOptions(node: node, options: options, outbound: &outbound)
         }
 
         if let tls = try singBoxTLS(node: node, options: options) {
@@ -1178,6 +1218,79 @@ public struct CoreConfigurationCompiler: Sendable {
         outbound["obfs"] = ["type": type, "password": obfsPassword]
     }
 
+    private func applySingBoxAnyTLSOptions(
+        options: [String: String],
+        outbound: inout [String: Any]
+    ) {
+        for (target, keys) in [
+            ("idle_session_check_interval", ["idle-session-check-interval", "idle_session_check_interval"]),
+            ("idle_session_timeout", ["idle-session-timeout", "idle_session_timeout"]),
+        ] {
+            if let value = firstNonEmpty(options, keys: keys) {
+                outbound[target] = value.allSatisfy(\.isNumber) ? "\(value)s" : value
+            }
+        }
+        if let value = firstInteger(options, keys: ["min-idle-session", "min_idle_session"]), value >= 0 {
+            outbound["min_idle_session"] = value
+        }
+    }
+
+    private func applySingBoxNetworkOptions(
+        node: NodeRecord,
+        options: [String: String],
+        outbound: inout [String: Any]
+    ) {
+        if let network = firstNonEmpty(options, keys: ["network"])?.lowercased(),
+           ["tcp", "udp"].contains(network) {
+            outbound["network"] = network
+        } else if !node.requiresUDP {
+            outbound["network"] = "tcp"
+        }
+    }
+
+    private func applySingBoxTUICOptions(
+        node: NodeRecord,
+        options: [String: String],
+        outbound: inout [String: Any]
+    ) throws {
+        if let congestion = firstNonEmpty(
+            options,
+            keys: ["congestion-controller", "congestion_control", "congestion-control"]
+        )?.lowercased() {
+            guard ["cubic", "new_reno", "bbr"].contains(congestion) else {
+                throw CoreConfigurationError.unsupportedProxyOption("tuic.congestion_control")
+            }
+            outbound["congestion_control"] = congestion
+        }
+        if let relayMode = firstNonEmpty(
+            options,
+            keys: ["udp-relay-mode", "udp_relay_mode"]
+        )?.lowercased() {
+            guard ["native", "quic"].contains(relayMode) else {
+                throw CoreConfigurationError.unsupportedProxyOption("tuic.udp_relay_mode")
+            }
+            outbound["udp_relay_mode"] = relayMode
+        }
+        let udpOverStream = firstBoolean(
+            options,
+            keys: ["udp-over-stream", "udp_over_stream"]
+        )
+        if udpOverStream == true, outbound["udp_relay_mode"] != nil {
+            throw CoreConfigurationError.unsupportedProxyOption("tuic.udp_mode_conflict")
+        }
+        if let udpOverStream { outbound["udp_over_stream"] = udpOverStream }
+        if let zeroRTT = firstBoolean(
+            options,
+            keys: ["zero-rtt-handshake", "zero_rtt_handshake", "reduce-rtt"]
+        ) {
+            outbound["zero_rtt_handshake"] = zeroRTT
+        }
+        if let heartbeat = firstNonEmpty(options, keys: ["heartbeat"]) {
+            outbound["heartbeat"] = heartbeat.allSatisfy(\.isNumber) ? "\(heartbeat)s" : heartbeat
+        }
+        applySingBoxNetworkOptions(node: node, options: options, outbound: &outbound)
+    }
+
     private func parsePluginArguments(_ rawValues: [String]) -> [String: String] {
         var result: [String: String] = [:]
         for rawValue in rawValues {
@@ -1213,6 +1326,10 @@ public struct CoreConfigurationCompiler: Sendable {
         case .vless: "vless"
         case .trojan: "trojan"
         case .hysteria2: "hysteria2"
+        case .anyTLS: "anytls"
+        case .socks5: "socks"
+        case .http: "http"
+        case .tuic: "tuic"
         }
     }
 
@@ -1387,8 +1504,9 @@ public struct CoreConfigurationCompiler: Sendable {
             return nil
         case .quic:
             // Hysteria2 uses QUIC as its protocol transport and therefore has
-            // no nested V2Ray transport. VMess/VLESS `type=quic` does.
-            return node.protocolKind == .hysteria2 ? nil : ["type": "quic"]
+            // no nested V2Ray transport. TUIC is also QUIC-native;
+            // VMess/VLESS `type=quic` is a nested transport.
+            return [.hysteria2, .tuic].contains(node.protocolKind) ? nil : ["type": "quic"]
         case .http:
             var value: [String: Any] = [
                 "type": "http",

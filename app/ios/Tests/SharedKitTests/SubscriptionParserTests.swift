@@ -44,6 +44,88 @@ final class SubscriptionParserTests: XCTestCase {
         XCTAssertEqual(parsed.nodes[1].security, .tls)
     }
 
+    func testParsesSIP008JSONAndSkipsMalformedServers() throws {
+        let payload: [String: Any] = [
+            "version": 1,
+            "servers": [
+                [
+                    "id": "11111111-2222-3333-4444-555555555555",
+                    "remarks": "SIP008-SS",
+                    "server": "ss.example.invalid",
+                    "server_port": 8_388,
+                    "method": "chacha20-ietf-poly1305",
+                    "password": "synthetic-password",
+                    "plugin": "obfs-local",
+                    "plugin_opts": "obfs=tls;obfs-host=https://edge.example.invalid",
+                ],
+                [
+                    "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                    "remarks": "BROKEN",
+                    "server": "broken.example.invalid",
+                ],
+            ],
+        ]
+        let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+
+        let parsed = try parser.parse(data, suggestedName: "SIP008 Provider")
+
+        XCTAssertEqual(parsed.suggestedName, "SIP008 Provider")
+        XCTAssertEqual(parsed.nodes.count, 1)
+        XCTAssertEqual(parsed.skippedNodeCount, 1)
+        XCTAssertEqual(parsed.nodes[0].protocolKind, .shadowsocks)
+        XCTAssertEqual(parsed.nodes[0].endpointHost, "ss.example.invalid")
+        XCTAssertEqual(parsed.nodes[0].credential.authentication["method"], "chacha20-ietf-poly1305")
+        XCTAssertEqual(parsed.nodes[0].credential.options["plugin"], "obfs-local")
+        XCTAssertEqual(
+            parsed.nodes[0].credential.options["plugin-opts"],
+            "obfs=tls;obfs-host=https://edge.example.invalid"
+        )
+    }
+
+    func testParsesFirstBatchProxyURIs() throws {
+        let payload = [
+            "anytls://synthetic-anytls@anytls.example.invalid:443?min-idle-session=2#ANYTLS",
+            "socks5://synthetic-user:synthetic-pass@socks.example.invalid:1080?udp=false#SOCKS",
+            "http://http-user:http-pass@http.example.invalid:8080#HTTP",
+            "https://https-user:https-pass@https.example.invalid:8443?sni=edge.example.invalid#HTTPS",
+            "tuic://11111111-2222-3333-4444-555555555555:tuic-pass@tuic.example.invalid:443?congestion-controller=bbr#TUIC",
+        ].joined(separator: "\n")
+
+        let parsed = try parser.parse(payload)
+
+        XCTAssertEqual(parsed.nodes.map(\.protocolKind), [.anyTLS, .socks5, .http, .http, .tuic])
+        XCTAssertEqual(parsed.nodes.map(\.security), [.tls, .none, .none, .tls, .tls])
+        XCTAssertEqual(parsed.nodes.map(\.requiresUDP), [true, false, false, false, true])
+        XCTAssertEqual(parsed.nodes[0].credential.authentication["password"], "synthetic-anytls")
+        XCTAssertEqual(parsed.nodes[1].credential.authentication["username"], "synthetic-user")
+        XCTAssertEqual(parsed.nodes[2].endpointPort, 8_080)
+        XCTAssertEqual(parsed.nodes[3].credential.options["sni"], "edge.example.invalid")
+        XCTAssertEqual(
+            parsed.nodes[4].credential.authentication["uuid"],
+            "11111111-2222-3333-4444-555555555555"
+        )
+    }
+
+    func testParsesFirstBatchClashMappings() throws {
+        let parsed = try parser.parse(
+            """
+            proxies:
+              - { name: ANYTLS, type: anytls, server: anytls.example.invalid, port: 443, password: anytls-pass, sni: edge.example.invalid, idle-session-timeout: 45s }
+              - { name: SOCKS, type: socks5, server: socks.example.invalid, port: 1080, username: socks-user, password: socks-pass, udp: false }
+              - { name: HTTPS, type: http, server: http.example.invalid, port: 8443, username: http-user, password: http-pass, tls: true, sni: edge.example.invalid }
+              - { name: TUIC, type: tuic, server: tuic.example.invalid, port: 443, uuid: 11111111-2222-3333-4444-555555555555, password: tuic-pass, congestion-controller: bbr, udp-relay-mode: native }
+            """
+        )
+
+        XCTAssertEqual(parsed.nodes.map(\.protocolKind), [.anyTLS, .socks5, .http, .tuic])
+        XCTAssertEqual(parsed.nodes.map(\.transport), [.tcp, .tcp, .tcp, .quic])
+        XCTAssertEqual(parsed.nodes.map(\.security), [.tls, .none, .tls, .tls])
+        XCTAssertEqual(parsed.nodes[0].credential.options["idle-session-timeout"], "45s")
+        XCTAssertEqual(parsed.nodes[1].requiresUDP, false)
+        XCTAssertEqual(parsed.nodes[2].credential.authentication["username"], "http-user")
+        XCTAssertEqual(parsed.nodes[3].credential.options["udp-relay-mode"], "native")
+    }
+
     func testSkipsProviderTrafficAndExpiryBannerNodes() throws {
         func vmessURI(ps: String, add: String) throws -> String {
             let object: [String: Any] = [
@@ -628,10 +710,140 @@ final class SubscriptionPayloadLoaderClipboardTests: XCTestCase {
         )
     }
 
+    func testTreatsExplicitHTTPProxyURIAsClipboardPayload() async throws {
+        let uri = "https://proxy-user:proxy-pass@proxy.example.invalid:8443#HTTPS-PROXY"
+        let resolved = try await SubscriptionPayloadLoader().resolveClipboardText(uri)
+
+        XCTAssertEqual(String(data: resolved.data, encoding: .utf8), uri)
+        XCTAssertEqual(resolved.source, .clipboard)
+    }
+
+    func testFetchesHTTPSSubscriptionWithExplicitPortPathAndTokenQuery() async throws {
+        let url = try XCTUnwrap(
+            URL(string: "https://provider.example.invalid:4900/api/v1/client/subscribe?token=synthetic")
+        )
+        let payload = Data("dHVpYzovL3N5bnRoZXRpYw==".utf8)
+        let stub = SubscriptionRequestStub(replies: [
+            .init(data: payload, statusCode: 200, headers: [:]),
+        ])
+        let loader = SubscriptionPayloadLoader { request in
+            try await stub.response(for: request)
+        }
+
+        let resolved = try await loader.resolveClipboardText(url.absoluteString)
+
+        XCTAssertEqual(resolved.data, payload)
+        XCTAssertEqual(resolved.source, .remoteURL(url))
+        let requestCount = await stub.requestCount
+        XCTAssertEqual(requestCount, 1)
+    }
+
+    func testKeepsAuthorityOnlyHTTPURLAsExplicitProxy() async throws {
+        let uri = "http://proxy.example.invalid:8080"
+
+        let resolved = try await SubscriptionPayloadLoader().resolveClipboardText(uri)
+
+        XCTAssertEqual(String(data: resolved.data, encoding: .utf8), uri)
+        XCTAssertEqual(resolved.source, .clipboard)
+    }
+
     func testDoesNotTreatECHQueryDNSAsSubscriptionURL() {
         let uri = "vless://11111111-2222-3333-4444-555555555555@node.example.invalid:443"
             + "?security=tls&ech=cloudflare-ech.com+https://dns.alidns.com/dns-query#DE"
         XCTAssertNil(SubscriptionPayloadLoader.remoteHTTPSURL(fromClipboard: uri))
+    }
+
+    func testRetriesSuccessfulEmptySubscriptionWithBrandedClashCompatibilityUserAgent() async throws {
+        let url = try XCTUnwrap(URL(string: "https://provider.example.invalid/subscription"))
+        let stub = SubscriptionRequestStub(replies: [
+            .init(data: Data(), statusCode: 200, headers: [:]),
+            .init(
+                data: Data("proxies:\n  - { name: TEST, type: tuic }".utf8),
+                statusCode: 200,
+                headers: ["subscription-userinfo": "upload=1; download=2; total=10"]
+            ),
+        ])
+        let loader = SubscriptionPayloadLoader { request in
+            try await stub.response(for: request)
+        }
+
+        let resolved = try await loader.remotePayload(from: url)
+        let userAgents = await stub.userAgents
+
+        XCTAssertEqual(userAgents.count, 2)
+        XCTAssertTrue(userAgents[0].hasPrefix("Routeva/"))
+        XCTAssertEqual(userAgents[1], "\(userAgents[0]) clash.meta")
+        XCTAssertEqual(String(data: resolved.data, encoding: .utf8), "proxies:\n  - { name: TEST, type: tuic }")
+        XCTAssertEqual(resolved.usage?.usedBytes, 3)
+    }
+
+    func testDoesNotRetryNonEmptySubscriptionResponse() async throws {
+        let url = try XCTUnwrap(URL(string: "https://provider.example.invalid/subscription"))
+        let payload = Data("tuic://synthetic@node.example.invalid:443".utf8)
+        let stub = SubscriptionRequestStub(replies: [
+            .init(data: payload, statusCode: 200, headers: [:]),
+        ])
+        let loader = SubscriptionPayloadLoader { request in
+            try await stub.response(for: request)
+        }
+
+        let resolved = try await loader.remotePayload(from: url)
+        let requestCount = await stub.userAgents.count
+
+        XCTAssertEqual(resolved.data, payload)
+        XCTAssertEqual(requestCount, 1)
+    }
+
+    func testStopsAfterOneCompatibilityRetryWhenBothResponsesAreEmpty() async throws {
+        let url = try XCTUnwrap(URL(string: "https://provider.example.invalid/subscription"))
+        let stub = SubscriptionRequestStub(replies: [
+            .init(data: Data(), statusCode: 200, headers: [:]),
+            .init(data: Data(), statusCode: 200, headers: [:]),
+        ])
+        let loader = SubscriptionPayloadLoader { request in
+            try await stub.response(for: request)
+        }
+
+        do {
+            _ = try await loader.remotePayload(from: url)
+            XCTFail("Expected an empty compatibility response to fail")
+        } catch {
+            XCTAssertEqual(error as? SubscriptionPayloadLoaderError, .invalidResponse)
+        }
+        let requestCount = await stub.requestCount
+        XCTAssertEqual(requestCount, 2)
+    }
+}
+
+private actor SubscriptionRequestStub {
+    struct Reply: Sendable {
+        let data: Data
+        let statusCode: Int
+        let headers: [String: String]
+    }
+
+    private var replies: [Reply]
+    private(set) var userAgents: [String] = []
+
+    var requestCount: Int { userAgents.count }
+
+    init(replies: [Reply]) {
+        self.replies = replies
+    }
+
+    func response(for request: URLRequest) throws -> (Data, URLResponse) {
+        userAgents.append(request.value(forHTTPHeaderField: "User-Agent") ?? "")
+        guard !replies.isEmpty, let url = request.url else {
+            throw SubscriptionPayloadLoaderError.invalidResponse
+        }
+        let reply = replies.removeFirst()
+        let response = try XCTUnwrap(HTTPURLResponse(
+            url: url,
+            statusCode: reply.statusCode,
+            httpVersion: "HTTP/1.1",
+            headerFields: reply.headers
+        ))
+        return (reply.data, response)
     }
 }
 

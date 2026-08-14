@@ -73,7 +73,7 @@ final class RoutevaAppModel: ObservableObject {
     private static let autoUpdateKey = "routeva.subscription.auto-update.enabled"
     private static let latencyRoundCompletedAtKey = "routeva.latency.round-completed-at"
     private static let latencySamplesKey = "routeva.latency.samples"
-    /// Weak cache TTL for silent full-table latency (implementation constant S).
+    /// Weak cache TTL for silent full-table endpoint latency.
     private static let latencyCacheTTL: TimeInterval = 6 * 60 * 60
     private static let orphanedProviderConnectingTimeout: Duration = .seconds(20)
     /// 整轮 Connecting 的上限：含预检、startTunnel、probe。超时回 Idle + toast。
@@ -1540,7 +1540,7 @@ final class RoutevaAppModel: ObservableObject {
         }
     }
 
-    /// Schedule a silent full-table TCP latency round when idle and cache is cold.
+    /// Schedule a silent full-table endpoint-handshake round when idle and cache is cold.
     func scheduleSilentLatencyTestIfNeeded() {
         // Until NetworkExtension preferences have been read, `.idle` is only
         // a launch placeholder and must not start work beside a surviving VPN.
@@ -1741,15 +1741,13 @@ final class RoutevaAppModel: ObservableObject {
         await withTaskGroup(of: (UUID, NodeLatencyProbeResult).self) { group in
             for record in records {
                 group.addTask {
-                    guard record.protocolKind != .hysteria2 else {
-                        return (record.id, .timeout)
-                    }
-                    return (
+                    (
                         record.id,
                         await NodeLatencyProbe.measure(
                             host: record.endpointHost,
                             port: record.endpointPort,
-                            timeout: 2
+                            timeout: 2,
+                            transport: record.transport
                         )
                     )
                 }
@@ -1832,22 +1830,22 @@ final class RoutevaAppModel: ObservableObject {
 
     func reloadSubscriptions() async {
         guard let database else { return }
-        guard let records = try? await database.subscriptions() else { return }
-        var summaries: [SubscriptionSummary] = []
-        for record in records {
-            guard let nodes = try? await database.nodes(subscriptionID: record.id) else { continue }
-            summaries.append(SubscriptionSummary(
+        guard let snapshot = try? await database.subscriptionCatalogSnapshot() else { return }
+        let activeNodeSummaries = snapshot.activeNodes.map(Self.nodeSummary)
+        let summaries = snapshot.subscriptions.map { record in
+            SubscriptionSummary(
                 id: record.id,
                 displayName: Self.localizedSubscriptionDisplayName(record.displayName),
                 isActive: record.isActive,
-                nodes: nodes.map(Self.nodeSummary),
+                nodes: record.isActive ? activeNodeSummaries : [],
+                nodeCount: snapshot.nodeCounts[record.id, default: 0],
                 usedGigabytes: record.usedBytes.map(Self.gigabytes),
                 totalGigabytes: record.totalBytes.map(Self.gigabytes),
                 expiresAt: record.expiresAt,
                 lastUpdatedDescription: Self.relativeUpdateDescription(record.updatedAt),
                 preferredNodeID: record.preferredNodeID,
                 canUpdateAutomatically: record.sourceKind == "remote-url"
-            ))
+            )
         }
         let previousActiveID = activeSubscription?.id
         let previousNodeIDs = Set(availableNodes.map(\.id))
@@ -2226,10 +2224,9 @@ final class RoutevaAppModel: ObservableObject {
             throw error
         }
 
-        // Quick TCP reachability on the selected node before bringing the
-        // tunnel up — rejects obviously dead endpoints (avoids a "connected"
-        // shell that cannot forward). Hysteria2 is UDP-only; skip and rely on
-        // the post-connect core probe.
+        // Quick TCP / QUIC reachability on the selected node before bringing
+        // the tunnel up rejects obviously dead endpoints (avoids a
+        // "connected" shell that cannot forward).
         try await verifySelectedNodeReachable(trace: trace)
 
         let controller = providerController
@@ -2592,7 +2589,7 @@ final class RoutevaAppModel: ObservableObject {
         #endif
     }
 
-    /// TCP open to the selected node's host:port before tunnel start.
+    /// TCP / QUIC handshake to the selected node's host:port before tunnel start.
     private func verifySelectedNodeReachable(trace: ConnectionDiagnosticTrace) async throws {
         guard let database else { return }
         guard availableNodes.indices.contains(selectedNodeIndex) else {
@@ -2612,15 +2609,11 @@ final class RoutevaAppModel: ObservableObject {
             ))
             throw RoutevaAppDataError.nodeUnavailable
         }
-        // UDP transports cannot be validated with a TCP open.
-        if record.protocolKind == .hysteria2 {
-            await trace.record(.init(layer: .probe, status: .passed, errorCode: "probe.node_udp_skipped"))
-            return
-        }
         let latency = await NodeLatencyProbe.measure(
             host: record.endpointHost,
             port: record.endpointPort,
-            timeout: 2.5
+            timeout: 2.5,
+            transport: record.transport
         )
         if case let .measured(milliseconds) = latency {
             nodeLatencies[record.id] = .measured(milliseconds)
@@ -2956,6 +2949,7 @@ struct SubscriptionSummary: Identifiable, Equatable {
     var displayName: String
     var isActive: Bool
     var nodes: [NodeSummary]
+    var nodeCount: Int
     var usedGigabytes: Double?
     var totalGigabytes: Double?
     var expiresAt: Date?
@@ -3074,6 +3068,10 @@ private extension ProxyProtocol {
         case .vless: "VLESS"
         case .trojan: "Trojan"
         case .hysteria2: "Hysteria 2"
+        case .anyTLS: "AnyTLS"
+        case .socks5: "SOCKS5"
+        case .http: "HTTP Proxy"
+        case .tuic: "TUIC"
         }
     }
 }

@@ -42,7 +42,7 @@ final class ProviderConnectionCoordinatorTests: XCTestCase {
         XCTAssertEqual(events, ["start:sing-box", "stop:sing-box"])
     }
 
-    func testThreeAttemptBudgetAppliesAcrossConnectionRequestsWithinWindow() async throws {
+    func testFailedRequestsDoNotBlockALaterExplicitConnectionRequest() async throws {
         let recorder = ProviderRecorder()
         let coordinator = ProviderConnectionCoordinator(maximumAttempts: 3)
         let manifest = makeManifest(policy: .automatic)
@@ -65,23 +65,18 @@ final class ProviderConnectionCoordinatorTests: XCTestCase {
             }
         }
 
-        do {
-            _ = try await coordinator.start(
-                manifest: manifest,
-                health: availableHealth,
-                startProvider: { core, _ in await recorder.started(core) },
-                stopProvider: { core in await recorder.stopped(core) },
-                probe: { _ in }
-            )
-            XCTFail("Expected budget failure")
-        } catch {
-            XCTAssertEqual(error as? ProviderConnectionError, .failureBudgetExhausted)
-        }
+        _ = try await coordinator.start(
+            manifest: manifest,
+            health: availableHealth,
+            startProvider: { core, _ in await recorder.started(core) },
+            stopProvider: { core in await recorder.stopped(core) },
+            probe: { _ in }
+        )
         let startCount = await recorder.events.filter { $0.hasPrefix("start:") }.count
-        XCTAssertEqual(startCount, 3)
+        XCTAssertEqual(startCount, 4)
     }
 
-    func testSuccessfulReconnectsDoNotConsumeFailureBudget() async throws {
+    func testRepeatedSuccessfulReconnectsRemainAllowed() async throws {
         let recorder = ProviderRecorder()
         let coordinator = ProviderConnectionCoordinator(maximumAttempts: 3)
         let manifest = makeManifest(policy: .singBox)

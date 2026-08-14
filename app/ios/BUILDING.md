@@ -87,8 +87,9 @@ xcodebuild test \
   -only-testing:SingBoxConfigTests
 ```
 
-The five linked tests cover Smart and Direct DNS, real sing-box service startup,
-the gVisor PacketFlow bridge, Hysteria2, and supported Shadowsocks plugins.
+The seven linked tests cover Smart and Direct DNS, real sing-box service startup,
+the gVisor PacketFlow bridge, Hysteria2, the first-batch AnyTLS/SOCKS5/HTTP(S)/TUIC
+outbounds, and supported Shadowsocks plugins.
 
 ## Signing
 

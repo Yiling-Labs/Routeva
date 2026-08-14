@@ -319,10 +319,27 @@ public protocol SubscriptionPayloadLoading: Sendable {
 }
 
 public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
-    public init() {}
+    typealias DataLoader = @Sendable (URLRequest) async throws -> (Data, URLResponse)
+
+    private let dataLoader: DataLoader
+
+    public init() {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        let session = URLSession(configuration: configuration)
+        dataLoader = { request in try await session.data(for: request) }
+    }
+
+    init(dataLoader: @escaping DataLoader) {
+        self.dataLoader = dataLoader
+    }
 
     public func resolveClipboardText(_ text: String) async throws -> ResolvedSubscriptionPayload {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if Self.isExplicitProxyNodeURI(trimmed) {
+            return ResolvedSubscriptionPayload(data: Data(trimmed.utf8), source: .clipboard)
+        }
         if let url = Self.remoteHTTPSURL(fromClipboard: trimmed) {
             return try await remotePayload(from: url)
         }
@@ -344,7 +361,10 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
         // query values (notably `ech=cover+https://dns…`). Those are not
         // subscription URLs.
         let lowered = trimmed.lowercased()
-        let proxySchemes = ["ss://", "vmess://", "vless://", "trojan://", "hysteria2://", "hy2://"]
+        let proxySchemes = [
+            "ss://", "vmess://", "vless://", "trojan://", "hysteria2://", "hy2://",
+            "anytls://", "socks://", "socks5://", "tuic://",
+        ]
         if proxySchemes.contains(where: { lowered.contains($0) }) { return nil }
         if lowered.contains("proxies:") { return nil }
         guard let match = trimmed.range(
@@ -368,33 +388,26 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
             timeoutInterval: 20
         )
         request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
-        // Identify the real client. Do not impersonate or advertise another
-        // format in User-Agent: provider panels commonly negotiate payloads
-        // from this header, and forcing a Clash conversion can discard fields
-        // that Routeva's native URI parser preserves (for example an explicit
-        // query-based ECH resolver). The parser determines the actual format
-        // from Content-Type/body with its legacy fallbacks.
-        request.setValue(
-            Self.subscriptionUserAgent(version: Bundle.main.object(
-                forInfoDictionaryKey: "CFBundleShortVersionString"
-            ) as? String),
-            forHTTPHeaderField: "User-Agent"
-        )
+        let productUserAgent = Self.subscriptionUserAgent(version: Bundle.main.object(
+            forInfoDictionaryKey: "CFBundleShortVersionString"
+        ) as? String)
+        // Prefer the real product identity so providers can return their
+        // native payload. Some panels answer unknown clients with a successful
+        // but empty body; only that exact case gets one compatibility retry.
+        request.setValue(productUserAgent, forHTTPHeaderField: "User-Agent")
         request.setValue(
             "application/json, text/yaml;q=0.9, application/yaml;q=0.9, text/plain;q=0.8, */*;q=0.5",
             forHTTPHeaderField: "Accept"
         )
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.urlCache = nil
-        configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        let (data, response) = try await URLSession(configuration: configuration).data(for: request)
-        guard let http = response as? HTTPURLResponse,
-              (200...299).contains(http.statusCode),
-              http.url?.scheme?.lowercased() == "https"
-        else { throw SubscriptionPayloadLoaderError.invalidResponse }
-        guard data.count <= SubscriptionParser.maximumPayloadBytes else {
-            throw SubscriptionPayloadLoaderError.responseTooLarge
+        var (data, http) = try await validatedResponse(for: request)
+        if data.isEmpty {
+            request.setValue(
+                Self.compatibilitySubscriptionUserAgent(productUserAgent),
+                forHTTPHeaderField: "User-Agent"
+            )
+            (data, http) = try await validatedResponse(for: request)
         }
+        guard !data.isEmpty else { throw SubscriptionPayloadLoaderError.invalidResponse }
         return ResolvedSubscriptionPayload(
             data: data,
             source: .remoteURL(url),
@@ -417,12 +430,55 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
         return nested.scheme?.lowercased() == "http"
     }
 
+    private static func isExplicitProxyNodeURI(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”‘’"))
+        guard let components = URLComponents(string: trimmed),
+              let scheme = components.scheme?.lowercased(),
+              components.host != nil
+        else { return false }
+        if ["anytls", "socks", "socks5", "tuic"].contains(scheme) { return true }
+        guard ["http", "https"].contains(scheme), components.port != nil else {
+            return false
+        }
+
+        // Subscription delivery URLs commonly use an explicit non-443 port
+        // plus a token in the path/query. Treating every such HTTPS URL as a
+        // proxy endpoint prevents the subscription from ever being fetched.
+        let hasSubscriptionPath = !components.path.isEmpty && components.path != "/"
+        guard !hasSubscriptionPath, components.query == nil else { return false }
+
+        // Plain HTTP is never accepted as a remote subscription, so the
+        // authority-only form remains an explicit proxy. HTTPS is ambiguous;
+        // require userinfo or a display-name fragment as an explicit signal.
+        if scheme == "http" { return true }
+        return components.user != nil
+            || components.password != nil
+            || components.fragment != nil
+    }
+
     static func subscriptionUserAgent(version: String?) -> String {
         let normalized = version?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .filter { $0.isASCII && ($0.isLetter || $0.isNumber || ".-_".contains($0)) }
         let safeVersion = normalized.flatMap { $0.isEmpty ? nil : $0 } ?? "1.0"
         return "Routeva/\(safeVersion)"
+    }
+
+    static func compatibilitySubscriptionUserAgent(_ productUserAgent: String) -> String {
+        "\(productUserAgent) clash.meta"
+    }
+
+    private func validatedResponse(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let (data, response) = try await dataLoader(request)
+        guard let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode),
+              http.url?.scheme?.lowercased() == "https"
+        else { throw SubscriptionPayloadLoaderError.invalidResponse }
+        guard data.count <= SubscriptionParser.maximumPayloadBytes else {
+            throw SubscriptionPayloadLoaderError.responseTooLarge
+        }
+        return (data, http)
     }
 
     private static func httpsURL(_ raw: String) -> URL? {

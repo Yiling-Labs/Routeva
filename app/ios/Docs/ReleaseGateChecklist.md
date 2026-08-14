@@ -12,8 +12,8 @@ documents. A local pass is not a substitute for a signed physical-device pass.
 | Open-source distribution license | Routeva has selected GPL-3.0-or-later and includes the full root license; complete transitive notice and independent App Store terms review remain | **Pending legal/release review** |
 | Simulator app and provider | Release App, the sole sing-box Packet Tunnel extension, and PacketFlow bridge framework build on iOS 26.5 Simulator | Pass |
 | Signed arm64 iOS product | Version 1.0 build 1 sing-box-only archive links, has required entitlements, passes deep signature/dependency validation, and the prior accepted build installs/launches on iOS 26.5.2 | Pass |
-| Unit/model/parser/security tests | 126 Swift package tests pass, including public PacketFlow bridge tests | Pass |
-| Linked core validation | All 5 Libbox tests pass, including complete Smart service startup, DNS preset validation, plugin validation, and framed gVisor UDP request/response through PacketFlow | Pass |
+| Unit/model/parser/security tests | Prior 126-test suite pass; 8 targeted AnyTLS/SOCKS5/HTTP(S)/TUIC and empty-response fallback tests pass | **Full suite rerun pending** |
+| Linked core validation | Prior linked-core gate passed; the suite now contains 7 tests including the new AnyTLS/SOCKS5/HTTP(S)/TUIC configuration validation | **Seven-test rerun pending** |
 | Synthetic import UI flow | Locale-independent Home → Paste → refreshed Home → Location UI test passes | Pass |
 | Provider policy | Clash/Mihomo and Surge rules normalize to typed ordered direct/current-node/reject policy; complete Smart policy starts in linked Libbox | Local pass |
 | Automatic node failover | Smart without a persisted Preferred tries current then scored/provider-order candidates, bounded to three; Preferred, Global and Direct never switch automatically | Local pass; device failure matrix pending |

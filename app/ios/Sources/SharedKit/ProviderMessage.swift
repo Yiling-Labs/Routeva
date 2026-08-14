@@ -101,6 +101,57 @@ public enum ProviderRuntimeStatus: String, Codable, Sendable {
     case failed
 }
 
+/// Pure retry classification shared by the host controller and tests. It is
+/// deliberately limited to IPC transport/readiness failures; a Provider
+/// rejection from the actual node probe is authoritative and is never retried
+/// as an IPC recovery.
+public enum ProviderIPCFailureKind: Equatable, Sendable {
+    case responseTimedOut
+    case responseMissing
+    case sessionUnavailable
+    case rateLimited
+    case other
+}
+
+public struct ProviderIPCRecoveryPolicy: Equatable, Sendable {
+    public let maximumReadinessAttempts: Int
+    public let maximumCoreProbeAttempts: Int
+
+    public init(
+        maximumReadinessAttempts: Int = 4,
+        maximumCoreProbeAttempts: Int = 2
+    ) {
+        self.maximumReadinessAttempts = maximumReadinessAttempts
+        self.maximumCoreProbeAttempts = maximumCoreProbeAttempts
+    }
+
+    public func shouldRetryReadiness(
+        after failure: ProviderIPCFailureKind,
+        completedAttempts: Int
+    ) -> Bool {
+        guard completedAttempts < maximumReadinessAttempts else { return false }
+        return switch failure {
+        case .responseTimedOut, .responseMissing, .sessionUnavailable, .rateLimited:
+            true
+        case .other:
+            false
+        }
+    }
+
+    public func shouldRetryCoreProbe(
+        after failure: ProviderIPCFailureKind,
+        completedAttempts: Int
+    ) -> Bool {
+        guard completedAttempts < maximumCoreProbeAttempts else { return false }
+        return switch failure {
+        case .responseTimedOut, .responseMissing, .sessionUnavailable, .rateLimited:
+            true
+        case .other:
+            false
+        }
+    }
+}
+
 public struct ProviderTrafficSnapshot: Codable, Equatable, Sendable {
     public let sessionID: UUID
     public let uploadedBytes: UInt64
