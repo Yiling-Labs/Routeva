@@ -14,7 +14,7 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "2"
     DEVELOPMENT_TEAM: NV2PNGX854
     CODE_SIGN_STYLE: Automatic
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
@@ -128,6 +128,8 @@ targets:
       path: Config/RoutevaPacketTunnelSingBox-Info.plist
       properties:
         CFBundleDisplayName: Routeva sing-box Tunnel
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         RoutevaKeychainAccessGroup: $(AppIdentifierPrefix)com.yilinglabs.routeva.shared
         NSExtension:
           NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
@@ -178,6 +180,8 @@ targets:
       path: Config/Routeva-Info.plist
       properties:
         CFBundleDisplayName: Routeva
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDevelopmentRegion: en
         CFBundleLocalizations:
           - en

@@ -128,13 +128,12 @@ hi-fi 文案已对齐；**产品代码实现**另勾。
 
 ## 4 · Settings · [`05-settings.html`](../../design/hi-fi/current/craft-p0/05-settings.html)
 
-> **走查 2026-08-06：** Root · Mode · DNS · Overrides 空/列表/Add · About（含 MT）。结果 **pass（附注）**。
+> **走查 2026-08-06：** Root · Mode · DNS · Overrides 空/列表/Add · About（含 MT）。结果 **pass（附注）**。DNS 行已撤；运行时固定 Automatic。
 
 | 帧 | 验收焦点 | Keys | ☑ |
 |---|---|---|---|
-| **1 Root** | 段 · Connection 三行+副文 · App 三行（Auto-update Toggle 默认开 · Subscriptions · About）· Close | `settings.title` S · `settings.section.connection` S · `settings.section.app` S · `settings.routing.title`+`.subtitle` S · `settings.dns.title`+`.subtitle` S · `settings.overrides.title`+`.subtitle` S · `settings.app.auto_update.title`+`.subtitle` S · `settings.app.subscriptions` S · `settings.app.about` S · `chrome.close` S · 计数 `chrome.none` / 数字 | [x] |
+| **1 Root** | 段 · Connection 两行+副文 · App 三行（Auto-update Toggle 默认开 · Subscriptions · About）· Close | `settings.title` S · `settings.section.connection` S · `settings.section.app` S · `settings.routing.title`+`.subtitle` S · `settings.overrides.title`+`.subtitle` S · `settings.app.auto_update.title`+`.subtitle` S · `settings.app.subscriptions` S · `settings.app.about` S · `chrome.close` S · 计数 `chrome.none` / 数字 | [x] |
 | **2 Routing mode** | Smart / Global；返回时若变更则切换 | `settings.routing.{auto,global}.{title,sub}` S · `chrome.back` S | [x] |
-| **3 DNS** | 三档 | `settings.dns.{automatic,privacy,compatibility}.{title,sub}` S | [x] |
 | **4 Overrides empty** | O3 空态 | `settings.overrides.empty.title` S · `.howto` S · `.boundary` **L** · `.chip` S · `settings.overrides.add` S | [x] |
 | **4d iCloud restore fail** | 空库恢复失败弱提示（iOS） | `settings.overrides.icloud.restore_failed` S · 帧 **4d** 空态弱行；非常驻云状态 | [x] |
 | **4e iCloud restore ok** | 成功恢复 toast（iOS） | `settings.overrides.icloud.restored_one` S · `restored_other` S（`{count}`）· 帧 **4e** 短 toast | [x] |

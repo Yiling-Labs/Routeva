@@ -79,5 +79,6 @@ design/
    - 权威屏：[`hi-fi/current/craft-p0/02-home.html`](./hi-fi/current/craft-p0/02-home.html)  
    - 系统提取：[`hi-fi/current/craft-p0/visual-system.md`](./hi-fi/current/craft-p0/visual-system.md)  
    - **后续任何屏幕**必须从该系统取色、材质、字阶、圆角与动效气质；可按场景裁剪，但必须**协调统一、不违和**。禁止另起无关风格族。  
+   - 商店截图现行：**A · Jobs** 视觉源 [`hi-fi/current/store-screenshots/`](./hi-fi/current/store-screenshots/) · 渠道图 [`gtm/stores/app_store/screenshots/`](../gtm/stores/app_store/screenshots/) 
 
 实践摘要：[docs/guides/design-versions.md](../docs/guides/design-versions.md)

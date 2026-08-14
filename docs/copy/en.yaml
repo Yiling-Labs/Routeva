@@ -663,47 +663,6 @@ strings:
     surface: settings
     notes: "ADR 0058 · Overrides may still proxy selected domains"
 
-  - key: settings.dns.title
-    en: DNS
-    tier: shell
-    surface: settings
-
-  - key: settings.dns.subtitle
-    en: How names resolve on your connection
-    tier: shell
-    surface: settings
-
-  - key: settings.dns.automatic.title
-    en: Automatic
-    tier: shell
-    surface: settings
-
-  - key: settings.dns.automatic.sub
-    en: Resolve by how traffic is routed
-    tier: shell
-    surface: settings
-    notes: "Automatic splits DNS: DIRECT names stay on the system resolver; proxied names resolve through the current node."
-
-  - key: settings.dns.privacy.title
-    en: Privacy
-    tier: shell
-    surface: settings
-
-  - key: settings.dns.privacy.sub
-    en: Encrypted DNS when possible
-    tier: shell
-    surface: settings
-
-  - key: settings.dns.compatibility.title
-    en: Compatibility
-    tier: shell
-    surface: settings
-
-  - key: settings.dns.compatibility.sub
-    en: Prefer widely reachable resolvers
-    tier: shell
-    surface: settings
-
   - key: settings.overrides.title
     en: Overrides
     tier: shell

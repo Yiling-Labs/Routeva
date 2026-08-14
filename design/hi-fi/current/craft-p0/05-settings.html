@@ -144,11 +144,7 @@
       { id: 'auto', title: 'Smart', sub: 'Provider rules; your node when proxied' },
       { id: 'global', title: 'Global', sub: 'All traffic via current node' },
     ];
-    const DNS_OPTS = [
-      { id: 'automatic', title: 'Automatic', sub: 'Resolve by how traffic is routed' },
-      { id: 'privacy', title: 'Privacy', sub: 'Encrypted DNS when possible' },
-      { id: 'compat', title: 'Compatibility', sub: 'Prefer widely reachable resolvers' },
-    ];
+
     const OVERRIDE_DEMO = [
       { id: 1, target: 'api.openai.com', action: 'Proxy', on: true },
       { id: 2, target: 'intranet.corp', action: 'Direct', on: true },
@@ -402,12 +398,11 @@
     /** Connection row subtitles: explain the title (what it is), not options or when-to-change. */
     const CONNECTION_ROW_SUB = {
       mode: 'How traffic uses your proxy',
-      dns: 'How names resolve on your connection',
       overrides: 'Exceptions for specific domains',
     };
 
     function SettingsRoot({
-      onNav, onClose, modeLabel, dnsLabel, overrideCount,
+      onNav, onClose, modeLabel, overrideCount,
       autoUpdate = true, onAutoUpdateChange,
     }) {
       return (
@@ -419,12 +414,6 @@
               subtitle={CONNECTION_ROW_SUB.mode}
               value={modeLabel}
               onClick={() => onNav('mode')}
-            />
-            <Row
-              label="DNS"
-              subtitle={CONNECTION_ROW_SUB.dns}
-              value={dnsLabel}
-              onClick={() => onNav('dns')}
             />
             <Row
               label="Overrides"
@@ -1313,7 +1302,6 @@
       const [screen, setScreen] = useState('root');
       const [mode, setMode] = useState('auto');
       const [draftMode, setDraftMode] = useState('auto');
-      const [dns, setDns] = useState('automatic');
       const [autoUpdate, setAutoUpdate] = useState(true);
       const [showAdd, setShowAdd] = useState(false);
       const [overrides, setOverrides] = useState(OVERRIDE_DEMO);
@@ -1328,7 +1316,6 @@
       };
 
       const modeLabel = MODE_OPTS.find((m) => m.id === mode)?.title || 'Smart';
-      const dnsLabel = DNS_OPTS.find((d) => d.id === dns)?.title || 'Automatic';
 
       let body = null;
       if (screen === 'closed') {
@@ -1357,7 +1344,6 @@
             onNav={openScreen}
             onClose={() => setScreen('closed')}
             modeLabel={modeLabel}
-            dnsLabel={dnsLabel}
             overrideCount={overrides.length}
             autoUpdate={autoUpdate}
             onAutoUpdateChange={setAutoUpdate}
@@ -1371,16 +1357,6 @@
             selected={draftMode}
             onSelect={setDraftMode}
             onBack={commitModeAndReturn}
-          />
-        );
-      } else if (screen === 'dns') {
-        body = (
-          <PickerScreen
-            title="DNS"
-            options={DNS_OPTS}
-            selected={dns}
-            onSelect={setDns}
-            onBack={() => setScreen('root')}
           />
         );
       } else if (screen === 'overrides') {
@@ -1433,7 +1409,7 @@
         <>
           <div className="row" style={{ marginBottom: 48 }}>
             <div className="phone-col">
-              <div className="lab">Interactive<span>Full nav · Mode/DNS · Overrides sheet</span></div>
+              <div className="lab">Interactive<span>Full nav · Mode · Overrides sheet</span></div>
               <Interactive />
             </div>
           </div>
@@ -1444,7 +1420,6 @@
                 <SettingsRoot
                   onNav={() => {}}
                   modeLabel="Smart"
-                  dnsLabel="Automatic"
                   overrideCount={2}
                   autoUpdate
                 />
@@ -1463,19 +1438,7 @@
               )}
             </div>
             <div className="phone-col">
-              <div className="lab">3 · DNS<span>Automatic · Privacy · Compatibility</span></div>
-              {frame(
-                <PickerScreen
-                  title="DNS"
-                  options={DNS_OPTS}
-                  selected="automatic"
-                  onSelect={() => {}}
-                  onBack={() => {}}
-                />
-              )}
-            </div>
-            <div className="phone-col">
-              <div className="lab">4 · Overrides empty<span>O3 · exceptions, not rules</span></div>
+              <div className="lab">3 · Overrides empty<span>O3 · exceptions, not rules</span></div>
               {frame(
                 <OverridesScreen items={[]} onBack={() => {}} onAdd={() => {}} onToggle={() => {}} />
               )}

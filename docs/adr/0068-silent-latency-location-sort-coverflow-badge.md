@@ -7,7 +7,7 @@
 3. **Cover Flow（2026-08-12 改判）：** Active 订阅**全量**可路由节点（导入时已剔除额度/到期等 metadata 横幅行），**订阅原序**，**循环**横滑（无端点）。角标仍为 **B2 · Inset glass + `NNms` + 分档色**（`design/hi-fi/_explore/2026-08-12-coverflow-latency-badge/`）：嵌在国旗圆盘底弧；未测不显示 · 测中 `…` · 有延迟 `NNms` · Timeout `—`。TCP RTT 分档：**&lt;100 绿 · 100–200 黄 · &gt;200/超时 软红**。延迟**只**做角标与 Location 排序信号，**不**再裁剪 / 重排 Cover Flow 成员。
 4. **Location 默认序（改判）：** 由「订阅原序、Avoid 按延迟重排」改为 **默认延迟升序**（有 ms 升序 → Timeout → 未测且未测保持订阅相对序）。Preferred 用 ✓，**不**强制置顶。
 5. **重排时机：** 测中 **只更新标注**；**本轮静默测或用户 *Test* 全部结束后** 再重排 **Location**（Cover Flow 序不变）。
-6. **预停：** 有 Preferred → 轮末仍预停 Preferred；无 → 预停最低 ms（仅改选中下标，不改 Cover Flow 列表序）。
+6. **预停（Idle）：** 当前焦点已是绿色（TCP RTT &lt;100）→ **不**自动换到更低 ms。当前非绿且未连接 → 预停已测样本中最低 ms。横滑 / Location 点选仍占焦点，测完不得抢走。仅改选中下标，不改 Cover Flow 列表序。Connecting / Connected 不预停。
 7. **连接中：** Connecting / Connected **暂停**静默全表测；回 Idle 再续；**禁止**测分刷新换掉当前会话节点。
 8. **显式 *Test*：** 与静默 **同一管道、同一结果集、同一轮末 Location 重排**。
 

@@ -56,16 +56,28 @@ _Avoid_: 15+ 语言假覆盖；Hans/Hant 混用同一串无分 locale；用上�
 - **锁 English：** 诊断四桶与失败主文案、Repair 确认/进度/回滚、隐私关键句、付费墙。高风险键无合格译文时 **显式回落 en**，优于错误机翻。  
 - **披露：** About **须有**一句次要说明（`settings.about.mt_disclosure`）——部分界面为机翻，关键说明以 English 为准；**无**每屏 MT 横幅、无首次强选语言。权威 hi-fi：`05-settings` About。  
 - **Help：** 用户输入可跟界面/系统语言；结构化诊断卡仍 English（同 T1）。  
-- **GTM 语言（与 App 脱钩计数）：** 见 **GTM Language Set**。  
-_Avoid_: 全 UI 含诊断/同意无人审机翻；运行时 LLM 译 UI 字符串；Settings 语言双轨；每屏 Machine translated 条；8 套完整 GTM 截图与 App 同日齐发
+- **GTM 语言（与 App 脱钩计数）：** 见 **GTM Language Set**。商店截图像素套见 **Store Screenshot Locale Set**。  
+_Avoid_: 全 UI 含诊断/同意无人审机翻；运行时 LLM 译 UI 字符串；Settings 语言双轨；每屏 Machine translated 条
 
 **GTM Language Set**：
 Go-to-market **精做**语言与 App locale **不同步强绑**。  
-- **P0：** **English** 全套（美区 App Store 描述/关键词/截图/预览、主隐私叙事、英文社区）。  
+- **P0：** **English** 全套（美区 App Store 描述/关键词/预览、主隐私叙事、英文社区）。  
 - **P1：** **zh-Hans** 商店文案与按需中文运营物料（可后于 en 上架）。  
-- **P2：** 按安装/投放 ROI 再开 **es** 或 **ja** 等 **listing 文案**；完整多语言截图/视频按需，默认不 8 语齐套。  
-闭集外 GTM 语言不做。机翻可用于非 en listing 草稿，**功效/隐私承诺不以无人审机翻为最终口径**。  
-_Avoid_: App 8 locale 迫使 GTM 8 套像素物料；商店多语言徽章当虚荣指标
+- **P2：** 按安装/投放 ROI 再开 **es** 或 **ja** 等 **listing 文案**。  
+截图像素套另见 **Store Screenshot Locale Set**（可与 listing 长文不同步）。闭集外 GTM 语言不做。机翻可用于非 en listing 草稿，**功效/隐私承诺不以无人审机翻为最终口径**。  
+_Avoid_: 商店多语言徽章当虚荣指标；用 8 套无人审描述长文冒充精做
+
+**Store Screenshot Locale Set**：
+商店截图像素套的语言闭集，与 **MVP Locale Set** 对齐：**en** · **zh-Hans** · **zh-Hant** · **es** · **pt-BR** · **ja** · **ko** · **de**。每语沿用同一 **Store Screenshot Spine**。  
+_Avoid_: 闭集外再开 ru/ar 截图套；Hans/Hant 共用一张图；App 8 语只出 en 图却宣称多语言截图齐套
+
+**Store Screenshot Copy Surface**：
+每张商店截图上随 locale 改写的文字：框外 **Listing 标题** + 手机内壳层 UI。lock-en 与演示节点名不随 locale 改。  
+_Avoid_: 只译标题装多语言；为截图另造一套与 App catalog 不同的 UI 口语
+
+**Store Screenshot String Source**：
+手机壳层 UI 取与二进制相同的 locale catalog。Listing 标题按 Spine 每语人工两行，不机翻品牌句。  
+_Avoid_: 截图另写一套 UI 口语；无人审机翻当 Listing 标题终稿
 
 **GTM Phase（grill 2026-08-07 · A）：**  
 **当前阶段 = Brand Presence only**（官网主职 + Legal Pages · ADR **0052**）。**不**要求现在填满 App Store / Play listing 长文、关键词矩阵、像素截图或预告片。商店物料默认等 **iOS 真机可截**（或明确开 listing 里程碑）再开；禁止用过期 hi-fi 冒充商店截图上架。icon 等已有资产可保留。  
@@ -78,6 +90,34 @@ _Avoid_: 把官网当第二套产品能力源；把商店长文原样堆进营�
 **Brand Presence（本阶段主职）**：
 上架前官网主职：用一页（或极少页）讲清 Routeva 是谁、为谁、不卖节点、核心闭环（Connect → 诚实失败 → 安全 Repair）与信任边界。主 CTA 不得假装已可下载（无真实商店/内测链时）。
 _Avoid_: Launch Marketing 的下载转化叙事；发明用户数/转化率；把协议清单当主卖点
+
+**Crafted Connect**：
+Brand Presence 与商店 listing 共用的主叙事：卖连接体验（Paste → 精致路径 → 诚实 Connection Success），不卖协议军备或已上线自愈。金句 *Connect without the maze.*
+_Avoid_: 订阅句当 H1；把未交付的诊断/Repair 写成已上线；协议墙当主卖点
+
+**Listing Hook**：
+App Store 截图第 1 张。转化任务 = **结果先行**：展示 **Connection Success** 绿场，标题继承 Crafted Connect（*Connect without the maze.*）。订阅边界与「不卖节点」不占首图主句。
+_Avoid_: 首图边界声明；首图功能清单；首图竞品对比拼贴
+
+**Store Screenshot Set**：
+App Store 精做截图闭集：**4** 张 · **Store Screenshot Locale Set** 八语 · iPhone 主图。现行视觉 = **A · Jobs**。HTML 源 `design/hi-fi/current/store-screenshots/`；渠道成品 `gtm/stores/app_store/screenshots/`。每语两档：6.5" **1284×2778**、6.7" **1290×2796**。第 1 张为 **Listing Hook**。无 Connecting 收束张。
+_Avoid_: 闭集外再开尺寸档；用过期 hi-fi 冒充真机上架；从 `_explore/` 导出上架图
+
+**Store Screenshot Spine**：
+闭集四张与产品 UI：① Listing Hook — Home · **Connection Success**（*Connect without / the maze.*）；② Gesture — Home · **Idle**（*Swipe once / to go online.*）；③ Setup — **Add Subscription**（*Paste a link / to set up.*）；④ Control — **Location**（*Pick the / fastest one.*）。标题统一两行，共用一条底线和标题–手机留白。
+_Avoid_: 地图或国家墙；Welcome / Settings 当主图；用 Latency Test 冒充 Probe
+
+**Listing Copy Voice**：
+选定套 **A · Jobs**：一句一事、强制两行 Newsreader、**无副文**。能力/结果 ≤6 词。
+_Avoid_: 首图功能清单；否定堆叠；商业 VPN 话术（Our servers / 90+ cities）；把 *VPN* 当品类主词
+
+**Store Screenshot Candidate**：
+按 iPhone 6.7" 画幅探索的视觉方向，**不是**已提交上架素材。终稿必须沿用同一 **Store Screenshot Spine**，并用与二进制一致的产品 UI。
+_Avoid_: 把 candidate 当已上传素材；用过期 hi-fi 冲审
+
+**Store Screenshot Directions**：
+同一 Spine 上的三车道探索；**已选定 A → 收口为 A · Jobs**（current）。B Instrument Quiet 与 C Capability Nouns 不进 listing。  
+_Avoid_: 用竞品的 MitM / Clash / 流媒体解锁话术；纯换底色冒充分叉；把未选定车道当现行套
 
 **Marketing Site Primary CTA（本阶段）**：
 Brand Presence 阶段首页**唯一主 CTA** = **页内理解闭环**（如 *How it works* 锚点滚动）。次要出口仅法律与联系：Privacy · Terms · Contact。无 Waitlist 表单、无伪商店按钮。
@@ -137,11 +177,10 @@ _Avoid_: MVP 顶栏 Help pill；Empty 用 + 替换 Settings；连接失败自动
 
 **Settings Surface**：
 从 Home 顶栏进入的一级配置面。**根页主职 = Connection Policy 优先**（ADR 0021）。**读者模型（C2，ADR 0045；grill 2026-08-07 再确认 A）：** 产品服务小白与半专业；Settings **同一套短策略闭集**，**半专业为主读者**（主动改意图），小白为**被引导的次要读者**（默认值 + 短副文；Post-MVP 可经 Help 引进同一页）。**不**为小白单独再瘦 IA。人群杠杆在 Table Stakes Connect（MVP）与日后 Self-Healing / Help。**根页一级分组闭集（两段，自上而下 · ADR 0051）：**
-1. **Connection** — 根页固定三行（均为 › 进二级，非 Home 内联控件）：**Routing mode** · **DNS** · **Overrides**（User Override 列表/编辑；Beta **无**条数上限）。**每行标题 + 一行释义副文（English 源，短，解释标题是什么；不绑定具体选项、不写何时该改）+ 右侧当前值：**  
+1. **Connection** — 根页固定两行（均为 › 进二级，非 Home 内联控件）：**Routing mode** · **Overrides**（User Override 列表/编辑；Beta **无**条数上限）。**每行标题 + 一行释义副文（English 源，短，解释标题是什么；不绑定具体选项、不写何时该改）+ 右侧当前值：**  
    - **Routing mode** — 副文 *How traffic uses your proxy*（进入后选 **Smart** / Global，与 Home 同闭集；点返回时若与当前模式不同则走同一条 `setRoutingMode` 切换，相同则不改；用户可见**禁止** *Auto* 作模式名）。  
-   - **DNS** — 副文 *How names resolve on your connection*（进入后选 Automatic / Privacy / Compatibility）。  
    - **Overrides** — 副文 *Exceptions for specific domains*（进入后管 Domain 例外列表）。  
-   **DNS 预设闭集（三选一，默认 Automatic）：** **Automatic**（系统/隧道默认）· **Privacy**（加密 DNS 优先；具体解析器为实现常数，UI 不堆公共 DNS 品牌列表）· **Compatibility**（偏可达/兼容解析路径）。**禁止**自定义 DNS IP/主机名表单。Repair 切换 DNS 必须落在同一闭集。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（偏好节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
+   **DNS 不进 Settings。** 运行时固定 **Automatic**（直连域名用系统解析器；走节点的名字经当前节点解析）。**禁止**自定义 DNS 表单与用户可选 Privacy / Compatibility。**Overrides 呈现：** 能力常驻根页，但空态/副文须防「完整规则引擎」误读（少数例外，非 Clash 式规则页）；无正则/规则市场。**不**在此段放节点列表、订阅 Refresh、自动 Failover 总闸（偏好节点/选节点主路径在 Home/Location）、任意配置全文、per-App/规则市场。  
 2. **App** — 根页固定三行（自上而下）：**Auto-update subscription**（Toggle，**默认开**；副文解释「冷启动时约每天刷新 Active」类意图，不写实现常数）· **Subscriptions ›**（深链同一套 UI，含 Empty 时无顶栏入口的补偿）· **About ›**。**无** 根页 **Privacy ›**（与 About 内 Privacy Policy 重复）。**无 Appearance 行：** UI 光暗 **仅跟随系统**；**连接绿场仍仅 Connection Success**，不提供主题皮肤或「永远绿」。**Beta 不**在根页放 Restore Purchases / 付费墙 / 账号。  
    - **Auto-update subscription：** 全局总闸，控制是否走 **Subscription Refresh** 自动路径；**不** per-subscription。关则仅手动 Update / Repair 重载。详见 **Subscription Refresh** / ADR **0015**。  
    - **About › 闭集：** 名+版本 · **一句隐私承诺**（如 *Privacy first. Temporary help context only — and you can turn cloud assist off.*；**不**写绝对 never upload）· **iOS 一句 iCloud 披露**（Domain exceptions 可经用户 iCloud 备份以便重装/换机；**非**开关、**非**全量配置同步；Android **不**显示）· Links（均为系统浏览器，**非**应用内长文）：  
@@ -177,7 +216,7 @@ _Avoid_: Settings 与顶栏两套订阅管理；Active 详情页与 All 列表�
 **Cover Flow（全量循环 · 订阅原序 · ADR 0068 改判）：** Cover Flow = Active 下**全部可路由节点**（导入时已剔除额度/到期等 metadata 横幅行），顺序 = **订阅原序**，**循环**横滑（无端点）。延迟**只**做角标，**不**裁剪 / 重排 Cover Flow 成员。**Location** 仍为扁平全量，**默认延迟序**（轮末重排）。  
 - **数据源：** `availableNodes` 全量。  
 - **延迟角标（黑场 · 定稿 B2）：** 嵌在旗球底弧的 soft glass 芯片；未测不显示 · 测中 `…` · 有延迟 **`NNms`** · Timeout **`—`**。分档色（TCP RTT）：**&lt;100 绿 · 100–200 黄 · &gt;200/超时 软红**（ADR **0068**）。  
-- **预停：** 有 Preferred → 预停偏好下标；无 → 预停最低 ms。横滑 alone = 临时焦点。  
+- **预停：** Idle 且当前焦点已绿（&lt;100ms）则留下；非绿才预停最低已测 ms。横滑 / Location 点选仍占焦点。Connecting / Connected 不预停。  
 - **Failover 会话暂用他节点：** Home 显示当前会话名；回 Idle 后焦点策略不变。  
 - **group UI：** 无；全量列表浏览亦在 Location。  
 **弱协议短名（全 app UI 闭集）：** 用户可见次要协议标签统一为 **`SS` · `VMess` · `VLESS` · `Trojan` · `Hy2`**（Home Cover Flow / 绿场节点行 / Location 行次行同源）。**不**在列表主扫读用 *Hysteria2* / *Shadowsocks* 等全称（a11y 可读 full name）。  
@@ -385,11 +424,11 @@ _Avoid_: 全量配置/订阅 Token 上云；自建账号同步；「多设备一
 预选导向「大概率连得上且不慢」。**Connection Success 真值不变：** 仅用户连接后「隧道就绪 + 完整 Connectivity Probe」；静默测分 **不得** 把 Home 染成 Connected / 绿场。  
 **测分未完成亦可连：** 静默测不是连接闸门。用户可在测分进行中对 **当前 Cover Flow 焦点**发起连接；连接路径短确认 + 完整 Probe，**不**等待全表测完。  
 **Connecting / Connected：** **暂停**静默全表测；**不得**被预选刷新从脚下换节点；回 Idle 再续跑（ADR **0068**）。**Connected** 允许用户显式 *Test*（ADR **0069**）；**Connecting** 不测，并取消进行中的一轮。  
-**测速时机（预选、不连）：** Active 订阅可用后 **静默**全表（或分批）TCP 测分；Cover Flow **全量订阅序循环** + 延迟角标；**有 Preferred → 预停偏好**；**无 → 预停最低 ms**；**仍不**自动连接。**禁止**把全表测压在下滑连接关键路径上。  
+**测速时机（预选、不连）：** Active 订阅可用后 **静默**全表（或分批）TCP 测分；Cover Flow **全量订阅序循环** + 延迟角标；Idle 预停 = **当前已绿则留下，非绿才最低 ms**；**仍不**自动连接。**禁止**把全表测压在下滑连接关键路径上。  
 **轮末重排：** 测中只写标注；本轮结束后重排 **Location**（Cover Flow 列表序不变）。  
 **静默重测触发（闭集）：**  
 1. **节点集合变化：** 首次导入 Active 成功；Refresh 成功且列表实质变化；切换 Active。  
-2. **弱缓存过期（长间隔 S）：** 打开/回前台且过期 → 安静重测（有 Preferred 不覆盖偏好预停）。  
+2. **弱缓存过期（长间隔 S）：** 打开/回前台且过期 → 安静重测（当前已绿不因更低 ms 换焦点）。  
 3. **失败 / Failover 定向重测**（非 Idle 主叙事）。  
 4. **用户显式 *Test*：** 与静默 **同测量**；准入见 ADR **0069**（同测量 ≠ Connected 也开静默）。  
 **禁止默认：** 仅因网络切换就全表重测。  

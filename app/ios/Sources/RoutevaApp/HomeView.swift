@@ -1,3 +1,4 @@
+import SharedKit
 import SwiftUI
 import UIKit
 
@@ -1000,7 +1001,7 @@ private struct CoverFlowLatencyBadge: View {
 
         static func of(status: NodeLatencyStatus?) -> Tier {
             switch status {
-            case let .measured(ms) where ms < 100: .good
+            case let .measured(ms) where NodeLatencyTier.isGood(ms): .good
             case let .measured(ms) where ms <= 200: .fair
             case .measured, .unavailable: .poor
             case .testing, .none: .neutral
@@ -1126,9 +1127,8 @@ private struct FlagImageFill: View {
         .scaleEffect(1.08)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
-        // The cover flow is removed from the hierarchy while connected. Keep
-        // previously displayed flags outside that transient view lifecycle so
-        // a disconnect does not depend on the network becoming available again.
+        // Cover flow is removed while connected. Memory + disk cache keep
+        // already-fetched flags so a disconnect does not need the network.
         .task(id: url) {
             image = nil
             didFailToLoad = false
@@ -1172,22 +1172,48 @@ private final class FlagImageCache {
     static let shared = FlagImageCache()
 
     private let images = NSCache<NSURL, UIImage>()
+    private var inflight: [URL: Task<UIImage?, Never>] = [:]
+    private let fileManager = FileManager.default
+    private let directory: URL?
 
     private init() {
         // Three cover-flow positions are normally visible; this keeps a small
         // buffer for swiping without retaining an unbounded number of flags.
         images.countLimit = 24
+        let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
+        directory = caches?.appendingPathComponent("flagcdn", isDirectory: true)
+        if let directory {
+            try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        }
     }
 
     func image(for url: URL) -> UIImage? {
-        images.object(forKey: url as NSURL)
+        if let memory = images.object(forKey: url as NSURL) {
+            return memory
+        }
+        guard let diskImage = readDiskImage(for: url) else { return nil }
+        images.setObject(diskImage, forKey: url as NSURL)
+        return diskImage
     }
 
     func loadImage(for url: URL) async -> UIImage? {
         if let image = image(for: url) {
             return image
         }
+        if let existing = inflight[url] {
+            return await existing.value
+        }
+        let task = Task { await fetchAndStore(url) }
+        inflight[url] = task
+        let image = await task.value
+        inflight[url] = nil
+        return image
+    }
 
+    private func fetchAndStore(_ url: URL) async -> UIImage? {
+        if let image = image(for: url) {
+            return image
+        }
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             guard let response = response as? HTTPURLResponse,
@@ -1196,12 +1222,34 @@ private final class FlagImageCache {
             else {
                 return nil
             }
-
             images.setObject(image, forKey: url as NSURL)
+            writeDisk(data, for: url)
             return image
         } catch {
             return nil
         }
+    }
+
+    private func diskFileURL(for url: URL) -> URL? {
+        guard let directory else { return nil }
+        let name = url.path
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            .replacingOccurrences(of: "/", with: "_")
+        guard !name.isEmpty, !name.contains("..") else { return nil }
+        return directory.appendingPathComponent(name, isDirectory: false)
+    }
+
+    private func readDiskImage(for url: URL) -> UIImage? {
+        guard let fileURL = diskFileURL(for: url),
+              let data = try? Data(contentsOf: fileURL),
+              let image = UIImage(data: data)
+        else { return nil }
+        return image
+    }
+
+    private func writeDisk(_ data: Data, for url: URL) {
+        guard let fileURL = diskFileURL(for: url) else { return }
+        try? data.write(to: fileURL, options: .atomic)
     }
 }
 

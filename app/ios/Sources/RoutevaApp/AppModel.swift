@@ -48,7 +48,6 @@ final class RoutevaAppModel: ObservableObject {
     @Published var subscriptions: [SubscriptionSummary] = []
     @Published var selectedNodeIndex = 0
     @Published var routingMode: RoutingMode = .automatic
-    @Published var dnsPreset: DNSPreset = .automatic
     @Published var overrides: [DomainOverrideSummary] = []
     /// Tunnel session cumulative traffic (this connection only).
     @Published var sessionDownloadedBytes: UInt64 = 0
@@ -73,6 +72,7 @@ final class RoutevaAppModel: ObservableObject {
     private static let onboardingKey = "routeva.onboarding.data-privacy.completed"
     private static let autoUpdateKey = "routeva.subscription.auto-update.enabled"
     private static let latencyRoundCompletedAtKey = "routeva.latency.round-completed-at"
+    private static let latencySamplesKey = "routeva.latency.samples"
     /// Weak cache TTL for silent full-table latency (implementation constant S).
     private static let latencyCacheTTL: TimeInterval = 6 * 60 * 60
     private static let orphanedProviderConnectingTimeout: Duration = .seconds(20)
@@ -289,7 +289,7 @@ final class RoutevaAppModel: ObservableObject {
             "schema: 1",
             "generatedAt: \(ISO8601DateFormatter().string(from: .now))",
             "routingMode: \(routingMode.runtimeValue.rawValue)",
-            "dnsPreset: \(dnsPreset.runtimeValue.rawValue)",
+            "dnsPreset: automatic",
         ]
         if let result = currentDiagnosticResult {
             lines.append("bucket: \(result.bucket.rawValue)")
@@ -1731,6 +1731,7 @@ final class RoutevaAppModel: ObservableObject {
             nodes: availableNodes,
             updateCoverFlowPrestop: !isConnectedForLatency
         )
+        persistLatencyCache()
         defaults.set(Date(), forKey: Self.latencyRoundCompletedAtKey)
     }
 
@@ -1790,22 +1791,20 @@ final class RoutevaAppModel: ObservableObject {
 
         // Connected *Test* 不得改 Cover Flow 下标（ADR 0069）。
         // Cover Flow / Location pick owns focus until the catalog changes.
-        // Pre-stop must not yank the user back to Preferred or lowest-ms.
+        // Idle 预停：当前已绿则留下；非绿才落到最低已测 ms。
         guard updateCoverFlowPrestop, !nodeSelectionOwnedByUser else { return }
 
-        let preferredID = activeSubscription?.preferredNodeID
-        if let preferredID,
-           let preferredIndex = nodes.firstIndex(where: { $0.id == preferredID }) {
-            selectedNodeIndex = preferredIndex
-            return
+        var measuredMilliseconds: [UUID: Int] = [:]
+        for (nodeID, status) in nodeLatencies {
+            if case let .measured(milliseconds) = status {
+                measuredMilliseconds[nodeID] = milliseconds
+            }
         }
-        // No Preferred: pre-stop on lowest ms among measured nodes.
-        if let bestID = locationOrderIDs.first(where: {
-            if case .measured = nodeLatencies[$0] { return true }
-            return false
-        }), let bestIndex = nodes.firstIndex(where: { $0.id == bestID }) {
-            selectedNodeIndex = bestIndex
-        }
+        selectedNodeIndex = CoverFlowLatencyPrestop.index(
+            currentIndex: selectedNodeIndex,
+            nodeIDs: nodes.map(\.id),
+            measuredMilliseconds: measuredMilliseconds
+        )
     }
 
     private static func sortedNodeIDsByLatency(
@@ -1858,12 +1857,18 @@ final class RoutevaAppModel: ObservableObject {
             : nil
         subscriptions = summaries
         let newNodeIDs = Set(availableNodes.map(\.id))
-        let catalogChanged = activeSubscription?.id != previousActiveID || newNodeIDs != previousNodeIDs
-        if catalogChanged {
+        let isInitialLoad = previousActiveID == nil && previousNodeIDs.isEmpty
+        let catalogChanged = !isInitialLoad
+            && (activeSubscription?.id != previousActiveID || newNodeIDs != previousNodeIDs)
+        if isInitialLoad {
+            restoreLatencyCache(validNodeIDs: newNodeIDs)
+        } else if catalogChanged {
             // New node set: system owns focus again (Preferred / index 0).
             nodeSelectionOwnedByUser = false
             locationOrderIDs = []
+            nodeLatencies = [:]
             defaults.removeObject(forKey: Self.latencyRoundCompletedAtKey)
+            defaults.removeObject(forKey: Self.latencySamplesKey)
         }
 
         if nodeSelectionOwnedByUser,
@@ -1877,9 +1882,60 @@ final class RoutevaAppModel: ObservableObject {
             selectedNodeIndex = 0
         }
 
-        if catalogChanged {
+        if catalogChanged || isInitialLoad {
             scheduleSilentLatencyTestIfNeeded()
         }
+    }
+
+    private struct PersistedLatencySample: Codable {
+        var milliseconds: Int?
+    }
+
+    private func persistLatencyCache() {
+        var payload: [String: PersistedLatencySample] = [:]
+        for (nodeID, status) in nodeLatencies {
+            switch status {
+            case let .measured(milliseconds):
+                payload[nodeID.uuidString.lowercased()] = PersistedLatencySample(
+                    milliseconds: milliseconds
+                )
+            case .unavailable:
+                payload[nodeID.uuidString.lowercased()] = PersistedLatencySample(
+                    milliseconds: nil
+                )
+            case .testing:
+                break
+            }
+        }
+        guard let data = try? JSONEncoder().encode(payload) else { return }
+        defaults.set(data, forKey: Self.latencySamplesKey)
+    }
+
+    private func restoreLatencyCache(validNodeIDs: Set<UUID>) {
+        guard nodeLatencies.isEmpty,
+              let data = defaults.data(forKey: Self.latencySamplesKey),
+              let payload = try? JSONDecoder().decode(
+                [String: PersistedLatencySample].self,
+                from: data
+              )
+        else { return }
+        var restored: [UUID: NodeLatencyStatus] = [:]
+        for (rawID, sample) in payload {
+            guard let nodeID = UUID(uuidString: rawID),
+                  validNodeIDs.contains(nodeID)
+            else { continue }
+            if let milliseconds = sample.milliseconds {
+                restored[nodeID] = .measured(milliseconds)
+            } else {
+                restored[nodeID] = .unavailable
+            }
+        }
+        guard !restored.isEmpty else { return }
+        nodeLatencies = restored
+        locationOrderIDs = Self.sortedNodeIDsByLatency(
+            nodes: availableNodes,
+            latencies: restored
+        )
     }
 
     func reloadOverrides() async {
@@ -2046,7 +2102,7 @@ final class RoutevaAppModel: ObservableObject {
             ),
             profiles: profiles,
             routingMode: routingMode.runtimeValue,
-            dnsPreset: dnsPreset.runtimeValue,
+            dnsPreset: .automatic,
             directRouteAddresses: directRouteAddresses,
             dnsBootstrapAddressMap: bootstrapAddressMap,
             providerRoutePolicy: providerRoutePolicy,
@@ -2627,7 +2683,7 @@ final class RoutevaAppModel: ObservableObject {
             guard availableNodes.count > 1 else { throw RoutevaAppDataError.nodeUnavailable }
             selectedNodeIndex = (selectedNodeIndex + 1) % availableNodes.count
         case .switchDNSPreset:
-            dnsPreset = .compatibility
+            break
         case .rebuildTunnel:
             try? await providerController.disconnectAll()
         default:
@@ -2641,7 +2697,6 @@ final class RoutevaAppModel: ObservableObject {
               let manifest = try? JSONDecoder().decode(RuntimeManifest.self, from: restored.manifestData)
         else { return }
         routingMode = RoutingMode(manifest.routingMode)
-        dnsPreset = DNSPreset(manifest.dnsPreset)
     }
 
     private func refreshTrafficPolling() {
@@ -2869,38 +2924,6 @@ enum RoutingMode: String, CaseIterable, Identifiable {
         case .automatic: "Provider rules + selected node"
         case .global: "All traffic via proxy"
         case .direct: "Direct by default; Overrides still apply"
-        }
-    }
-}
-
-enum DNSPreset: String, CaseIterable, Identifiable {
-    case automatic = "Automatic"
-    case privacy = "Privacy"
-    case compatibility = "Compatibility"
-
-    var id: String { rawValue }
-
-    var runtimeValue: RuntimeManifest.DNSPreset {
-        switch self {
-        case .automatic: .automatic
-        case .privacy: .privacy
-        case .compatibility: .compatibility
-        }
-    }
-
-    init(_ value: RuntimeManifest.DNSPreset) {
-        switch value {
-        case .automatic: self = .automatic
-        case .privacy: self = .privacy
-        case .compatibility: self = .compatibility
-        }
-    }
-
-    var detail: String {
-        switch self {
-        case .automatic: "Resolve by how traffic is routed"
-        case .privacy: "Encrypted DNS when possible"
-        case .compatibility: "Prefer widely reachable resolvers"
         }
     }
 }

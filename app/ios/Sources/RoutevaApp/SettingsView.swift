@@ -4,7 +4,6 @@ struct SettingsView: View {
     private enum Screen: Equatable {
         case root
         case routing
-        case dns
         case overrides
         case about
     }
@@ -29,14 +28,6 @@ struct SettingsView: View {
                         titleFor: \.rawValue,
                         detailFor: \.detail,
                         onBack: commitRoutingModeAndReturn
-                    )
-                case .dns:
-                    picker(
-                        title: "DNS",
-                        values: DNSPreset.allCases,
-                        selection: $model.dnsPreset,
-                        titleFor: \.rawValue,
-                        detailFor: \.detail
                     )
                 case .overrides:
                     overridesScreen
@@ -96,12 +87,6 @@ struct SettingsView: View {
                             draftRoutingMode = model.routingMode
                             screen = .routing
                         }
-                        SettingsDivider()
-                        SettingsRow(
-                            title: "DNS",
-                            subtitle: "How names resolve on your connection",
-                            value: model.dnsPreset.rawValue
-                        ) { screen = .dns }
                         SettingsDivider()
                         SettingsRow(
                             title: "Overrides",
