@@ -31,6 +31,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Routeva uses the camera only when you choose Scan QR to import a subscription.</string>
 	<key>RoutevaKeychainAccessGroup</key>

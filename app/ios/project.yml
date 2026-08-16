@@ -14,7 +14,7 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "2"
+    CURRENT_PROJECT_VERSION: "5"
     DEVELOPMENT_TEAM: NV2PNGX854
     CODE_SIGN_STYLE: Automatic
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
@@ -183,6 +183,7 @@ targets:
         CFBundleDisplayName: Routeva
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
         CFBundleDevelopmentRegion: en
         CFBundleLocalizations:
           - en
