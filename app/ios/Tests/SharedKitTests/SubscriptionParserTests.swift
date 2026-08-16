@@ -153,6 +153,21 @@ final class SubscriptionParserTests: XCTestCase {
         XCTAssertEqual(parsed.skippedNodeCount, 2)
     }
 
+    func testSkipsProviderInstructionAndDomainBannerNodes() throws {
+        let yaml = """
+        proxies:
+          - { name: '若节点故障先更新订阅并设置订阅自动更新', type: tuic, server: notice.example.invalid, port: 443, uuid: 11111111-2222-3333-4444-555555555555, password: tuic-pass }
+          - { name: '域名: lgga.cb2077.com（墙内访问）', type: tuic, server: panel.example.invalid, port: 29840, uuid: 11111111-2222-3333-4444-555555555555, password: tuic-pass }
+          - { name: '香港-域名优化1', type: tuic, server: hk.example.invalid, port: 443, uuid: 11111111-2222-3333-4444-555555555555, password: tuic-pass }
+        """
+
+        let parsed = try parser.parse(yaml)
+
+        XCTAssertEqual(parsed.nodes.map(\.displayName), ["香港-域名优化1"])
+        XCTAssertEqual(parsed.nodes[0].endpointHost, "hk.example.invalid")
+        XCTAssertEqual(parsed.skippedNodeCount, 2)
+    }
+
     func testParsesClashBlockAndInlineMappingsAndSkipsUnsupportedType() throws {
         let yaml = """
         mixed-port: 7890

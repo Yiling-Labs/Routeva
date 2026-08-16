@@ -205,7 +205,10 @@ public struct SubscriptionParser: Sendable {
                     options: options
                 )
             )
-            if isProviderMetadataNode(displayName: node.displayName, host: node.endpointHost) {
+            if ProviderMetadataNodeClassifier.isMetadata(
+                displayName: node.displayName,
+                host: node.endpointHost
+            ) {
                 skipped += 1
                 continue
             }
@@ -245,9 +248,11 @@ public struct SubscriptionParser: Sendable {
                 skipped += 1
                 continue
             }
-            // Providers often inject non-routable banner rows (traffic / expiry
-            // text) as fake proxies. Keep them out of the selectable node list.
-            if isProviderMetadataNode(displayName: node.displayName, host: node.endpointHost) {
+            // Providers inject quota / instruction rows as fake proxies.
+            if ProviderMetadataNodeClassifier.isMetadata(
+                displayName: node.displayName,
+                host: node.endpointHost
+            ) {
                 skipped += 1
                 continue
             }
@@ -564,7 +569,10 @@ public struct SubscriptionParser: Sendable {
                 endpointPort: port,
                 credential: ProxyCredentialEnvelope(authentication: authentication, options: options)
             )
-            if isProviderMetadataNode(displayName: node.displayName, host: node.endpointHost) {
+            if ProviderMetadataNodeClassifier.isMetadata(
+                displayName: node.displayName,
+                host: node.endpointHost
+            ) {
                 skipped += 1
                 continue
             }
@@ -651,7 +659,10 @@ public struct SubscriptionParser: Sendable {
                 endpointPort: port,
                 credential: ProxyCredentialEnvelope(authentication: authentication, options: options)
             )
-            if isProviderMetadataNode(displayName: node.displayName, host: node.endpointHost) {
+            if ProviderMetadataNodeClassifier.isMetadata(
+                displayName: node.displayName,
+                host: node.endpointHost
+            ) {
                 skipped += 1
                 continue
             }
@@ -664,47 +675,6 @@ public struct SubscriptionParser: Sendable {
             skippedNodeCount: skipped,
             routePolicy: try extractor.routePolicy(from: input)
         )
-    }
-
-    /// True for non-routable banner rows some providers inject into the proxy list
-    /// (e.g. "剩余流量：…", "过期时间：…") so the user can read them in other clients.
-    /// Routeva surfaces traffic / expiry from `subscription-userinfo` instead.
-    private func isProviderMetadataNode(displayName: String, host: String) -> Bool {
-        let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let lowered = name.lowercased()
-        let hostLowered = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-        // Intentional dummy endpoints used only for banner rows.
-        if hostLowered.contains("g00gle") { return true }
-
-        let markers = [
-            "剩余流量",
-            "過期時間",
-            "过期时间",
-            "套餐到期",
-            "到期时间",
-            "到期時間",
-            "流量重置",
-            "重置时间",
-            "重置時間",
-            "官网",
-            "官方網站",
-            "官方网站",
-            "expire time",
-            "expires on",
-            "traffic remaining",
-            "remaining traffic",
-            "package expires",
-        ]
-        if markers.contains(where: { name.contains($0) || lowered.contains($0) }) {
-            return true
-        }
-
-        // "过期时间：2026-09-17 …" / "剩余流量：19%" without requiring full markers above.
-        if name.hasPrefix("过期") || name.hasPrefix("到期") || name.hasPrefix("剩餘") || name.hasPrefix("剩余") {
-            return true
-        }
-        return false
     }
 
     private func surgeWebSocketHost(_ headers: String) -> String? {
