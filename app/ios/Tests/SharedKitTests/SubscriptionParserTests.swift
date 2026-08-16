@@ -661,19 +661,22 @@ final class SubscriptionParserTests: XCTestCase {
 }
 
 final class SubscriptionPayloadLoaderClipboardTests: XCTestCase {
-    func testUsesProductUserAgentWithoutImpersonatingAFormat() {
+    func testUsesProductUserAgentWithCommonClientCompatibilityTokens() {
+        let tokens = SubscriptionPayloadLoader.compatibilitySubscriptionUserAgent
+        XCTAssertEqual(tokens, "ClashMeta clash.meta Stash Shadowrocket")
         XCTAssertEqual(
             SubscriptionPayloadLoader.subscriptionUserAgent(version: "1.2.3"),
-            "Routeva/1.2.3"
+            "Routeva/1.2.3 \(tokens)"
         )
         XCTAssertEqual(
             SubscriptionPayloadLoader.subscriptionUserAgent(version: "1.2 beta!"),
-            "Routeva/1.2beta"
+            "Routeva/1.2beta \(tokens)"
         )
         XCTAssertEqual(
             SubscriptionPayloadLoader.subscriptionUserAgent(version: nil),
-            "Routeva/1.0"
+            "Routeva/1.0 \(tokens)"
         )
+        XCTAssertFalse(tokens.split(separator: " ").contains("clash"))
     }
 
     func testExtractsBareQuotedAndMixedHTTPSLinks() {
@@ -772,7 +775,11 @@ final class SubscriptionPayloadLoaderClipboardTests: XCTestCase {
 
         XCTAssertEqual(userAgents.count, 2)
         XCTAssertTrue(userAgents[0].hasPrefix("Routeva/"))
-        XCTAssertEqual(userAgents[1], "\(userAgents[0]) clash.meta")
+        XCTAssertTrue(userAgents[0].contains("ClashMeta"))
+        XCTAssertTrue(userAgents[0].contains("clash.meta"))
+        XCTAssertTrue(userAgents[0].contains("Stash"))
+        XCTAssertTrue(userAgents[0].contains("Shadowrocket"))
+        XCTAssertEqual(userAgents[1], SubscriptionPayloadLoader.compatibilitySubscriptionUserAgent)
         XCTAssertEqual(String(data: resolved.data, encoding: .utf8), "proxies:\n  - { name: TEST, type: tuic }")
         XCTAssertEqual(resolved.usage?.usedBytes, 3)
     }

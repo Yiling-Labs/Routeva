@@ -391,9 +391,8 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
         let productUserAgent = Self.subscriptionUserAgent(version: Bundle.main.object(
             forInfoDictionaryKey: "CFBundleShortVersionString"
         ) as? String)
-        // Prefer the real product identity so providers can return their
-        // native payload. Some panels answer unknown clients with a successful
-        // but empty body; only that exact case gets one compatibility retry.
+        // 机场按 UA 关键字分流。默认同时带上 Clash Meta / Stash / Shadowrocket，
+        // 避免 Routeva 被当成未知客户端而返回空 body。
         request.setValue(productUserAgent, forHTTPHeaderField: "User-Agent")
         request.setValue(
             "application/json, text/yaml;q=0.9, application/yaml;q=0.9, text/plain;q=0.8, */*;q=0.5",
@@ -402,7 +401,7 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
         var (data, http) = try await validatedResponse(for: request)
         if data.isEmpty {
             request.setValue(
-                Self.compatibilitySubscriptionUserAgent(productUserAgent),
+                Self.compatibilitySubscriptionUserAgent,
                 forHTTPHeaderField: "User-Agent"
             )
             (data, http) = try await validatedResponse(for: request)
@@ -457,16 +456,16 @@ public struct SubscriptionPayloadLoader: SubscriptionPayloadLoading, Sendable {
             || components.fragment != nil
     }
 
+    /// 订阅拉取 UA：Routeva 身份 + 机场常见客户端关键字。
+    /// 不含单独的 `clash`：部分面板先匹配 clash 再匹配 meta，会下发空 `proxies: []`。
+    static let compatibilitySubscriptionUserAgent = "ClashMeta clash.meta Stash Shadowrocket"
+
     static func subscriptionUserAgent(version: String?) -> String {
         let normalized = version?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .filter { $0.isASCII && ($0.isLetter || $0.isNumber || ".-_".contains($0)) }
         let safeVersion = normalized.flatMap { $0.isEmpty ? nil : $0 } ?? "1.0"
-        return "Routeva/\(safeVersion)"
-    }
-
-    static func compatibilitySubscriptionUserAgent(_ productUserAgent: String) -> String {
-        "\(productUserAgent) clash.meta"
+        return "Routeva/\(safeVersion) \(compatibilitySubscriptionUserAgent)"
     }
 
     private func validatedResponse(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
