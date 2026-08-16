@@ -95,6 +95,7 @@ final class RoutevaAppModel: ObservableObject {
     private let repairCoordinator = RepairCoordinator()
     private let nodeSelectionMutationGate = NodeSelectionMutationGate()
     private var connectionTask: Task<Void, Never>?
+    private var connectionAttemptID: UUID?
     private var disconnectionTask: Task<Void, Never>?
     /// Latest *Set active* target. A newer tap only updates this; the in-flight
     /// switch applies the last id after teardown.
@@ -119,6 +120,8 @@ final class RoutevaAppModel: ObservableObject {
     private var dnsHealthMonitor = ProviderDNSHealthMonitor()
     private var isHomeVisible = false
     private var isSceneActive = true
+    /// 本轮 Connecting 是否离开过前台（系统 VPN 设置页）。
+    private var connectionLeftForeground = false
     private let deviceID: String
     private var overrideSyncService: CloudOverrideSyncService?
     private var silentLatencyTask: Task<Void, Never>?
@@ -330,9 +333,10 @@ final class RoutevaAppModel: ObservableObject {
             presentedSurface = .addSubscription
             return
         }
-        guard connectionTask == nil, disconnectionTask == nil else { return }
+        guard connectionTask == nil else { return }
         cancelProviderConnectingRecovery()
         suppressProviderConnectingPresentation = false
+        connectionLeftForeground = false
         connectionFailureMessage = nil
         nodeFailoverToast = nil
         cancelNodeSelection()
@@ -346,9 +350,11 @@ final class RoutevaAppModel: ObservableObject {
         #endif
         connectionState = .connecting
         let startupStartedAt = Date()
+        let attemptID = UUID()
+        connectionAttemptID = attemptID
         connectionTask = Task { [weak self] in
             guard let self else { return }
-            defer { finishConnectionTransaction() }
+            defer { finishConnectionTransaction(attemptID: attemptID) }
             let trace = ConnectionDiagnosticTrace()
             do {
                 try await raceConnectionAttempt(trace: trace)
@@ -390,6 +396,7 @@ final class RoutevaAppModel: ObservableObject {
         let core = connectedCore ?? .singBox
         connectionTask?.cancel()
         connectionTask = nil
+        connectionAttemptID = nil
         cancelProviderConnectingRecovery()
         cancelNodeSelection()
         cancelPostConnectProbe()
@@ -437,10 +444,16 @@ final class RoutevaAppModel: ObservableObject {
     }
 
     func setSceneActive(_ active: Bool) {
+        if !active, case .connecting = connectionState {
+            connectionLeftForeground = true
+        }
         isSceneActive = active
         refreshTrafficPolling()
         if active {
             Task {
+                if connectionLeftForeground {
+                    await abandonConnectingIfPermissionWasNotGranted()
+                }
                 await reconcileProviderConnectionStatus()
                 await syncOverrides()
                 await reconcileSelectedNodeIfNeeded()
@@ -508,8 +521,11 @@ final class RoutevaAppModel: ObservableObject {
         await reconcileSelectedNodeIfNeeded()
     }
 
-    private func finishConnectionTransaction() {
-        connectionTask = nil
+    private func finishConnectionTransaction(attemptID: UUID) {
+        if connectionAttemptID == attemptID {
+            connectionTask = nil
+            connectionAttemptID = nil
+        }
         Task { [weak self] in
             await self?.reconcileProviderConnectionStatus()
         }
@@ -807,15 +823,18 @@ final class RoutevaAppModel: ObservableObject {
         let coreToStop = connectedCore
         cancelProviderConnectingRecovery()
         suppressProviderConnectingPresentation = false
+        connectionLeftForeground = false
         cancelNodeSelection()
         cancelPostConnectProbe()
         stopTrafficPolling()
         connectionState = .connecting
         let controller = providerController
         let startupStartedAt = Date()
+        let attemptID = UUID()
+        connectionAttemptID = attemptID
         connectionTask = Task { [weak self] in
             guard let self else { return }
-            defer { finishConnectionTransaction() }
+            defer { finishConnectionTransaction(attemptID: attemptID) }
             if let coreToStop {
                 await controller.stop(core: coreToStop)
             } else {
@@ -992,10 +1011,14 @@ final class RoutevaAppModel: ObservableObject {
     }
 
     /// 立刻把 Home 拉回 Idle，再在后台停 provider。Connecting 电源键与切 Active 共用。
+    /// 不能 `await` 仍卡在 `saveToPreferences` 的旧 task，否则电源键和重试都会死锁。
     private func abortConnectingSession() {
         suppressProviderConnectingPresentation = true
         let core = connectedCore ?? .singBox
-        connectionTask?.cancel()
+        let pending = connectionTask
+        connectionTask = nil
+        connectionAttemptID = nil
+        pending?.cancel()
         cancelProviderConnectingRecovery()
         cancelNodeSelection()
         cancelPostConnectProbe()
@@ -1005,8 +1028,9 @@ final class RoutevaAppModel: ObservableObject {
         connectionState = .idle
         sessionDownloadedBytes = 0
         sessionUploadedBytes = 0
-        guard disconnectionTask == nil else { return }
         let controller = providerController
+        Task { await controller.invalidateInFlightStart() }
+        guard disconnectionTask == nil else { return }
         disconnectionTask = Task { [weak self] in
             guard let self else { return }
             defer {
@@ -1016,10 +1040,22 @@ final class RoutevaAppModel: ObservableObject {
                 }
                 scheduleSilentLatencyTestIfNeeded()
             }
-            await connectionTask?.value
             await controller.requestStop(core: core)
             await connectionCoordinator.reconcile(.disconnected)
         }
+    }
+
+    /// 从系统 VPN 页回来时：配置仍未启用就不要继续 Connecting。
+    private func abandonConnectingIfPermissionWasNotGranted() async {
+        guard case .connecting = connectionState, connectionTask != nil else { return }
+        let enabled = await providerController.hasEnabledConfiguration()
+        guard VPNPermissionGate.shouldAbandonConnectingOnForeground(
+            isConnecting: true,
+            hasInFlightConnection: true,
+            hasEnabledConfiguration: enabled
+        ) else { return }
+        abortConnectingSession()
+        connectionFailureMessage = Self.vpnPermissionUserMessage
     }
 
     func setAutoUpdateEnabled(_ enabled: Bool) {
@@ -2139,22 +2175,17 @@ final class RoutevaAppModel: ObservableObject {
     }
 
     private func raceConnectionAttempt(trace: ConnectionDiagnosticTrace) async throws {
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            group.addTask {
-                try await self.establishConnection(trace: trace)
-            }
-            group.addTask {
-                try await Task.sleep(for: Self.connectionAttemptTimeout)
-                throw ConnectionAttemptOutcomeError.timedOut
-            }
-            try await group.next()
-            group.cancelAll()
-        }
+        try await AbandonableAsync.firstFinished(
+            timeout: Self.connectionAttemptTimeout,
+            operation: { try await self.establishConnection(trace: trace) },
+            timeoutError: { ConnectionAttemptOutcomeError.timedOut }
+        )
     }
 
     private func handleConnectionAttemptTimeout(trace: ConnectionDiagnosticTrace) async {
         suppressProviderConnectingPresentation = true
         let core = connectedCore ?? .singBox
+        await providerController.invalidateInFlightStart()
         await providerController.requestStop(core: core)
         await connectionCoordinator.reconcile(.disconnected)
         await trace.record(.init(
@@ -2275,7 +2306,13 @@ final class RoutevaAppModel: ObservableObject {
                 }
                 #endif
                 do {
-                    try await controller.start(core: core, manifestID: manifestID)
+                    try await controller.start(
+                        core: core,
+                        manifestID: manifestID,
+                        isSceneActive: { [weak self] in
+                            await MainActor.run { self?.isSceneActive ?? true }
+                        }
+                    )
                     await trace.record(.init(layer: .tunnel, status: .passed))
                 } catch {
                     let errorCode = VPNProviderController.stableDiagnosticCode(for: error)
@@ -2287,6 +2324,9 @@ final class RoutevaAppModel: ObservableObject {
                     #if DEBUG
                     print("Routeva VPN startup diagnostic: \(errorCode)")
                     #endif
+                    if VPNProviderController.isConfigurationPermissionFailure(error) {
+                        throw NonFailoverConnectionError.providerUnavailable
+                    }
                     throw error
                 }
             },
@@ -2550,6 +2590,8 @@ final class RoutevaAppModel: ObservableObject {
 
     private static let nodeUnreachableUserMessage =
         "This node isn’t responding. Try another node."
+    private static let vpnPermissionUserMessage =
+        "Allow VPN access, then try again."
 
     private func presentDiagnostic(from trace: ConnectionDiagnosticTrace) async {
         suppressProviderConnectingPresentation = true
@@ -2568,8 +2610,13 @@ final class RoutevaAppModel: ObservableObject {
             || evidenceCode == "probe.tunnel_http_response_too_large"
             || evidenceCode == "probe.tunnel_probe_address_unavailable"
             || evidenceCode.hasPrefix("probe.core_proxy_")
+        let isPermissionFailure = evidenceCode == "provider.configuration_activation_not_persisted"
+            || evidenceCode == "provider.configuration_save_timed_out"
+            || evidenceCode.hasPrefix("provider.start_request_failed.configuration_")
         #if DEBUG
-        if isNodeUnreachable {
+        if isPermissionFailure {
+            connectionFailureMessage = "\(Self.vpnPermissionUserMessage) [\(evidenceCode)]"
+        } else if isNodeUnreachable {
             var message = "\(Self.nodeUnreachableUserMessage) [\(evidenceCode)]"
             if let probeCounterSummary {
                 message += " {\(probeCounterSummary)}"
@@ -2583,9 +2630,13 @@ final class RoutevaAppModel: ObservableObject {
             connectionFailureMessage = message
         }
         #else
-        connectionFailureMessage = isNodeUnreachable
-            ? Self.nodeUnreachableUserMessage
-            : "Couldn’t connect. Try again."
+        if isPermissionFailure {
+            connectionFailureMessage = Self.vpnPermissionUserMessage
+        } else if isNodeUnreachable {
+            connectionFailureMessage = Self.nodeUnreachableUserMessage
+        } else {
+            connectionFailureMessage = "Couldn’t connect. Try again."
+        }
         #endif
     }
 

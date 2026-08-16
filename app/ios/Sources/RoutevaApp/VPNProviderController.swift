@@ -49,6 +49,8 @@ actor VPNProviderController {
     /// Reserve Provider messages far enough apart to stay outside the
     /// extension's 200 ms request limiter, including concurrent polling tasks.
     private var nextProviderMessageAt = ContinuousClock.now
+    /// 取消/超时后作废仍在跑的 saveToPreferences / startVPNTunnel。
+    private var startGeneration: UInt64 = 0
 
     static func stableDiagnosticCode(for error: Error) -> String {
         guard case let VPNProviderControllerError.providerStartFailed(_, code) = error else {
@@ -113,6 +115,24 @@ actor VPNProviderController {
         }
     }
 
+    static func isConfigurationPermissionFailure(_ error: Error) -> Bool {
+        guard case let VPNProviderControllerError.providerStartFailed(_, code) = error else {
+            return false
+        }
+        switch code {
+        case "provider.configuration_activation_not_persisted",
+             "provider.configuration_save_timed_out",
+             "provider.start_request_failed.configuration_invalid",
+             "provider.start_request_failed.configuration_disabled",
+             "provider.start_request_failed.configuration_stale",
+             "provider.start_request_failed.configuration_read_write_failed",
+             "provider.start_request_failed.configuration_unknown":
+            return true
+        default:
+            return false
+        }
+    }
+
     private static func shouldReactivateConfiguration(after error: Error) -> Bool {
         let systemError = error as NSError
         guard systemError.domain == NEVPNErrorDomain else { return false }
@@ -130,8 +150,21 @@ actor VPNProviderController {
             health: health,
             excluding: excluding
         )
-        try await start(core: decision.selected, manifestID: manifest.manifestID)
+        try await start(
+            core: decision.selected,
+            manifestID: manifest.manifestID,
+            isSceneActive: { true }
+        )
         return decision
+    }
+
+    func invalidateInFlightStart() {
+        startGeneration &+= 1
+    }
+
+    func hasEnabledConfiguration(core: CoreIdentifier = .singBox) async -> Bool {
+        guard let managers = try? await loadManagersFromPreferences() else { return false }
+        return managers[core]?.isEnabled == true
     }
 
     func disconnectAll() async throws {
@@ -191,14 +224,22 @@ actor VPNProviderController {
         return .disconnected
     }
 
-    func start(core: CoreIdentifier, manifestID: UUID) async throws {
+    func start(
+        core: CoreIdentifier,
+        manifestID: UUID,
+        isSceneActive: @escaping @Sendable () async -> Bool = { true }
+    ) async throws {
+        startGeneration &+= 1
+        let generation = startGeneration
         try await removeLegacyRoutevaManagers()
+        try ensureStartCurrent(generation)
         if let activeManager {
             try await stopForFreshSession(activeManager.manager)
         }
         activeManager = nil
 
         var existingManagers = try await loadManagersFromPreferences()
+        try ensureStartCurrent(generation)
         if let existingManager = existingManagers[core] {
             // Every attempt has a new manifest ID. Never reuse a same-core
             // session that merely still reports Connected: it may be an old
@@ -209,28 +250,27 @@ actor VPNProviderController {
 
         // Stop any stale Routeva session before starting a fresh manifest.
         try await stopOtherManagers(existingManagers, except: core)
+        try ensureStartCurrent(generation)
         // A manager loaded before stop can remain bound to the old Provider
         // bridge even after its local connection object says Disconnected.
         // Require two refreshed inactive observations, then start only from a
         // manager loaded after that teardown barrier.
         try await waitForStableDisconnection(core: core)
+        try ensureStartCurrent(generation)
         existingManagers = try await loadManagersFromPreferences()
-        var managers = managersMatchDesiredConfiguration(
-            existingManagers,
-            activating: core
-        ) ? existingManagers : try await configureManagers(activating: core)
-        guard var manager = managers[core] else {
-            throw VPNProviderControllerError.providerConfigurationMissing(core)
+        if !managersMatchDesiredConfiguration(existingManagers, activating: core) {
+            try await configureManagers(activating: core)
+            try ensureStartCurrent(generation)
         }
-        guard manager.isEnabled else {
-            throw VPNProviderControllerError.providerStartFailed(
-                core,
-                diagnosticCode: "provider.configuration_activation_not_persisted"
-            )
-        }
+        var manager = try await waitUntilReadyToStart(
+            core: core,
+            generation: generation,
+            isSceneActive: isSceneActive
+        )
 
         startupDiagnostics.clear()
         let startupRequestedAt = Date()
+        try ensureStartCurrent(generation)
         do {
             try manager.connection.startVPNTunnel(options: [
                 ProviderStartOptionKey.manifestID: manifestID.uuidString as NSString,
@@ -239,8 +279,9 @@ actor VPNProviderController {
             if Self.shouldReactivateConfiguration(after: error) {
                 // Settings or another VPN may have changed the single enabled
                 // enterprise configuration between our load and start request.
-                managers = try await configureManagers(activating: core)
-                guard let refreshed = managers[core], refreshed.isEnabled else {
+                try ensureStartCurrent(generation)
+                let refreshedManagers = try await configureManagers(activating: core)
+                guard let refreshed = refreshedManagers[core], refreshed.isEnabled else {
                     throw VPNProviderControllerError.providerStartFailed(
                         core,
                         diagnosticCode: "provider.configuration_activation_not_persisted"
@@ -668,6 +709,71 @@ actor VPNProviderController {
         }
     }
 
+    private func ensureStartCurrent(_ generation: UInt64) throws {
+        try Task.checkCancellation()
+        guard generation == startGeneration else { throw CancellationError() }
+    }
+
+    private func savePreferencesAllowingPermissionPrompt(
+        _ manager: NETunnelProviderManager
+    ) async throws {
+        do {
+            try await AbandonableAsync.firstFinished(
+                timeout: .seconds(15),
+                operation: { try await manager.saveToPreferences() },
+                timeoutError: {
+                    VPNProviderControllerError.providerStartFailed(
+                        .singBox,
+                        diagnosticCode: "provider.configuration_save_timed_out"
+                    )
+                }
+            )
+        } catch let error as VPNProviderControllerError {
+            throw error
+        } catch {
+            throw VPNProviderControllerError.providerStartFailed(
+                .singBox,
+                diagnosticCode: Self.startRequestDiagnosticCode(for: error)
+            )
+        }
+    }
+
+    /// 首次授权可能把 App 切到系统 VPN 页。此时不要 start；等回前台再读一次 isEnabled。
+    private func waitUntilReadyToStart(
+        core: CoreIdentifier,
+        generation: UInt64,
+        isSceneActive: @escaping @Sendable () async -> Bool
+    ) async throws -> NETunnelProviderManager {
+        let deadline = ContinuousClock.now + .seconds(20)
+        while true {
+            try ensureStartCurrent(generation)
+            let managers = try await loadManagersFromPreferences()
+            let manager = managers[core]
+            let enabled = manager?.isEnabled == true
+            let active = await isSceneActive()
+            switch VPNPermissionGate.decision(isEnabled: enabled, sceneIsActive: active) {
+            case .startTunnel:
+                guard let manager else {
+                    throw VPNProviderControllerError.providerConfigurationMissing(core)
+                }
+                return manager
+            case .failNotPersisted:
+                throw VPNProviderControllerError.providerStartFailed(
+                    core,
+                    diagnosticCode: "provider.configuration_activation_not_persisted"
+                )
+            case .waitForForeground:
+                guard ContinuousClock.now < deadline else {
+                    throw VPNProviderControllerError.providerStartFailed(
+                        core,
+                        diagnosticCode: "provider.configuration_save_timed_out"
+                    )
+                }
+                try await Task.sleep(for: .milliseconds(200))
+            }
+        }
+    }
+
     private func configureManagers(
         activating selected: CoreIdentifier
     ) async throws -> [CoreIdentifier: NETunnelProviderManager] {
@@ -719,7 +825,9 @@ actor VPNProviderController {
             manager.protocolConfiguration = tunnelProtocol
             manager.localizedDescription = "Routeva"
             manager.isEnabled = shouldEnable
-            try await manager.saveToPreferences()
+            try await savePreferencesAllowingPermissionPrompt(manager)
+            // Apple：save 之后必须再 load，否则 startVPNTunnel 可能打在过期配置上。
+            try await manager.loadFromPreferences()
         }
 
         // Only return objects loaded after the final preference write. These
